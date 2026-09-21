@@ -1,0 +1,2193 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Campus Facility Issue Prediction & Prioritization System</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <!-- Chart.js for professional analytics charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>SmartCampus AI</h1>
+          <span>Predictive Maintenance</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebarNav">
+        <!-- STUDENT NAVIGATION (Active when logged in as Student) -->
+        <div id="studentNavGroup" style="display: none;">
+          <div class="nav-section-title">Student Portal</div>
+          <a class="nav-item active" data-view="student-home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Student Home
+          </a>
+          <a class="nav-item" data-view="student-submit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Submit Complaint
+          </a>
+          <a class="nav-item" data-view="student-complaints">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            My Complaints
+          </a>
+          <a class="nav-item" data-view="student-help">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Help & FAQ
+          </a>
+          <a class="nav-item" data-view="student-profile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            My Profile
+          </a>
+        </div>
+
+        <!-- ADMINISTRATOR NAVIGATION (Active when logged in as Administrator) -->
+        <div id="adminNavGroup">
+          <div class="nav-section-title">1. Overview</div>
+          <a class="nav-item active" data-view="dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            Executive Dashboard
+          </a>
+          <a class="nav-item" data-view="home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Home & Mission
+          </a>
+          <a class="nav-item" data-view="how-it-works">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            How It Works (5 Steps)
+          </a>
+
+          <div class="nav-section-title">2. Operations</div>
+          <a class="nav-item" data-view="admin-complaints">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            All Complaints (5,500)
+          </a>
+          <a class="nav-item" data-view="priority-queue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Priority Queue
+          </a>
+          <a class="nav-item" data-view="ai-pipeline">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            AI Intake Sandbox
+          </a>
+
+          <div class="nav-section-title">3. Intelligence</div>
+          <a class="nav-item" data-view="risk-intelligence">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Facility Risk Intel
+          </a>
+          <a class="nav-item" data-view="campus-map">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+            Campus Location Map
+          </a>
+          <a class="nav-item" data-view="recurring-issues">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Recurring Issues
+          </a>
+          <a class="nav-item" data-view="predictive-maintenance">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Predictive Maintenance
+          </a>
+
+          <div class="nav-section-title">4. Data & ML</div>
+          <a class="nav-item" data-view="dataset-management">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            Dataset Management
+          </a>
+          <a class="nav-item" data-view="ml-architecture">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            Model Performance
+          </a>
+          <a class="nav-item" data-view="explainable-ai">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Why This Prediction? (SHAP)
+          </a>
+
+          <div class="nav-section-title">5. System</div>
+          <a class="nav-item" data-view="admin-users">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            User Directory
+          </a>
+          <a class="nav-item" data-view="audit-logs">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            System Audit Logs
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="demo-badge-indicator" id="sidebarDatasetBadge">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="status-dot"></span>
+            <span>Dataset: <strong>5,500 Records</strong></span>
+          </div>
+          <button class="btn btn-outline" id="resetDemoBtn" style="padding: 2px 6px; font-size: 0.68rem;" title="Reset dataset to default 5,500 records">Reset</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Container -->
+    <div class="main-wrapper">
+      
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" id="mobileMenuToggle" aria-label="Toggle Menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="page-title-box">
+            <h2 id="currentViewTitle">Smart Campus Maintenance Intelligence</h2>
+            <p id="currentViewSubtitle">Predictive facility triage, recurrence tracking, and explainable prioritization</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- Active User Profile Badge -->
+          <div class="user-badge-header" id="headerUserBadge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span id="headerUserName">Rahul Sharma</span>
+            <span class="user-role-tag role-student" id="headerUserRole">Student</span>
+          </div>
+
+          <button class="btn btn-outline" id="switchRoleBtn" title="Switch User / Role" onclick="app.showLoginView()">
+            Switch Role
+          </button>
+          <button class="btn btn-outline" id="signOutBtn" title="Sign Out" onclick="app.logout()" style="padding: 6px 10px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign Out
+          </button>
+
+          <button class="btn btn-tour" id="launchTourBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+            5-Minute Walkthrough
+          </button>
+          <button class="btn btn-outline" id="weightsModalBtn" title="Configure Prototype Weights">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Weights
+          </button>
+          <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle Theme" title="Toggle Light / Dark Mode">
+            <svg id="sunIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg id="moonIcon" style="display:none;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </header>
+
+        <!-- VIEW 0: AUTHENTICATION & ROLE-BASED LOGIN -->
+        <section id="view-login" class="app-view">
+          <div class="login-view-container">
+            <div class="login-card">
+              <div class="login-header">
+                <div class="brand-icon" style="margin: 0 auto 12px auto; width: 48px; height: 48px;">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                  </svg>
+                </div>
+                <h2>SmartCampus Access Portal</h2>
+                <p>Select your user role to sign in to your dedicated portal</p>
+              </div>
+
+              <!-- Role Selector Tabs -->
+              <div class="role-tabs">
+                <button type="button" class="role-tab-btn active" id="tabStudent" onclick="app.setLoginTab('student')">
+                  👨‍🎓 Student Portal
+                </button>
+                <button type="button" class="role-tab-btn" id="tabAdmin" onclick="app.setLoginTab('admin')">
+                  🛡️ Administrator
+                </button>
+              </div>
+
+              <!-- Login Form -->
+              <form id="loginForm" onsubmit="event.preventDefault(); app.handleLogin();">
+                <div style="margin-bottom: 14px;">
+                  <label id="loginUserLabel" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 5px;">
+                    Student ID or Campus Email
+                  </label>
+                  <input type="text" id="loginUsername" class="form-input" style="width: 100%;" required placeholder="e.g. STU101 or rahul.sharma@campus.edu">
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                  <label style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 5px;">
+                    Password
+                  </label>
+                  <input type="password" id="loginPassword" class="form-input" style="width: 100%;" required placeholder="••••••••">
+                </div>
+
+                <div id="loginErrorMsg" style="display: none; background: var(--risk-critical-bg); color: var(--risk-critical); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.8rem; margin-bottom: 14px;">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px; font-weight: 600;">
+                  Sign In to System
+                </button>
+              </form>
+
+              <!-- 1-Click Quick Demo Accounts -->
+              <div class="quick-accounts-box">
+                <h4>⚡ One-Click Demo Personas</h4>
+                <div class="quick-btn-group">
+                  <button type="button" class="btn-quick-login" onclick="app.quickLogin('STU101', 'student123')">
+                    <div>
+                      <strong>Rahul Sharma</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(Student • CS & Eng)</span>
+                    </div>
+                    <span class="badge badge-open" style="font-size: 0.68rem;">STU101</span>
+                  </button>
+                  <button type="button" class="btn-quick-login" onclick="app.quickLogin('STU102', 'student123')">
+                    <div>
+                      <strong>Priya Patel</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(Student • EE Wing)</span>
+                    </div>
+                    <span class="badge badge-open" style="font-size: 0.68rem;">STU102</span>
+                  </button>
+                  <button type="button" class="btn-quick-login" onclick="app.quickLogin('ADMIN01', 'admin123')">
+                    <div>
+                      <strong>Dr. K. V. Raman</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(Director • Facilities)</span>
+                    </div>
+                    <span class="badge badge-critical" style="font-size: 0.68rem;">ADMIN01</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- STUDENT VIEWS (ONLY ACCESSIBLE BY AUTHENTICATED STUDENTS)            -->
+        <!-- ==================================================================== -->
+
+        <!-- STUDENT HOME -->
+        <section id="view-student-home" class="app-view">
+          <div class="hero-banner" style="padding: 24px 28px; margin-bottom: 24px;">
+            <div class="hero-content">
+              <span class="hero-badge" id="studentWelcomeBadge">Student Portal • Computer Science & Eng</span>
+              <h1 class="hero-title" style="font-size: 1.8rem;" id="studentWelcomeTitle">Welcome Back, Rahul!</h1>
+              <p class="hero-subtitle" style="font-size: 0.92rem; margin-bottom: 16px;">
+                Report maintenance defects quickly and track real-time repair progress across your campus classrooms, dorms, and labs.
+              </p>
+              <div class="hero-actions">
+                <button class="btn btn-primary" onclick="app.navigateTo('student-submit')">
+                  ➕ Report a New Issue
+                </button>
+                <button class="btn btn-outline" onclick="app.navigateTo('student-complaints')">
+                  📋 View My Complaints
+                </button>
+                <button class="btn btn-outline" onclick="app.navigateTo('student-help')">
+                  ❓ Help & Emergency Contacts
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Student Personal KPIs -->
+          <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+            <div class="kpi-card">
+              <div class="kpi-label">My Total Reports</div>
+              <div class="kpi-value" id="stuKpiTotal">0</div>
+              <div class="kpi-subtext">Complaints submitted by you</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Open / In Triage</div>
+              <div class="kpi-value" style="color: var(--status-open);" id="stuKpiOpen">0</div>
+              <div class="kpi-subtext">Awaiting technician assignment</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Under Active Repair</div>
+              <div class="kpi-value" style="color: var(--status-inprogress);" id="stuKpiInProgress">0</div>
+              <div class="kpi-subtext">Technician dispatched on-site</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Resolved Issues</div>
+              <div class="kpi-value" style="color: var(--status-resolved);" id="stuKpiResolved">0</div>
+              <div class="kpi-subtext">Completed & verified</div>
+            </div>
+          </div>
+
+          <!-- Student Recent Complaints -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">My Recent Complaints</h3>
+                <p class="card-subtitle">Real-time status updates on issues you have reported</p>
+              </div>
+              <button class="btn btn-outline" style="font-size: 0.78rem; padding: 4px 10px;" onclick="app.navigateTo('student-complaints')">
+                View All
+              </button>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Ticket ID</th>
+                    <th>Facility</th>
+                    <th>Location</th>
+                    <th>Reported</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="studentHomeRecentList">
+                  <tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--text-muted);">Loading your tickets...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- STUDENT SUBMIT COMPLAINT FORM -->
+        <section id="view-student-submit" class="app-view">
+          <div style="display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px;">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Report a Facility Problem</h3>
+                  <p class="card-subtitle">Describe what is broken or malfunctioning anywhere on campus</p>
+                </div>
+                <span class="badge badge-open">Fast-Track Intake</span>
+              </div>
+
+              <!-- Automated AI Triage Notice -->
+              <div style="background: var(--primary-light); border: 1px solid var(--primary-border); padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 20px; font-size: 0.84rem; display: flex; gap: 10px; align-items: flex-start;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary); flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <div>
+                  <strong style="color: var(--text-main);">AI-Powered Automatic Triage:</strong>
+                  <span style="color: var(--text-muted); display: block; margin-top: 2px;">
+                    You do not need to choose priority or severity. Our natural language AI analyzes your issue description and campus location to estimate urgency and alert maintenance teams automatically.
+                  </span>
+                </div>
+              </div>
+
+              <form id="studentComplaintForm" onsubmit="event.preventDefault(); app.handleStudentSubmit();">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                  <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Reporter Name</label>
+                    <input type="text" id="stuSubmitName" class="form-input" style="width: 100%; background: var(--bg-card-subtle);" readonly value="Rahul Sharma">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Student ID</label>
+                    <input type="text" id="stuSubmitId" class="form-input" style="width: 100%; background: var(--bg-card-subtle);" readonly value="STU101">
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                  <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Facility Category</label>
+                    <select id="stuSubmitFacility" class="filter-select" style="width: 100%;" required>
+                      <option value="Water Cooler">💧 Drinking Water / Water Cooler</option>
+                      <option value="Washroom & Plumbing">🚾 Washroom & Plumbing</option>
+                      <option value="Lighting & Electrical">⚡ Lighting & Electrical</option>
+                      <option value="HVAC & Air Conditioning">❄️ AC & Air Conditioning</option>
+                      <option value="Elevator & Mobility">🛗 Elevator & Lift</option>
+                      <option value="Waste Management & Sanitation">🗑️ Waste & Sanitation</option>
+                      <option value="Classroom AV & Furniture">🪑 Furniture & Classroom AV</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Campus Location / Building</label>
+                    <select id="stuSubmitLocation" class="filter-select" style="width: 100%;" required>
+                      <option value="Block C (Science & Labs)">Block C (Science & Labs)</option>
+                      <option value="Central Cafeteria & Food Court">Central Cafeteria & Food Court</option>
+                      <option value="Central Library">Central Library</option>
+                      <option value="Block A (Admin & Lecture Theatres)">Block A (Admin & Lecture Theatres)</option>
+                      <option value="Block B (Computing & IT Wing)">Block B (Computing & IT Wing)</option>
+                      <option value="Block D (Humanities & Design)">Block D (Humanities & Design)</option>
+                      <option value="Indoor Sports Complex & Gym">Indoor Sports Complex & Gym</option>
+                      <option value="North Hostel Quad">North Hostel Quad</option>
+                      <option value="South Hostel Quad">South Hostel Quad</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                  <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">
+                    Description of Defect
+                  </label>
+                  <textarea id="stuSubmitDesc" class="form-textarea" rows="4" style="width: 100%;" required placeholder="Please describe the issue in detail (e.g. Water cooler on 2nd floor has stopped dispensing cold water and is leaking onto the corridor tile floor)."></textarea>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                  <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">
+                    Photo Attachment (Optional)
+                  </label>
+                  <div style="border: 2px dashed var(--border-main); padding: 14px; border-radius: var(--radius-sm); text-align: center; color: var(--text-muted); font-size: 0.82rem; cursor: pointer; background: var(--bg-card-subtle);">
+                    📸 Tap to upload photo from your device
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 600;">
+                  Submit Complaint & Generate Tracking Ticket
+                </button>
+              </form>
+            </div>
+
+            <!-- Right Column: Submission Guidelines & SLA -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">What Happens Next?</h3>
+                </div>
+                <div style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.6;">
+                  <div style="display: flex; gap: 12px; margin-bottom: 14px;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">1</div>
+                    <div>
+                      <strong style="color: var(--text-main);">Instant Ticket Number:</strong>
+                      <p>You will immediately receive a unique ticket ID to track updates in real time.</p>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 12px; margin-bottom: 14px;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">2</div>
+                    <div>
+                      <strong style="color: var(--text-main);">Automated Triage:</strong>
+                      <p>AI maps the complaint to the relevant department (Carpentry, Electrical, HVAC, Plumbing).</p>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 12px;">
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0;">3</div>
+                    <div>
+                      <strong style="color: var(--text-main);">Repair & Resolution:</strong>
+                      <p>A campus technician will visit the location and mark the issue resolved when complete.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Demo Autofill -->
+              <div class="card">
+                <div class="card-header">
+                  <h4 class="card-title" style="font-size: 0.88rem;">Quick Demo Scenarios</h4>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <button type="button" class="btn btn-outline" style="text-align: left; font-size: 0.78rem;" onclick="app.prefillStudentScenario('water_cooler')">
+                    💧 <strong>Water Cooler Leak</strong> (Block C)
+                  </button>
+                  <button type="button" class="btn btn-outline" style="text-align: left; font-size: 0.78rem;" onclick="app.prefillStudentScenario('washroom_tap')">
+                    🚾 <strong>Broken Tap in Washroom</strong> (Cafeteria)
+                  </button>
+                  <button type="button" class="btn btn-outline" style="text-align: left; font-size: 0.78rem;" onclick="app.prefillStudentScenario('library_light')">
+                    💡 <strong>Flickering Light in Reading Room</strong> (Library)
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- STUDENT MY COMPLAINTS LIST -->
+        <section id="view-student-complaints" class="app-view">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">My Filed Complaints</h3>
+                <p class="card-subtitle">All facility reports submitted by your account (<span id="stuComplaintsSubtitleId">STU101</span>)</p>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-primary" style="font-size: 0.8rem;" onclick="app.navigateTo('student-submit')">
+                  ➕ File New Complaint
+                </button>
+              </div>
+            </div>
+
+            <!-- Status Filter Tabs -->
+            <div class="tabs-container" style="margin-bottom: 16px;">
+              <div class="tabs-nav" id="stuFilterTabs">
+                <button class="tab-btn active" onclick="app.filterStudentComplaints('All')">All Tickets (<span id="stuCountAll">0</span>)</button>
+                <button class="tab-btn" onclick="app.filterStudentComplaints('Open')">Open (<span id="stuCountOpen">0</span>)</button>
+                <button class="tab-btn" onclick="app.filterStudentComplaints('In Progress')">In Progress (<span id="stuCountProg">0</span>)</button>
+                <button class="tab-btn" onclick="app.filterStudentComplaints('Resolved')">Resolved (<span id="stuCountRes">0</span>)</button>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Ticket ID</th>
+                    <th>Facility Type</th>
+                    <th>Campus Location</th>
+                    <th>Complaint Description</th>
+                    <th>Date Filed</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="studentComplaintsTableBody">
+                  <tr><td colspan="8" style="text-align:center; padding: 24px; color: var(--text-muted);">Loading complaints...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- STUDENT HELP & FAQ -->
+        <section id="view-student-help" class="app-view">
+          <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px;">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Frequently Asked Questions</h3>
+                  <p class="card-subtitle">Guidance on campus facilities and repair workflows</p>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="background: var(--bg-card-subtle); padding: 16px; border-radius: var(--radius-sm);">
+                  <h4 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 6px;">How long does it take for a complaint to be attended?</h4>
+                  <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.6;">
+                    Critical issues (such as water overflow or power outages) are typically inspected within 2 to 4 hours. General facility defects (such as classroom furniture or flickering lights) are handled within 24 to 48 hours according to campus SLA.
+                  </p>
+                </div>
+
+                <div style="background: var(--bg-card-subtle); padding: 16px; border-radius: var(--radius-sm);">
+                  <h4 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 6px;">How does the system decide complaint priority?</h4>
+                  <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.6;">
+                    Our AI platform calculates a weighted priority score based on severity, repeat occurrences at that exact location, student footfall density, and location criticality.
+                  </p>
+                </div>
+
+                <div style="background: var(--bg-card-subtle); padding: 16px; border-radius: var(--radius-sm);">
+                  <h4 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 6px;">Can other students see my tickets?</h4>
+                  <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.6;">
+                    No. The student portal enforces strict privacy isolation. You only see issues filed by your student account.
+                  </p>
+                </div>
+
+                <div style="background: var(--bg-card-subtle); padding: 16px; border-radius: var(--radius-sm);">
+                  <h4 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 6px;">Can I reopen an issue if it was not repaired properly?</h4>
+                  <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.6;">
+                    Yes, if an issue recurs, simply report it again. The system detects repeated occurrences and will automatically escalate the ticket to high recurrence priority!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Emergency Contacts -->
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Emergency Hotlines</h3>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div style="padding: 12px; border: 1px solid var(--border-main); border-radius: var(--radius-sm);">
+                  <div style="font-weight: 700; font-size: 0.88rem; color: var(--risk-critical);">🚨 24/7 Security & Emergency Ops</div>
+                  <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">Campus Main Gate Control Room</div>
+                  <div style="font-size: 0.84rem; font-weight: 600; margin-top: 6px; color: var(--text-main);">Ext: 4400 | +91 98765 43210</div>
+                </div>
+
+                <div style="padding: 12px; border: 1px solid var(--border-main); border-radius: var(--radius-sm);">
+                  <div style="font-weight: 700; font-size: 0.88rem; color: var(--risk-high);">⚡ Electrical Substation Desk</div>
+                  <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">Power outages and wire hazards</div>
+                  <div style="font-size: 0.84rem; font-weight: 600; margin-top: 6px; color: var(--text-main);">Ext: 4412 | +91 98765 43211</div>
+                </div>
+
+                <div style="padding: 12px; border: 1px solid var(--border-main); border-radius: var(--radius-sm);">
+                  <div style="font-weight: 700; font-size: 0.88rem; color: var(--status-inprogress);">💧 Plumbing & Water Supply</div>
+                  <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">Pipe bursts and washroom blockages</div>
+                  <div style="font-size: 0.84rem; font-weight: 600; margin-top: 6px; color: var(--text-main);">Ext: 4415 | +91 98765 43212</div>
+                </div>
+
+                <div style="padding: 12px; border: 1px solid var(--border-main); border-radius: var(--radius-sm);">
+                  <div style="font-weight: 700; font-size: 0.88rem; color: var(--status-resolved);">🏥 Campus Health Center</div>
+                  <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">Medical first response & ambulance</div>
+                  <div style="font-size: 0.84rem; font-weight: 600; margin-top: 6px; color: var(--text-main);">Ext: 4500 | +91 98765 43219</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- STUDENT PROFILE -->
+        <section id="view-student-profile" class="app-view">
+          <div class="card" style="max-width: 600px; margin: 0 auto;">
+            <div class="card-header">
+              <h3 class="card-title">Student Profile</h3>
+              <span class="user-role-tag role-student">Enrolled Student</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 24px;">
+              <div style="width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #7c3aed); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.6rem; font-weight: 700;">
+                <span id="profileAvatarText">RS</span>
+              </div>
+              <div>
+                <h3 style="font-size: 1.2rem; font-weight: 700;" id="profileName">Rahul Sharma</h3>
+                <p style="color: var(--text-muted); font-size: 0.86rem;" id="profileEmail">rahul.sharma@campus.edu</p>
+                <div style="display: flex; gap: 8px; margin-top: 6px;">
+                  <span class="badge badge-live" id="profileIdBadge">ID: STU101</span>
+                  <span class="badge badge-open">Status: Active</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--border-main); padding-top: 18px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.86rem;">
+                <span style="color: var(--text-muted);">Academic Department:</span>
+                <strong id="profileDept">Computer Science & Engineering</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.86rem;">
+                <span style="color: var(--text-muted);">Total Complaints Reported:</span>
+                <strong id="profileComplaintsCount">0</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.86rem;">
+                <span style="color: var(--text-muted);">Active Open Complaints:</span>
+                <strong id="profileActiveCount" style="color: var(--status-open);">0</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.86rem;">
+                <span style="color: var(--text-muted);">Account Security:</span>
+                <span>Protected by Signed Session Token</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px;">
+              <button class="btn btn-outline" onclick="app.showLoginView()">Switch Account</button>
+              <button class="btn btn-primary" onclick="app.logout()">Sign Out</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 1: HOME & OVERVIEW (ADMIN / PUBLIC) -->
+        <section id="view-home" class="app-view">
+          <div class="hero-banner">
+            <div class="hero-content">
+              <span class="hero-badge">AI-Powered Campus Maintenance Platform</span>
+              <h1 class="hero-title">Predict Campus Facility Problems Before They Become Bigger Issues</h1>
+              <p class="hero-subtitle">
+                An intelligent campus infrastructure system that analyzes historical student and staff complaints,
+                predicts facility failure risks, detects chronic recurring problems, calculates explainable priority scores (0-100),
+                and helps maintenance teams dispatch resources where they matter most.
+              </p>
+              <div class="hero-actions">
+                <button class="btn btn-primary" onclick="app.navigateTo('dashboard')">
+                  Explore Maintenance Dashboard
+                </button>
+                <button class="btn btn-outline" onclick="app.navigateTo('how-it-works')">
+                  See How It Works (5-Step Workflow)
+                </button>
+                <button class="btn btn-outline" onclick="app.navigateTo('submit-complaint')">
+                  Submit a Complaint
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Visual 5-Step Pipeline Infographic -->
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <div class="card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Core Concept: The End-to-End Decision Pipeline
+              </div>
+              <span class="badge badge-demo">Not a Generic Complaint Form</span>
+            </div>
+            
+            <div class="pipeline-infographic">
+              <div class="pipeline-step-node" onclick="app.navigateTo('submit-complaint')" style="cursor: pointer;">
+                <div class="step-circle">1</div>
+                <div class="step-label">Complaint</div>
+                <div class="step-desc">Student / Staff Intake</div>
+              </div>
+              <div class="pipeline-arrow">→</div>
+
+              <div class="pipeline-step-node" onclick="app.navigateTo('ai-pipeline')" style="cursor: pointer;">
+                <div class="step-circle">2</div>
+                <div class="step-label">NLP Analysis</div>
+                <div class="step-desc">TF-IDF & Category Model</div>
+              </div>
+              <div class="pipeline-arrow">→</div>
+
+              <div class="pipeline-step-node" onclick="app.navigateTo('risk-intelligence')" style="cursor: pointer;">
+                <div class="step-circle">3</div>
+                <div class="step-label">Risk & Severity</div>
+                <div class="step-desc">ML Urgency & Zone Stress</div>
+              </div>
+              <div class="pipeline-arrow">→</div>
+
+              <div class="pipeline-step-node" onclick="app.navigateTo('priority-queue')" style="cursor: pointer;">
+                <div class="step-circle">4</div>
+                <div class="step-label">Priority (0-100)</div>
+                <div class="step-desc">Explainable SHAP Scoring</div>
+              </div>
+              <div class="pipeline-arrow">→</div>
+
+              <div class="pipeline-step-node" onclick="app.navigateTo('priority-queue')" style="cursor: pointer;">
+                <div class="step-circle">5</div>
+                <div class="step-label">Action</div>
+                <div class="step-desc">Targeted Dispatch</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Target User Value Cards -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px;">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">👨‍🎓 For Students & Staff</div>
+                <span class="badge badge-live">Intake & Tracking</span>
+              </div>
+              <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 14px;">
+                Submit facility complaints in seconds with plain English text. Receive immediate transparency on
+                how the system classifies your issue, its calculated priority score, and live resolution status.
+              </p>
+              <button class="btn btn-outline" style="width: 100%;" onclick="app.navigateTo('submit-complaint')">Test Complaint Submission</button>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">🔧 For Maintenance Teams</div>
+                <span class="badge badge-high">Operational Queue</span>
+              </div>
+              <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 14px;">
+                Stop sifting through random complaint lists. Work from a prioritized queue ranked by severity,
+                recurrence frequency, and campus footfall with exact recommended maintenance steps.
+              </p>
+              <button class="btn btn-outline" style="width: 100%;" onclick="app.navigateTo('priority-queue')">Open Priority Queue</button>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">🏛️ For Campus Administrators</div>
+                <span class="badge badge-inprogress">Predictive Health</span>
+              </div>
+              <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 14px;">
+                Monitor campus-wide facility health, identify chronic failure hotspots like the Block C water cooler,
+                forecast upcoming 7-30 day risk windows, and optimize capital budget allocation.
+              </p>
+              <button class="btn btn-outline" style="width: 100%;" onclick="app.navigateTo('predictive-maintenance')">View Risk Forecasts</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 2: HOW IT WORKS (5 STEPS) -->
+        <section id="view-how-it-works" class="app-view">
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">How the Intelligent Maintenance System Operates</h3>
+                <p class="card-subtitle">5 automated stages converting raw student feedback into optimized physical maintenance dispatches</p>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+              
+              <!-- Step 1 -->
+              <div class="card" style="border-left: 4px solid var(--primary);">
+                <div style="display: flex; align-items: flex-start; gap: 16px;">
+                  <div class="step-circle" style="background: var(--primary); color: #fff;">1</div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <h4 style="font-size: 1.05rem; font-weight: 700;">Step 1 — Submit Complaint</h4>
+                      <span class="badge badge-live">User Interaction</span>
+                    </div>
+                    <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 6px;">
+                      A student, professor, or staff member encounters a facility defect (e.g., leaking water cooler, flickering light, jammed lift).
+                      They submit a natural-language description along with the location (e.g. "Block C 2nd floor").
+                    </p>
+                    <div style="background: var(--bg-card-subtle); padding: 10px 14px; border-radius: var(--radius-sm); margin-top: 10px; font-size: 0.82rem; font-family: monospace;">
+                      Input Example: "The water cooler near Block C 2nd floor has stopped working again and water is leaking on the floor during lunch hours."
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 2 -->
+              <div class="card" style="border-left: 4px solid #7c3aed;">
+                <div style="display: flex; align-items: flex-start; gap: 16px;">
+                  <div class="step-circle" style="background: #7c3aed; color: #fff;">2</div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <h4 style="font-size: 1.05rem; font-weight: 700;">Step 2 — Understand (NLP & Entity Extraction)</h4>
+                      <span class="badge badge-demo">Scikit-Learn NLP Pipeline</span>
+                    </div>
+                    <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 6px;">
+                      The Natural Language Processing engine cleans and vectorizes the text using unigram/bigram TF-IDF representations.
+                      A multi-class classifier identifies the facility domain (Water Cooler, Washroom, Lighting, HVAC, etc.) with calibrated probabilities.
+                    </p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                      <span class="badge badge-medium">Category: Water Cooler (96% Confidence)</span>
+                      <span class="badge badge-demo">Keywords: ["water", "cooler", "leaking", "lunch", "floor"]</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 3 -->
+              <div class="card" style="border-left: 4px solid var(--risk-high);">
+                <div style="display: flex; align-items: flex-start; gap: 16px;">
+                  <div class="step-circle" style="background: var(--risk-high); color: #fff;">3</div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <h4 style="font-size: 1.05rem; font-weight: 700;">Step 3 — Predict Severity, Recurrence & Location Risk</h4>
+                      <span class="badge badge-high">Multi-Model Inference</span>
+                    </div>
+                    <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 6px;">
+                      Three distinct algorithms process the contextual features:
+                    </p>
+                    <ul style="font-size: 0.84rem; color: var(--text-muted); margin: 8px 0 0 20px; line-height: 1.6;">
+                      <li><strong>Severity Model:</strong> Detects physical safety signals, water damage, or electrical hazards → <span class="badge badge-high">Severity: High (85 pts)</span></li>
+                      <li><strong>Recurrence Engine:</strong> Scans the campus repository for matching facility/location pairs → <span class="badge badge-critical">12 Prior Complaints Detected (Chronic)</span></li>
+                      <li><strong>Location Risk Model:</strong> Maps pedestrian traffic telemetry (Block C has 88/100 footfall density during lunch) → <span class="badge badge-high">Location Risk: High (84 pts)</span></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 4 -->
+              <div class="card" style="border-left: 4px solid var(--primary);">
+                <div style="display: flex; align-items: flex-start; gap: 16px;">
+                  <div class="step-circle" style="background: var(--primary); color: #fff;">4</div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <h4 style="font-size: 1.05rem; font-weight: 700;">Step 4 — Calculate Explainable Priority Score (0 - 100)</h4>
+                      <span class="badge badge-inprogress">Configurable Scoring Engine</span>
+                    </div>
+                    <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 6px;">
+                      Rather than an arbitrary black-box number, the priority score combines weighted factors:
+                    </p>
+                    <div style="background: var(--bg-card-subtle); padding: 12px 16px; border-radius: var(--radius-sm); margin-top: 10px; font-size: 0.82rem;">
+                      $$\text{Priority} = 0.35(\text{Severity}) + 0.25(\text{Recurrence}) + 0.20(\text{Footfall}) + 0.10(\text{Location Risk}) + 0.10(\text{Impact}) = \mathbf{85.6 / 100}$$
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 5 -->
+              <div class="card" style="border-left: 4px solid var(--risk-low);">
+                <div style="display: flex; align-items: flex-start; gap: 16px;">
+                  <div class="step-circle" style="background: var(--risk-low); color: #fff;">5</div>
+                  <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <h4 style="font-size: 1.05rem; font-weight: 700;">Step 5 — Action & Work Order Dispatch</h4>
+                      <span class="badge badge-low">Operational Resolution</span>
+                    </div>
+                    <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 6px;">
+                      The maintenance team receives an automated actionable work order in their priority dispatch queue with the exact diagnosis:
+                      <em>"Emergency dispatch: overhaul compressor & repair drainage line; schedule full filtration unit replacement."</em>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 3: SUBMIT COMPLAINT -->
+        <section id="view-submit-complaint" class="app-view">
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px;">
+            
+            <!-- Left: Complaint Form -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Submit Campus Facility Complaint</h3>
+                  <p class="card-subtitle">Real-time ML evaluation will process your submission immediately</p>
+                </div>
+                <span class="badge badge-live">Live Submission Form</span>
+              </div>
+
+              <!-- Quick Demo Pre-fill Scenarios -->
+              <div style="margin-bottom: 18px;">
+                <label style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">
+                  Test with a Realistic Campus Scenario:
+                </label>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-outline" style="font-size: 0.75rem; padding: 4px 8px;" onclick="app.prefillScenario('water_cooler')">
+                    💧 Block C Water Cooler (Chronic)
+                  </button>
+                  <button type="button" class="btn btn-outline" style="font-size: 0.75rem; padding: 4px 8px;" onclick="app.prefillScenario('washroom_leak')">
+                    🚾 Cafeteria Washroom Flood
+                  </button>
+                  <button type="button" class="btn btn-outline" style="font-size: 0.75rem; padding: 4px 8px;" onclick="app.prefillScenario('server_ac')">
+                    ⚡ Server Room AC Overheat
+                  </button>
+                  <button type="button" class="btn btn-outline" style="font-size: 0.75rem; padding: 4px 8px;" onclick="app.prefillScenario('library_light')">
+                    💡 Library Flickering Tube
+                  </button>
+                </div>
+              </div>
+
+              <form id="complaintForm">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                  <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Reporter Name</label>
+                    <input type="text" id="reporterName" class="form-input" style="width: 100%;" required placeholder="e.g. Arjun Sharma">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Role</label>
+                    <select id="reporterRole" class="filter-select" style="width: 100%;">
+                      <option value="Student">Student</option>
+                      <option value="Faculty">Faculty</option>
+                      <option value="Maintenance Staff">Maintenance Staff</option>
+                      <option value="Visitor">Visitor</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                  <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Facility Type</label>
+                    <select id="facilityType" class="filter-select" style="width: 100%;" required>
+                      <option value="Water Cooler">Water Cooler</option>
+                      <option value="Washroom & Plumbing">Washroom & Plumbing</option>
+                      <option value="Lighting & Electrical">Lighting & Electrical</option>
+                      <option value="HVAC & Air Conditioning">HVAC & Air Conditioning</option>
+                      <option value="Waste Management & Sanitation">Waste Management & Sanitation</option>
+                      <option value="Elevator & Mobility">Elevator & Mobility</option>
+                      <option value="Classroom AV & Furniture">Classroom AV & Furniture</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Campus Location</label>
+                    <select id="locationSelect" class="filter-select" style="width: 100%;" required>
+                      <option value="Block C (Science & Labs)">Block C (Science & Labs) - High Footfall</option>
+                      <option value="Central Cafeteria & Food Court">Central Cafeteria & Food Court - Very High Footfall</option>
+                      <option value="Central Library">Central Library - High Footfall</option>
+                      <option value="Block A (Admin & Lecture Theatres)">Block A (Admin & Lecture Theatres)</option>
+                      <option value="Block B (Computing & IT Wing)">Block B (Computing & IT Wing)</option>
+                      <option value="Block D (Humanities & Design)">Block D (Humanities & Design)</option>
+                      <option value="Indoor Sports Complex & Gym">Indoor Sports Complex & Gym</option>
+                      <option value="North Hostel Quad">North Hostel Quad</option>
+                      <option value="South Hostel Quad">South Hostel Quad</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                  <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">
+                    Complaint Description
+                  </label>
+                  <textarea id="complaintDesc" class="form-textarea" rows="4" style="width: 100%;" required placeholder="Tell us what is happening... (e.g. The water cooler near Block C has stopped working again and many students are using it during lunch hours.)"></textarea>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                  <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">
+                    Optional Photo / Video Attachment
+                  </label>
+                  <div style="border: 2px dashed var(--border-main); padding: 14px; border-radius: var(--radius-sm); text-align: center; color: var(--text-muted); font-size: 0.82rem; cursor: pointer;">
+                    📸 Drag & drop facility photo or click to browse (Simulated Upload)
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 10px;" id="submitBtn">
+                  Submit & Run AI Prioritization Pipeline
+                </button>
+              </form>
+            </div>
+
+            <!-- Right: Real-time AI Analysis Result Card -->
+            <div>
+              <div class="card" id="aiResultCard">
+                <div class="card-header">
+                  <div class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    AI Decision Pipeline Result
+                  </div>
+                  <span class="badge badge-inprogress" id="resultStatusBadge">Live ML Output</span>
+                </div>
+
+                <div id="resultPlaceholder" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin: 0 auto 12px; color: var(--text-light);"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                  <p style="font-size: 0.9rem; font-weight: 600;">No Active Submission Yet</p>
+                  <p style="font-size: 0.78rem; margin-top: 4px;">Fill the form on the left or click a demo scenario to see real-time classification, severity, recurrence, and priority scoring.</p>
+                </div>
+
+                <div id="resultContent" style="display: none;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-sm);">
+                      <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Issue Classification</div>
+                      <div style="font-size: 1rem; font-weight: 700; margin-top: 2px;" id="resCategory">Water Cooler</div>
+                      <div style="font-size: 0.72rem; color: var(--primary);" id="resConfidence">Confidence: 96%</div>
+                    </div>
+                    <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-sm);">
+                      <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Predicted Severity</div>
+                      <div style="font-size: 1rem; font-weight: 700; margin-top: 2px;" id="resSeverity">High</div>
+                      <div style="font-size: 0.72rem; color: var(--text-muted);" id="resSevScore">Calibrated Score: 85/100</div>
+                    </div>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-sm);">
+                      <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Recurrence Detected</div>
+                      <div style="font-size: 1rem; font-weight: 700; margin-top: 2px;" id="resRecurrence">Yes (12 Prior)</div>
+                      <div style="font-size: 0.72rem; color: var(--risk-critical);" id="resRecurrenceBadge">Chronic Problem</div>
+                    </div>
+                    <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-sm);">
+                      <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Location Exposure</div>
+                      <div style="font-size: 1rem; font-weight: 700; margin-top: 2px;" id="resLocationRisk">High Risk</div>
+                      <div style="font-size: 0.72rem; color: var(--text-muted);" id="resFootfall">Footfall: High (88/100)</div>
+                    </div>
+                  </div>
+
+                  <!-- Priority Score Card Highlight -->
+                  <div style="background: linear-gradient(135deg, rgba(37,99,235,0.08), rgba(234,88,12,0.08)); border: 1px solid var(--primary-border); padding: 16px; border-radius: var(--radius-md); margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <div>
+                        <div style="font-size: 0.76rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Calculated Priority Score</div>
+                        <div style="font-size: 2.2rem; font-weight: 900; color: var(--primary);" id="resPriorityScore">85.6 <span style="font-size: 1rem; font-weight: 600; color: var(--text-muted);">/ 100</span></div>
+                      </div>
+                      <div style="text-align: right;">
+                        <span class="badge badge-critical" style="font-size: 0.82rem; padding: 6px 12px;" id="resImpactBadge">Impact: High</span>
+                        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Top 5% Campus Urgency</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Recommended Action -->
+                  <div style="background: var(--bg-card-subtle); padding: 14px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Recommended Maintenance Action</div>
+                    <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-main); margin-top: 4px;" id="resAction">
+                      Inspect and overhaul Block C water cooler compressor and drain line immediately.
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-outline" style="flex: 1;" id="inspectShapBtn">
+                      Inspect SHAP Breakdown
+                    </button>
+                    <button class="btn btn-primary" style="flex: 1;" onclick="app.navigateTo('priority-queue')">
+                      View in Priority Queue →
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- VIEW 4: AI ANALYSIS SANDBOX -->
+        <section id="view-ai-pipeline" class="app-view">
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Interactive AI Pipeline Sandbox</h3>
+                <p class="card-subtitle">Type any campus complaint to visualize the 7-stage ML decision pipeline in real time</p>
+              </div>
+              <span class="badge badge-inprogress">Live Model Sandbox</span>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+              <input type="text" id="sandboxInput" class="form-input" style="flex: 1;" placeholder="Enter custom complaint text... e.g. Severely blocked washroom pipe leaking into elevator shaft near cafeteria">
+              <button class="btn btn-primary" id="runSandboxBtn">Execute Pipeline</button>
+            </div>
+
+            <!-- Pipeline Visual Stages -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+              
+              <div class="card" style="padding: 14px;">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">STAGE 1: NLP TOKENS</div>
+                <div style="font-size: 0.95rem; font-weight: 700; margin: 4px 0;" id="sbStage1Cat">Category: --</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);" id="sbStage1Keys">Keywords: --</div>
+              </div>
+
+              <div class="card" style="padding: 14px;">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">STAGE 2: SEVERITY</div>
+                <div style="font-size: 0.95rem; font-weight: 700; margin: 4px 0;" id="sbStage2Sev">Severity: --</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);" id="sbStage2Score">Calibrated Score: --</div>
+              </div>
+
+              <div class="card" style="padding: 14px;">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">STAGE 3: RECURRENCE</div>
+                <div style="font-size: 0.95rem; font-weight: 700; margin: 4px 0;" id="sbStage3Rec">Recurrence: --</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);" id="sbStage3Count">Prior Incidents: --</div>
+              </div>
+
+              <div class="card" style="padding: 14px;">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">STAGE 4: LOCATION RISK</div>
+                <div style="font-size: 0.95rem; font-weight: 700; margin: 4px 0;" id="sbStage4Loc">Risk Tier: --</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);" id="sbStage4Foot">Footfall: --</div>
+              </div>
+
+              <div class="card" style="padding: 14px;">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">STAGE 5: PRIORITY</div>
+                <div style="font-size: 1.2rem; font-weight: 800; color: var(--primary); margin: 4px 0;" id="sbStage5Pri">Score: --</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);" id="sbStage5Impact">Impact: --</div>
+              </div>
+
+            </div>
+
+            <!-- Dynamic Decision Flowchart -->
+            <div style="margin-top: 24px; padding: 18px; background: var(--bg-card-subtle); border-radius: var(--radius-md);">
+              <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 8px;">Prescribed Maintenance Intervention:</h4>
+              <p style="font-size: 0.9rem; font-weight: 600; color: var(--primary);" id="sbPrescribedAction">
+                Submit text above to generate automated maintenance prescription.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 5: MAINTENANCE DASHBOARD -->
+        <section id="view-dashboard" class="app-view">
+          
+          <!-- KPI Cards Grid -->
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div>
+                <div class="kpi-label">Total Complaints</div>
+                <div class="kpi-value" id="kpiTotal">20</div>
+                <div class="kpi-subtext">Historical & Live</div>
+              </div>
+              <div class="kpi-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div>
+                <div class="kpi-label">Open Complaints</div>
+                <div class="kpi-value" id="kpiOpen" style="color: var(--status-open);">4</div>
+                <div class="kpi-subtext">Awaiting Maintenance</div>
+              </div>
+              <div class="kpi-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div>
+                <div class="kpi-label">High Priority</div>
+                <div class="kpi-value" id="kpiHighPri" style="color: var(--risk-critical);">6</div>
+                <div class="kpi-subtext">Priority Score ≥ 75</div>
+              </div>
+              <div class="kpi-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div>
+                <div class="kpi-label">Recurring Issues</div>
+                <div class="kpi-value" id="kpiRecurring" style="color: var(--risk-high);">10</div>
+                <div class="kpi-subtext">Chronic Repeat Tickets</div>
+              </div>
+              <div class="kpi-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div>
+                <div class="kpi-label">High-Risk Zones</div>
+                <div class="kpi-value" id="kpiHighRisk">3</div>
+                <div class="kpi-subtext">Elevated Failure Density</div>
+              </div>
+              <div class="kpi-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div>
+                <div class="kpi-label">Avg Resolution</div>
+                <div class="kpi-value" id="kpiAvgRes">1.8 <span style="font-size: 0.9rem; font-weight: 500;">days</span></div>
+                <div class="kpi-subtext">Mean Repair Turnaround</div>
+              </div>
+              <div class="kpi-icon-box">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 10"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Multi-attribute Filtering Toolbar -->
+          <div class="filters-toolbar">
+            <div class="filter-group">
+              <label style="font-size: 0.76rem; font-weight: 600; color: var(--text-muted);">SOURCE:</label>
+              <select id="filterSource" class="filter-select">
+                <option value="all">All Sources</option>
+                <option value="demo_only">Demo Dataset Only</option>
+                <option value="live_only">Live Campus Tickets Only</option>
+              </select>
+
+              <label style="font-size: 0.76rem; font-weight: 600; color: var(--text-muted); margin-left: 8px;">STATUS:</label>
+              <select id="filterStatus" class="filter-select">
+                <option value="All">All Statuses</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+              </select>
+
+              <label style="font-size: 0.76rem; font-weight: 600; color: var(--text-muted); margin-left: 8px;">SEVERITY:</label>
+              <select id="filterSeverity" class="filter-select">
+                <option value="All">All Severities</option>
+                <option value="Critical">Critical</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+
+              <label style="font-size: 0.76rem; font-weight: 600; color: var(--text-muted); margin-left: 8px;">FACILITY:</label>
+              <select id="filterFacility" class="filter-select">
+                <option value="All">All Facilities</option>
+                <option value="Water Cooler">Water Cooler</option>
+                <option value="Washroom & Plumbing">Washroom & Plumbing</option>
+                <option value="Lighting & Electrical">Lighting & Electrical</option>
+                <option value="HVAC & Air Conditioning">HVAC & Air Conditioning</option>
+                <option value="Waste Management & Sanitation">Waste Management</option>
+                <option value="Elevator & Mobility">Elevator & Mobility</option>
+                <option value="Classroom AV & Furniture">Classroom AV</option>
+              </select>
+            </div>
+
+            <div>
+              <span class="badge badge-demo" id="activeFilterBadge">Showing 20 records</span>
+            </div>
+          </div>
+
+          <!-- Charts Grid (2x2) -->
+          <div class="charts-grid-2x2">
+            
+            <div class="card chart-card">
+              <div class="card-header">
+                <div class="card-title">Issue Distribution by Facility Type</div>
+                <span class="badge badge-demo">NLP Categorization</span>
+              </div>
+              <div class="chart-canvas-container">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+
+            <div class="card chart-card">
+              <div class="card-header">
+                <div class="card-title">Severity Level Breakdown</div>
+                <span class="badge badge-demo">Urgency Tiers</span>
+              </div>
+              <div class="chart-canvas-container">
+                <canvas id="severityChart"></canvas>
+              </div>
+            </div>
+
+            <div class="card chart-card">
+              <div class="card-header">
+                <div class="card-title">30-Day Complaint Inflow & Resolution Trend</div>
+                <span class="badge badge-demo">Timeline Analytics</span>
+              </div>
+              <div class="chart-canvas-container">
+                <canvas id="trendsChart"></canvas>
+              </div>
+            </div>
+
+            <div class="card chart-card">
+              <div class="card-header">
+                <div class="card-title">Complaint Concentration by Campus Zone</div>
+                <span class="badge badge-demo">Location Stress</span>
+              </div>
+              <div class="chart-canvas-container">
+                <canvas id="locationChart"></canvas>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- VIEW 6: MAINTENANCE PRIORITY QUEUE -->
+        <section id="view-priority-queue" class="app-view">
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Intelligent Maintenance Priority Queue</h3>
+                <p class="card-subtitle">Work orders sorted strictly by calculated Priority Score (0-100) incorporating Severity, Recurrence, and Footfall</p>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-outline" onclick="app.loadQueue()">Refresh Queue</button>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table" id="priorityQueueTable">
+                <thead>
+                  <tr>
+                    <th>Ticket #</th>
+                    <th>Source</th>
+                    <th>Facility & Location</th>
+                    <th>Severity</th>
+                    <th>Recurrence</th>
+                    <th>Footfall</th>
+                    <th>Priority Score</th>
+                    <th>Recommended Maintenance Action</th>
+                    <th>Status</th>
+                    <th>Explain</th>
+                  </tr>
+                </thead>
+                <tbody id="priorityQueueBody">
+                  <!-- Populated dynamically by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 7: FACILITY RISK INTELLIGENCE -->
+        <section id="view-risk-intelligence" class="app-view">
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Facility Risk Intelligence Matrix</h3>
+                <p class="card-subtitle">Identifies campus locations with elevated composite vulnerability based on footfall, chronic recurrence, and ticket volume</p>
+              </div>
+              <span class="badge badge-high">Campus Vulnerability Matrix</span>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Campus Location</th>
+                    <th>Zone</th>
+                    <th>Footfall Density</th>
+                    <th>Composite Risk Score</th>
+                    <th>Risk Tier</th>
+                    <th>Active Complaints</th>
+                    <th>Chronic Recurrences</th>
+                    <th>Preventive Intervention</th>
+                  </tr>
+                </thead>
+                <tbody id="riskMatrixBody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 8: RECURRING ISSUE DETECTION -->
+        <section id="view-recurring-issues" class="app-view">
+          
+          <!-- Chronic Highlight Card: Block C Water Cooler -->
+          <div class="card" style="border-left: 5px solid var(--risk-critical); margin-bottom: 24px;">
+            <div class="card-header">
+              <div>
+                <span class="badge badge-critical" style="margin-bottom: 6px;">Chronic Failure Hotspot Detected</span>
+                <h3 class="card-title" style="font-size: 1.25rem;">Block C - 2nd Floor Water Cooler Breakdown Pattern</h3>
+                <p class="card-subtitle">12 historical complaints detected over the past 90 days. Mean time between failures: 8.4 days.</p>
+              </div>
+              <span class="badge badge-demo">Demo Case Study</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px;">
+              <div style="background: var(--bg-card-subtle); padding: 14px; border-radius: var(--radius-sm);">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Total Historical Reports</div>
+                <div style="font-size: 1.6rem; font-weight: 800; color: var(--risk-critical);">12 Complaints</div>
+              </div>
+              <div style="background: var(--bg-card-subtle); padding: 14px; border-radius: var(--radius-sm);">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Mean Time Between Failures</div>
+                <div style="font-size: 1.6rem; font-weight: 800; color: var(--risk-high);">8.4 Days</div>
+              </div>
+              <div style="background: var(--bg-card-subtle); padding: 14px; border-radius: var(--radius-sm);">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Primary Failure Root Cause</div>
+                <div style="font-size: 0.95rem; font-weight: 700; margin-top: 4px;">Compressor Thermal Overload</div>
+              </div>
+              <div style="background: var(--bg-card-subtle); padding: 14px; border-radius: var(--radius-sm);">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Historical Repair Pattern</div>
+                <div style="font-size: 0.95rem; font-weight: 700; margin-top: 4px; color: var(--text-muted);">Repeated Temporary Patches</div>
+              </div>
+            </div>
+
+            <div style="background: var(--bg-card-subtle); padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px;">
+              <h4 style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">System Preventive Recommendation:</h4>
+              <p style="font-size: 0.88rem; color: var(--text-muted);">
+                Cease repeated localized patch repairs. Schedule a permanent overhaul: replace obsolete 2018 compressor with a hermetic commercial unit and reroute PVC drainage pipe directly to external drain to eliminate slip hazards.
+              </p>
+            </div>
+
+            <!-- Recurrence Timeline -->
+            <h4 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 12px;">Recurrence Failure Timeline:</h4>
+            <div style="display: flex; flex-direction: column; gap: 8px;" id="chronicTimelineList">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+        </section>
+
+        <!-- VIEW 9: PREDICTIVE ISSUE-RISK FORECASTING -->
+        <section id="view-predictive-maintenance" class="app-view">
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Predictive Issue-Risk Forecasting</h3>
+                <p class="card-subtitle">Algorithmic forecast of facility components with elevated probability of repeat complaints in the next 7-30 days</p>
+              </div>
+              <span class="badge badge-high">Predictive Risk Engine</span>
+            </div>
+
+            <!-- Prominent Transparency Alert -->
+            <div style="background: var(--primary-light); border: 1px solid var(--primary-border); padding: 14px 18px; border-radius: var(--radius-md); margin-bottom: 20px; font-size: 0.85rem; color: var(--text-main);">
+              <strong>ℹ️ Data Integrity Notice:</strong>
+              Prediction ≠ Confirmed Physical Breakdown. Algorithmic issue-risk forecast based on historical complaint recurrence cycles, pedestrian footfall spikes, and facility operational stress.
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px;" id="forecastsContainer">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 10: CAMPUS LOCATION MAP -->
+        <section id="view-campus-map" class="app-view">
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Interactive Campus Layout & Hotspot Map</h3>
+                <p class="card-subtitle">Click on any campus building to inspect localized complaints, footfall rating, and facility vulnerability</p>
+              </div>
+              <span class="badge badge-demo">Demonstration Layout</span>
+            </div>
+
+            <div class="campus-map-wrapper">
+              <svg class="map-svg" viewBox="0 0 1000 600" id="campusSvgMap">
+                <!-- SVG map elements rendered via JS -->
+              </svg>
+            </div>
+
+            <!-- Selected Building Info Drawer -->
+            <div id="selectedBuildingBox" style="margin-top: 18px; padding: 16px; background: var(--bg-card-subtle); border-radius: var(--radius-md); display: none;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h4 style="font-size: 1.1rem; font-weight: 700;" id="selLocName">Building Name</h4>
+                <span class="badge badge-high" id="selLocRisk">High Risk</span>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted);" id="selLocDetails">Location details...</p>
+              <div style="margin-top: 10px; display: flex; gap: 14px;" id="selLocStats">
+                <!-- Stats -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 11: EXPLAINABLE AI (SHAP) -->
+        <section id="view-explainable-ai" class="app-view">
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Why This Prediction? Explainable AI (SHAP)</h3>
+                <p class="card-subtitle">Mathematical feature attribution explaining why a complaint received its specific priority and risk rating</p>
+              </div>
+              <span class="badge badge-inprogress">Exact Shapley Game Theory</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1.4fr; gap: 24px;">
+              <div>
+                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 8px;">Select a Ticket to Explain:</h4>
+                <select id="shapTicketSelector" class="filter-select" style="width: 100%; margin-bottom: 16px;">
+                  <!-- Populated dynamically -->
+                </select>
+
+                <div style="background: var(--bg-card-subtle); padding: 16px; border-radius: var(--radius-md); font-size: 0.85rem;">
+                  <h5 style="font-weight: 700; margin-bottom: 6px;">How SHAP Explainability Works:</h5>
+                  <p style="color: var(--text-muted); line-height: 1.5; margin-bottom: 8px;">
+                    Using Shapley Additive exPlanations, we decompose the difference between the 
+                    <strong>Campus Baseline Priority (\(\approx 56.4\) pts)</strong> and the final ticket priority score.
+                  </p>
+                  <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                    <span style="display:inline-block; width:12px; height:12px; background:var(--shap-positive); border-radius:2px;"></span>
+                    <span style="font-size:0.78rem;"><strong>Red / Rose:</strong> Factors driving priority UP</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+                    <span style="display:inline-block; width:12px; height:12px; background:var(--shap-negative); border-radius:2px;"></span>
+                    <span style="font-size:0.78rem;"><strong>Blue / Teal:</strong> Factors reducing priority</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Waterfall Visual Display -->
+              <div>
+                <div style="background: var(--bg-card); border: 1px solid var(--border-main); padding: 18px; border-radius: var(--radius-md);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                    <div>
+                      <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Base Campus Baseline:</div>
+                      <div style="font-size: 1.1rem; font-weight: 800;" id="shapBaseVal">56.4 pts</div>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Model Output Priority:</div>
+                      <div style="font-size: 1.4rem; font-weight: 800; color: var(--primary);" id="shapOutputVal">85.6 pts</div>
+                    </div>
+                  </div>
+
+                  <div id="shapWaterfallList" class="shap-waterfall-box">
+                    <!-- Populated dynamically -->
+                  </div>
+
+                  <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-sm); margin-top: 14px; font-size: 0.82rem; color: var(--text-main);" id="shapSummaryText">
+                    Summary loading...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW 12: ML ARCHITECTURE & MODEL METRICS -->
+        <section id="view-ml-architecture" class="app-view">
+          <div class="card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Technology Stack & Genuine ML Evaluation Metrics</h3>
+                <p class="card-subtitle">Real performance scores evaluated on holdout test partitions with Scikit-learn</p>
+              </div>
+              <span class="badge badge-demo">Scikit-Learn Holdout Evaluation</span>
+            </div>
+
+            <!-- Architecture Diagram -->
+            <div style="background: var(--bg-card-subtle); padding: 20px; border-radius: var(--radius-md); margin-bottom: 24px;">
+              <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px;">End-to-End System Pipeline:</h4>
+              <div style="font-family: monospace; font-size: 0.82rem; line-height: 1.8; color: var(--text-main); overflow-x: auto;">
+                Complaint Data (Student / Staff Intake)<br>
+                &nbsp;&nbsp;↓<br>
+                Text Preprocessing & Unigram/Bigram Tokenization<br>
+                &nbsp;&nbsp;↓<br>
+                TF-IDF Vector Space (Sublinear Scaling, 500 features)<br>
+                &nbsp;&nbsp;↓<br>
+                Multinomial Classification Model → Facility Issue Category<br>
+                &nbsp;&nbsp;↓<br>
+                Severity ML Estimator (Linguistic Urgency + Physical Hazard Signals)<br>
+                &nbsp;&nbsp;↓<br>
+                Historical Recurrence Engine (Database Match & Interval Scorer)<br>
+                &nbsp;&nbsp;↓<br>
+                Campus Location Risk Mapping (Pedestrian Footfall Telemetry)<br>
+                &nbsp;&nbsp;↓<br>
+                Configurable Multi-Factor Priority Scoring Engine (0 - 100)<br>
+                &nbsp;&nbsp;↓<br>
+                Exact Shapley Attribution Engine (SHAP Decomposition)<br>
+                &nbsp;&nbsp;↓<br>
+                Maintenance Priority Dispatch Queue & Real-time Operations Dashboard
+              </div>
+            </div>
+
+            <!-- Model Evaluation Metrics Table -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+              
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">NLP Facility Classifier</div>
+                  <span class="badge badge-live" id="nlpModelName">TF-IDF + Naive Bayes</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                  <div style="background: var(--bg-card-subtle); padding: 10px; border-radius: var(--radius-sm);">
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Accuracy</div>
+                    <div style="font-size: 1.25rem; font-weight: 800;" id="nlpAcc">--</div>
+                  </div>
+                  <div style="background: var(--bg-card-subtle); padding: 10px; border-radius: var(--radius-sm);">
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Weighted F1-Score</div>
+                    <div style="font-size: 1.25rem; font-weight: 800;" id="nlpF1">--</div>
+                  </div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);" id="nlpNote">Holdout evaluation note...</div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Severity Prediction Model</div>
+                  <span class="badge badge-live" id="sevModelName">Severity Estimator</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                  <div style="background: var(--bg-card-subtle); padding: 10px; border-radius: var(--radius-sm);">
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Accuracy</div>
+                    <div style="font-size: 1.25rem; font-weight: 800;" id="sevAcc">--</div>
+                  </div>
+                  <div style="background: var(--bg-card-subtle); padding: 10px; border-radius: var(--radius-sm);">
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Weighted F1-Score</div>
+                    <div style="font-size: 1.25rem; font-weight: 800;" id="sevF1">--</div>
+                  </div>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Tested across 4 discrete severity classes (Low, Medium, High, Critical).</div>
+              </div>
+
+            </div>
+
+            <!-- Tech Stack Tags -->
+            <div>
+              <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 10px;">Production Technology Stack:</h4>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <span class="badge badge-demo">Python 3.12</span>
+                <span class="badge badge-demo">FastAPI REST Framework</span>
+                <span class="badge badge-demo">Scikit-Learn</span>
+                <span class="badge badge-demo">Pandas & NumPy</span>
+                <span class="badge badge-demo">SHAP Game Theory</span>
+                <span class="badge badge-demo">Uvicorn ASGI</span>
+                <span class="badge badge-demo">Chart.js Visualizations</span>
+                <span class="badge badge-demo">Modern Responsive CSS</span>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================================================================== -->
+        <!-- ADMINISTRATOR VIEWS (RESTRICTED TO ADMINISTRATOR ROLE)               -->
+        <!-- ==================================================================== -->
+
+        <!-- VIEW: ALL COMPLAINTS MANAGEMENT (5,500 RECORDS) -->
+        <section id="view-admin-complaints" class="app-view">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Campus Facilities Complaint Directory</h3>
+                <p class="card-subtitle">Comprehensive master list of all 5,500 historical and live campus maintenance reports</p>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-outline" style="font-size: 0.8rem;" onclick="app.exportDataset()">
+                  📥 Export CSV
+                </button>
+                <button class="btn btn-primary" style="font-size: 0.8rem;" onclick="app.navigateTo('dataset-management')">
+                  ⚙️ Dataset Management
+                </button>
+              </div>
+            </div>
+
+            <!-- Filters Bar -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 16px; align-items: center;">
+              <div>
+                <input type="text" id="adminSearchInput" class="form-input" style="width: 100%;" placeholder="🔍 Search ticket ID, description, location, or student..." oninput="app.filterAdminComplaints()">
+              </div>
+              <div>
+                <select id="adminFilterCategory" class="filter-select" style="width: 100%;" onchange="app.filterAdminComplaints()">
+                  <option value="All">All Categories</option>
+                  <option value="Water Cooler">Water Cooler</option>
+                  <option value="Washroom & Plumbing">Washroom & Plumbing</option>
+                  <option value="Lighting & Electrical">Lighting & Electrical</option>
+                  <option value="HVAC & Air Conditioning">HVAC & AC</option>
+                  <option value="Elevator & Mobility">Elevator & Lift</option>
+                  <option value="Waste Management & Sanitation">Sanitation</option>
+                  <option value="Classroom AV & Furniture">Furniture & AV</option>
+                </select>
+              </div>
+              <div>
+                <select id="adminFilterSeverity" class="filter-select" style="width: 100%;" onchange="app.filterAdminComplaints()">
+                  <option value="All">All Severities</option>
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+              <div>
+                <select id="adminFilterPriority" class="filter-select" style="width: 100%;" onchange="app.filterAdminComplaints()">
+                  <option value="All">All Priorities</option>
+                  <option value="Critical">Critical Priority</option>
+                  <option value="High">High Priority</option>
+                  <option value="Medium">Medium Priority</option>
+                  <option value="Low">Low Priority</option>
+                </select>
+              </div>
+              <div>
+                <select id="adminFilterStatus" class="filter-select" style="width: 100%;" onchange="app.filterAdminComplaints()">
+                  <option value="All">All Statuses</option>
+                  <option value="Open">Open</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Resolved">Resolved</option>
+                </select>
+              </div>
+              <div>
+                <button class="btn btn-outline" style="padding: 7px 10px; font-size: 0.8rem;" onclick="app.resetAdminFilters()">
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Ticket ID</th>
+                    <th>Reporter</th>
+                    <th>Facility</th>
+                    <th>Location</th>
+                    <th>Severity</th>
+                    <th>Priority Score</th>
+                    <th>Status</th>
+                    <th>Technician / Dept</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="adminComplaintsTableBody">
+                  <tr><td colspan="9" style="text-align:center; padding: 24px; color: var(--text-muted);">Loading 5,500 campus complaints...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination Bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 0.84rem; color: var(--text-muted);">
+              <div id="adminPaginationInfo">
+                Showing records 1 - 50 of 5,500
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-outline" id="adminPrevPageBtn" style="padding: 4px 10px; font-size: 0.8rem;" onclick="app.changeAdminPage(-1)">
+                  ← Previous
+                </button>
+                <span id="adminCurrentPage" style="padding: 4px 8px; font-weight: 600; color: var(--text-main);">Page 1</span>
+                <button class="btn btn-outline" id="adminNextPageBtn" style="padding: 4px 10px; font-size: 0.8rem;" onclick="app.changeAdminPage(1)">
+                  Next →
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: DATASET MANAGEMENT (ADMIN EXCLUSIVE) -->
+        <section id="view-dataset-management" class="app-view">
+          <!-- Summary Metrics Cards -->
+          <div class="dataset-metrics-grid">
+            <div class="kpi-card">
+              <div class="kpi-label">Primary Dataset Rows</div>
+              <div class="kpi-value" id="dsTotalRecords">5,500</div>
+              <div class="kpi-subtext">Active complaint records</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Schema Columns</div>
+              <div class="kpi-value" id="dsTotalCols">21</div>
+              <div class="kpi-subtext">Engineered & telemetry fields</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Missing Values Check</div>
+              <div class="kpi-value" style="color: var(--status-resolved);" id="dsMissingCount">0</div>
+              <div class="kpi-subtext">Cleaned & validated records</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Duplicate Ticket Check</div>
+              <div class="kpi-value" style="color: var(--status-resolved);" id="dsDuplicateCount">0</div>
+              <div class="kpi-subtext">Unique complaint IDs</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- Left: Dataset Actions & Upload -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Dataset Upload & Ingestion</h3>
+                  <p class="card-subtitle">Replace or update the active platform dataset with strict schema validation</p>
+                </div>
+                <span class="badge badge-inprogress">CSV Parser</span>
+              </div>
+
+              <!-- Required Columns Checklist -->
+              <div style="background: var(--bg-card-subtle); padding: 14px; border-radius: var(--radius-sm); margin-bottom: 18px; font-size: 0.8rem;">
+                <strong style="color: var(--text-main); display: block; margin-bottom: 6px;">Mandatory CSV Schema Requirements:</strong>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                  <span class="badge badge-open">complaint_id</span>
+                  <span class="badge badge-open">facility_category</span>
+                  <span class="badge badge-open">building_name</span>
+                  <span class="badge badge-open">complaint_text</span>
+                  <span class="badge badge-open">severity</span>
+                  <span class="badge badge-open">status</span>
+                </div>
+                <span style="color: var(--text-muted); display: block; margin-top: 6px; font-size: 0.76rem;">
+                  Optional telemetry fields: <em>footfall_index, recurring_count_30d, technician_assigned, resolution_time_hours</em>
+                </span>
+              </div>
+
+              <!-- Upload Dropzone -->
+              <div class="upload-dropzone" id="datasetDropzone" onclick="document.getElementById('datasetFileInput').click()">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary); margin-bottom: 8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <div style="font-weight: 600; font-size: 0.88rem; color: var(--text-main);">Click to Browse or Drag & Drop CSV File</div>
+                <div style="color: var(--text-muted); font-size: 0.78rem; margin-top: 4px;">Supports standard RFC 4180 CSV files up to 25 MB</div>
+                <input type="file" id="datasetFileInput" accept=".csv" style="display: none;" onchange="app.handleDatasetFileSelect(this.files[0])">
+              </div>
+
+              <!-- Upload Error Alert -->
+              <div id="datasetUploadError" style="display: none; background: var(--risk-critical-bg); color: var(--risk-critical); border: 1px solid var(--risk-critical); padding: 12px; border-radius: var(--radius-sm); font-size: 0.82rem; margin-top: 14px;">
+              </div>
+
+              <!-- Selected File Box -->
+              <div id="selectedFileBox" style="display: none; margin-top: 14px; padding: 10px; background: var(--bg-card-subtle); border-radius: var(--radius-sm); align-items: center; justify-content: space-between;">
+                <div>
+                  <strong id="selectedFileName" style="font-size: 0.82rem;">dataset.csv</strong>
+                  <span id="selectedFileSize" style="color: var(--text-muted); font-size: 0.76rem; margin-left: 8px;">(1.8 MB)</span>
+                </div>
+                <button class="btn btn-primary" style="font-size: 0.76rem; padding: 4px 10px;" onclick="app.executeDatasetUpload()">
+                  Validate & Ingest
+                </button>
+              </div>
+
+              <div style="display: flex; gap: 10px; margin-top: 18px; border-top: 1px solid var(--border-main); padding-top: 16px;">
+                <button class="btn btn-outline" style="flex: 1;" onclick="app.exportDataset()">
+                  📥 Export Active Dataset (CSV)
+                </button>
+                <button class="btn btn-outline" style="flex: 1; border-color: var(--risk-critical); color: var(--risk-critical);" onclick="app.confirmResetDataset()">
+                  🔄 Restore Default 5,500 Dataset
+                </button>
+              </div>
+            </div>
+
+            <!-- Right: Dataset Distributions -->
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <h3 class="card-title">Dataset Distributions</h3>
+                  <p class="card-subtitle">Real-time profile of the 5,500 loaded complaints</p>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div>
+                  <h4 style="font-size: 0.84rem; font-weight: 700; margin-bottom: 8px;">Facility Breakdown:</h4>
+                  <div id="datasetFacilityDistList" style="display: flex; flex-direction: column; gap: 6px;">
+                    <!-- Injected by JS -->
+                  </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+                  <h4 style="font-size: 0.84rem; font-weight: 700; margin-bottom: 8px;">Severity Breakdown:</h4>
+                  <div id="datasetSeverityDistList" style="display: flex; flex-direction: column; gap: 6px;">
+                    <!-- Injected by JS -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dataset Preview Table (First 15 Rows) -->
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Dataset Raw Inspection (First 15 Records)</h3>
+                <p class="card-subtitle">Live schema and cell-level preview of the current historical dataset</p>
+              </div>
+              <span class="badge badge-demo">Dataset Preview</span>
+            </div>
+            <div class="dataset-preview-table-wrapper">
+              <table class="dataset-preview-table" id="datasetPreviewTable">
+                <thead>
+                  <tr id="datasetPreviewHeader">
+                    <th>Loading columns...</th>
+                  </tr>
+                </thead>
+                <tbody id="datasetPreviewBody">
+                  <tr><td>Loading raw preview...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: USER DIRECTORY (ADMIN EXCLUSIVE) -->
+        <section id="view-admin-users" class="app-view">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">Campus User Directory & Access Roles</h3>
+                <p class="card-subtitle">Active registered student and administrative personas with role authentication profiles</p>
+              </div>
+              <span class="badge badge-open">Role Security</span>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Full Name</th>
+                    <th>Role</th>
+                    <th>Department / Office</th>
+                    <th>Campus Email</th>
+                    <th>Access Permissions</th>
+                    <th>Account Status</th>
+                  </tr>
+                </thead>
+                <tbody id="adminUsersTableBody">
+                  <tr>
+                    <td><strong>STU101</strong></td>
+                    <td>Rahul Sharma</td>
+                    <td><span class="user-role-tag role-student">Student</span></td>
+                    <td>Computer Science & Engineering</td>
+                    <td>rahul.sharma@campus.edu</td>
+                    <td>Student Portal, Ticket Submission, Own Tickets</td>
+                    <td><span class="badge badge-open">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>STU102</strong></td>
+                    <td>Priya Patel</td>
+                    <td><span class="user-role-tag role-student">Student</span></td>
+                    <td>Electrical & Electronics</td>
+                    <td>priya.patel@campus.edu</td>
+                    <td>Student Portal, Ticket Submission, Own Tickets</td>
+                    <td><span class="badge badge-open">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>ADMIN01</strong></td>
+                    <td>Dr. K. V. Raman</td>
+                    <td><span class="user-role-tag role-admin">Administrator</span></td>
+                    <td>Director of Campus Facilities & Operations</td>
+                    <td>admin.facilities@campus.edu</td>
+                    <td>Full Master Access, 5,500 Complaints, ML, Weights</td>
+                    <td><span class="badge badge-critical">Active Administrator</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- VIEW: SYSTEM AUDIT LOGS (ADMIN EXCLUSIVE) -->
+        <section id="view-audit-logs" class="app-view">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h3 class="card-title">System Activity & Operational Audit Logs</h3>
+                <p class="card-subtitle">Immutable log stream of ticket submissions, ML classifications, and triage actions</p>
+              </div>
+              <button class="btn btn-outline" style="font-size: 0.78rem; padding: 4px 10px;" onclick="app.refreshAuditLogs()">
+                🔄 Refresh Logs
+              </button>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Action / Event</th>
+                    <th>Initiator</th>
+                    <th>Role</th>
+                    <th>Target Record</th>
+                    <th>Details</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="auditLogsTableBody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL 1: 5-MINUTE GUIDED WALKTHROUGH TOUR -->
+  <div class="modal-backdrop" id="tourModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="badge badge-live" id="tourStepBadge">Step 1 of 5 (0:00 - 1:00)</span>
+          <h3 class="modal-title" id="tourTitle">System Overview & Purpose</h3>
+        </div>
+        <button class="close-btn" onclick="app.closeTour()">&times;</button>
+      </div>
+      <div class="modal-body" id="tourBody">
+        <!-- Injected dynamically by JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="tourPrevBtn" onclick="app.prevTourStep()">Previous</button>
+        <button class="btn btn-outline" onclick="app.jumpTourView()">Jump to Page</button>
+        <button class="btn btn-primary" id="tourNextBtn" onclick="app.nextTourStep()">Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: CONFIGURABLE PROTOTYPE WEIGHTS -->
+  <div class="modal-backdrop" id="weightsModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">Configurable Prototype Priority Weights</h3>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+            Tune the multi-factor scoring formula to match campus operational policy
+          </p>
+        </div>
+        <button class="close-btn" onclick="app.closeWeightsModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>Predicted Severity Weight</span>
+            <span id="lblWeightSev">35%</span>
+          </div>
+          <input type="range" min="0" max="100" value="35" class="slider-input" id="sliderSev" oninput="app.updateSliderLabels()">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>Historical Recurrence Weight</span>
+            <span id="lblWeightRec">25%</span>
+          </div>
+          <input type="range" min="0" max="100" value="25" class="slider-input" id="sliderRec" oninput="app.updateSliderLabels()">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>Campus Zone Footfall Weight</span>
+            <span id="lblWeightFoot">20%</span>
+          </div>
+          <input type="range" min="0" max="100" value="20" class="slider-input" id="sliderFoot" oninput="app.updateSliderLabels()">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>Location Vulnerability Risk Weight</span>
+            <span id="lblWeightLoc">10%</span>
+          </div>
+          <input type="range" min="0" max="100" value="10" class="slider-input" id="sliderLoc" oninput="app.updateSliderLabels()">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label-row">
+            <span>Operational Impact Weight</span>
+            <span id="lblWeightImp">10%</span>
+          </div>
+          <input type="range" min="0" max="100" value="10" class="slider-input" id="sliderImp" oninput="app.updateSliderLabels()">
+        </div>
+
+        <div style="background: var(--bg-card-subtle); padding: 12px; border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--text-muted);">
+          Note: Weights are automatically normalized to 100%. Updating weights will recalculate the Priority Scores and re-rank all tickets in the Priority Queue immediately.
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="app.resetDefaultWeights()">Reset Defaults</button>
+        <button class="btn btn-primary" onclick="app.saveWeights()">Save & Recalculate Queue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: TICKET DETAIL & SHAP BREAKDOWN -->
+  <div class="modal-backdrop" id="ticketDetailModal">
+    <div class="modal-dialog" style="max-width: 720px;">
+      <div class="modal-header">
+        <div>
+          <span class="badge badge-inprogress" id="mdlTicketNumber">CMP-2026-0812</span>
+          <h3 class="modal-title" style="margin-top: 4px;" id="mdlTicketTitle">Ticket Inspection</h3>
+        </div>
+        <button class="close-btn" onclick="app.closeTicketDetail()">&times;</button>
+      </div>
+      <div class="modal-body" id="ticketDetailBody">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="app.closeTicketDetail()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: STUDENT TICKET TRACKING & STATUS PROGRESSION (4-STEP STEPPER) -->
+  <div class="modal-backdrop" id="studentProgressModal">
+    <div class="modal-dialog" style="max-width: 650px;">
+      <div class="modal-header">
+        <div>
+          <span class="badge badge-inprogress" id="stuMdlTicketId">CMP-2026-0001</span>
+          <h3 class="modal-title" style="margin-top: 4px;" id="stuMdlTitle">Issue Status Progression</h3>
+        </div>
+        <button class="close-btn" onclick="app.closeStudentProgressModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="studentProgressBody">
+        <!-- 4-Step Stepper -->
+        <div class="stepper-container" id="stuStepper">
+          <div class="stepper-step" id="step1">
+            <div class="step-bubble">1</div>
+            <div class="step-label">Submitted</div>
+            <div class="step-subtext" id="step1Time">Report Logged</div>
+          </div>
+          <div class="stepper-step" id="step2">
+            <div class="step-bubble">2</div>
+            <div class="step-label">Open / Triaged</div>
+            <div class="step-subtext" id="step2Time">AI Prioritized</div>
+          </div>
+          <div class="stepper-step" id="step3">
+            <div class="step-bubble">3</div>
+            <div class="step-label">In Progress</div>
+            <div class="step-subtext" id="step3Time">Staff On-Site</div>
+          </div>
+          <div class="stepper-step" id="step4">
+            <div class="step-bubble">4</div>
+            <div class="step-label">Resolved</div>
+            <div class="step-subtext" id="step4Time">Repair Complete</div>
+          </div>
+        </div>
+
+        <!-- Ticket Details Card -->
+        <div style="background: var(--bg-card-subtle); padding: 18px; border-radius: var(--radius-sm); margin-top: 20px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <span style="font-size: 0.76rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Facility:</span>
+              <div id="stuMdlFacility" style="font-weight: 600; font-size: 0.9rem;">Water Cooler</div>
+            </div>
+            <div>
+              <span style="font-size: 0.76rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Campus Location:</span>
+              <div id="stuMdlLocation" style="font-weight: 600; font-size: 0.9rem;">Block C (Science & Labs)</div>
+            </div>
+            <div>
+              <span style="font-size: 0.76rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Assigned Technician / Dept:</span>
+              <div id="stuMdlTech" style="font-weight: 600; font-size: 0.9rem; color: var(--primary);">Pending Dispatch</div>
+            </div>
+            <div>
+              <span style="font-size: 0.76rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">System Priority:</span>
+              <div id="stuMdlPriority" style="font-weight: 600; font-size: 0.9rem;"><span class="badge badge-high">High Priority</span></div>
+            </div>
+          </div>
+
+          <div style="border-top: 1px solid var(--border-main); padding-top: 10px;">
+            <span style="font-size: 0.76rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Reported Description:</span>
+            <p id="stuMdlDesc" style="font-size: 0.85rem; color: var(--text-main); margin-top: 4px; line-height: 1.5;">Complaint description text...</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="app.closeStudentProgressModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: ADMINISTRATOR EDIT COMPLAINT MODAL -->
+  <div class="modal-backdrop" id="adminEditModal">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-header">
+        <div>
+          <span class="badge badge-critical" id="adminEditMdlTicketId">CMP-2026-0001</span>
+          <h3 class="modal-title" style="margin-top: 4px;">Update Complaint & Dispatch</h3>
+        </div>
+        <button class="close-btn" onclick="app.closeAdminEditModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="adminEditForm" onsubmit="event.preventDefault(); app.saveAdminComplaintUpdate();">
+          <input type="hidden" id="adminEditComplaintId">
+
+          <div style="margin-bottom: 14px;">
+            <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Lifecycle Status</label>
+            <select id="adminEditStatus" class="filter-select" style="width: 100%;">
+              <option value="Open">Open (Pending Triage)</option>
+              <option value="In Progress">In Progress (Technician Dispatched)</option>
+              <option value="Resolved">Resolved (Work Completed & Tested)</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 14px;">
+            <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Assigned Department</label>
+            <select id="adminEditDept" class="filter-select" style="width: 100%;">
+              <option value="Plumbing & Sanitation">Plumbing & Sanitation</option>
+              <option value="Electrical Services">Electrical Services</option>
+              <option value="HVAC & Refrigeration">HVAC & Refrigeration</option>
+              <option value="Carpentry & Civil Works">Carpentry & Civil Works</option>
+              <option value="Elevator Maintenance">Elevator Maintenance</option>
+              <option value="General Facilities">General Facilities</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 18px;">
+            <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Assigned Technician</label>
+            <input type="text" id="adminEditTechnician" class="form-input" style="width: 100%;" placeholder="e.g. Manoj Yadav (Carpentry) or Rajesh Kumar">
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn btn-outline" onclick="app.closeAdminEditModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Core JavaScript -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
