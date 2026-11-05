@@ -1,0 +1,3 @@
+"""
+Reusable dashboard UI components.
+"""

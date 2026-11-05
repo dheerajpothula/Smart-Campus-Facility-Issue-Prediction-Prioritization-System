@@ -1,30 +1,40 @@
-# Virtual Environments
-.venv/
-venv/
-env/
-ENV/
-.env
-
-# Python Bytecode and Cache
+# Python bytecode & cache
 __pycache__/
 *.py[cod]
 *$py.class
-.pytest_cache/
-.coverage
-htmlcov/
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Streamlit run cache
+.streamlit/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Data files (keep directory structure via .gitkeep)
+**/data/raw/*
+!**/data/raw/.gitkeep
+**/data/processed/*
+!**/data/processed/.gitkeep
+**/data/synthetic/*
+!**/data/synthetic/.gitkeep
+
+# Trained Model Artifacts
+**/models/*
+!**/models/.gitkeep
+*.joblib
+*.pkl
+
+# Logs
 *.log
 
-# Operating System Files
+# OS & IDE
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# IDE & Editor Files
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# Temporary and Scratch files
-scratch/
-scratch_*

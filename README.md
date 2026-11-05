@@ -1,189 +1,189 @@
 # Smart Campus Facility Issue Prediction & Prioritization System
 
-> **An AI/ML-powered campus maintenance platform that analyzes historical student and staff complaints, predicts facility failure risks, detects recurring problems, computes explainable priority scores (0–100), forecasts future high-risk windows, and provides maintenance teams with an intelligent dispatch queue.**
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Framework Streamlit](https://img.shields.io/badge/framework-Streamlit-FF4B4B.svg)](https://streamlit.io/)
+[![Framework FastAPI](https://img.shields.io/badge/framework-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
+[![Theme Light](https://img.shields.io/badge/theme-Warm%20Chalk%20Light-EAE3D2.svg)]()
+[![Tests Passing](https://img.shields.io/badge/tests-36%20passed-success.svg)]()
+[![License MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com/)
-[![Scikit--Learn](https://img.shields.io/badge/Scikit--Learn-1.5+-F7931E.svg)](https://scikit-learn.org/)
-[![SHAP](https://img.shields.io/badge/Explainability-SHAP-red.svg)](https://github.com/slundberg/shap)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
----
-
-## 1. Project Concept & Value Proposition
-
-Traditional college campus maintenance portals operate merely as **passive complaint bins**:
-1. Complaints are stored chronologically without urgency intelligence.
-2. Trivial cosmetic defects bury critical infrastructure hazards (e.g. electrical sparks or server room overheating).
-3. Chronic failures (such as the Block C water cooler failing 12 times) receive repeated temporary patch repairs rather than root-cause overhauls.
-4. Maintenance supervisors lack visibility into pedestrian footfall density and failure recurrence.
-
-**The Smart Campus AI System changes this paradigm:**
-$$\mathbf{Complaint \longrightarrow AI\ Analysis \longrightarrow Risk\ \&\ Severity\ Prediction \longrightarrow Priority\ (0\text{--}100) \longrightarrow Targeted\ Action}$$
+An intelligent university maintenance intelligence platform engineered to identify, prioritize, and predict recurring facility breakdowns across university campuses with role-based access control, dedicated login, student complaint tracking, sequential token assignment, explainable AI (SHAP-inspired), and accessible high-contrast UI design.
 
 ---
 
-## 2. 5-Minute Understanding Flow
+## 🌟 Key Capabilities & Modules
 
-The platform includes a built-in **interactive 5-Minute Guided Walkthrough Tour** that enables any evaluator or visitor to grasp the entire workflow without prior technical knowledge:
+### 1. Minimal Role Selection Gateway
+- Clean, professional entry screen presenting two access tiers:
+  - **Administrator**: *"Manage campus maintenance, facility issues, AI predictions, and maintenance priorities."*
+  - **Student**: *"Report facility issues and track your complaints."*
+- Choosing either role opens the dedicated login screen for that role.
 
-| Time | Stage | Focus |
-| :--- | :--- | :--- |
-| **0:00 – 1:00** | **Problem & Purpose** | Why passive complaint inboxes fail and how predictive AI triage prevents major campus disruptions. |
-| **1:00 – 2:00** | **Complaint Intake** | Plain English complaint submission; instant automated extraction of facility type, severity, and recurrence. |
-| **2:00 – 3:00** | **7-Stage ML Pipeline** | Interactive pipeline debugger demonstrating NLP, severity estimation, footfall mapping, and priority scoring. |
-| **3:00 – 4:00** | **Maintenance Dashboard** | KPI monitoring, issue distribution charts, and the intelligent dispatch queue with live status toggling. |
-| **4:00 – 5:00** | **Predictive AI & SHAP** | Forward-looking 7–30 day issue-risk forecasts and game-theoretic SHAP waterfall feature attribution. |
+### 2. Dedicated Role-Based Login Flow
+- **Administrator Login**: Prompts for Administrator Name and Administrator ID.
+- **Student Login**: Prompts for Student Name and Student ID.
+- **Simulated Authentication**: Demonstrates realistic access control without requiring external passwords or emails.
+- **Validation & Back Navigation**: Enforces non-empty name and ID inputs; provides a secondary "Back to Role Selection" button.
+- **Dynamic Identity**: Binds the active session to the entered Name and ID (removing any hardcoded mock profiles).
+
+### 3. Student Dashboard & Strict Data Isolation
+- **Per-Student Complaint Isolation**: Students view strictly the complaints they have submitted under **My Complaints**.
+- **Empty State**: If 0 complaints have been submitted by the student, shows:
+  - *"No complaints submitted yet."*
+  - *"Raise an issue to report a facility problem on campus."*
+  - Prominent primary action button: `➕ Raise an Issue`.
+- **Sequential Token Generation**: Assigns permanent, unique, 3-digit zero-padded tokens formatted as `CMP-2026-001`, `CMP-2026-002`, `CMP-2026-003`, etc.
+- **7-Field Issue Submission Form**:
+  1. *Student Name* (read-only, populated from authenticated session)
+  2. *Student ID* (read-only, populated from authenticated session)
+  3. *Issue Title / Brief Headline*
+  4. *Facility Category* (Washroom cleanliness, Garbage overflow, Water supply, Electrical/lighting, Plumbing, Other)
+  5. *Building or Block*
+  6. *Floor or Specific Location*
+  7. *Detailed Issue Description*
+- **Confirmation Screen**: Displays ticket token, initial `Submitted` status, and a `Return to My Complaints` primary button without exposing raw JSON/code.
+- **5-Stage Progress Indicator**: Visual progress tracker on each ticket (`Submitted` ➔ `Under Review` ➔ `Assigned` ➔ `In Progress` ➔ `Resolved`). Internal ML scores and priority weights are hidden from students.
+
+### 4. Administrator Dashboard with Right-Side Sidebar
+- **Layout**: Main dashboard analytics and controls on the **left**, and dedicated navigation sidebar on the **right**.
+- **Right Sidebar Contents**:
+  - Administrator identity (Name and ID entered during login).
+  - Navigation menu with 8 core sections:
+    1. **📊 Overview** (KPI metrics, facility distribution, location vulnerability density)
+    2. **📋 Complaint Management** (Live tickets, student reporter badges, status updates across 5 stages, admin intake form, CSV ingestion)
+    3. **⚡ AI Analysis** (NLP feature classification, tokenization, TF-IDF vectorization)
+    4. **🚨 Priority Queue** (Dynamic multi-factor priority dispatch queue: Critical, High, Medium, Low)
+    5. **🔮 Predictive Maintenance** (Failure recurrence forecasting and risk trajectories)
+    6. **🔁 Recurring Issues** (Chronic repeat-breakdown detection and MTBF analysis)
+    7. **🔬 Explainable AI** (SHAP-inspired multi-factor feature attribution and plain-language rationalization)
+    8. **⚙️ Settings** (Interactive priority weight tuning and auto-normalization)
+  - **Live Repository Status** (Total Tickets, Open Backlog, High Priority).
+  - **Demo Controls** (Reset Default, Empty Dataset).
+  - **Logout Button**: Clears the session and returns to the role selection gateway.
+
+### 5. Accessible 60/30/10 Color Harmony & High-Contrast Buttons
+- **60% Warm Chalk (`#FDFBF7`)**: Background canvas and spacious card sections.
+- **30% Deep Charcoal (`#1A1A1A`)**: Typography, headings, icons, charts, and progress bars.
+- **10% Soft Tan (`#EAE3D2`)**: Card borders, badges, status pills, and accents.
+- **Primary Action Buttons**: Warm dark tan/brown background (`#756044`) with crisp white text (`#FFFFFF`) and dark hover (`#5D4A32`).
+- **Secondary Action Buttons**: Soft Tan background (`#EAE3D2`) with Deep Charcoal text (`#1A1A1A`) and muted hover (`#D8CDB8`).
+- **Outline & Disabled Buttons**: Transparent outline with visible text; disabled states remain clearly legible.
 
 ---
 
-## 3. End-to-End System Architecture
+## 📂 Repository Structure
 
 ```
-                       [ Student / Staff Complaint ]
-                                    │
-                                    ▼
-                     [ FastAPI Asynchronous Backend ]
-                                    │
-    ┌───────────────────────────────┴───────────────────────────────┐
-    │                                                               │
-    ▼                                                               ▼
-[ NLP Classifier (TF-IDF + NB) ]               [ Severity Estimator (TF-IDF + ML) ]
-Classifies Facility Domain                     Estimates Physical Urgency & Hazard
-(Water Cooler, Plumbing, Lighting, etc.)       (Low, Medium, High, Critical)
-    │                                                               │
-    └───────────────────────────────┬───────────────────────────────┘
-                                    │
-                                    ▼
-                    [ Historical Recurrence Engine ]
-                    Scans Campus DB for matching pairs
-                    Identifies Chronic Outages & MTBF
-                                    │
-                                    ▼
-                    [ Campus Location Risk Engine ]
-                    Maps Zone Footfall & Vulnerability
-                    (e.g., Block C = 88/100 Lunch Footfall)
-                                    │
-                                    ▼
-             [ Intelligent Priority Scoring Engine (0 - 100) ]
-             Configurable Prototype Weights (Severity, Recurrence,
-             Footfall, Location Risk, Operational Impact)
-                                    │
-                                    ▼
-                 [ Exact Shapley / SHAP Explainer ]
-                 Decomposes Score into Positive & Negative Drivers
-                 Efficiency: Base Value + Σ(φ_i) = Final Priority
-                                    │
-                                    ▼
-          [ Maintenance Priority Dispatch Queue & Dashboard ]
-          Real-time triage, status management (Open/In Progress/Resolved)
-```
-
----
-
-## 4. Configurable Prototype Priority Formula
-
-Priority is calculated dynamically using a transparent, explainable formula:
-
-$$\text{Priority Score} = w_{\text{sev}} \cdot S + w_{\text{rec}} \cdot R + w_{\text{foot}} \cdot F + w_{\text{loc\_risk}} \cdot L + w_{\text{imp}} \cdot I$$
-
-Where:
-* $S$: Calibrated Severity Score ($0 \le S \le 100$)
-* $R$: Historical Recurrence Score ($0 \le R \le 100$)
-* $F$: Location Pedestrian Footfall ($0 \le F \le 100$)
-* $L$: Chronic Location Vulnerability Index ($0 \le L \le 100$)
-* $I$: Operational Impact Score ($0 \le I \le 100$)
-
-### Default Prototype Weights:
-* **Severity Weight ($w_{\text{sev}}$):** `0.35` (35%)
-* **Recurrence Weight ($w_{\text{rec}}$):** `0.25` (25%)
-* **Footfall Weight ($w_{\text{foot}}$):** `0.20` (20%)
-* **Location Risk Weight ($w_{\text{loc}}$):** `0.10` (10%)
-* **Impact Weight ($w_{\text{imp}}$):** `0.10` (10%)
-
-> **Interactive Feature**: Weights can be adjusted live via sliders in the **Weights Modal** in the UI, instantly re-ranking the entire maintenance dispatch queue.
-
----
-
-## 5. Explainable AI: Mathematical SHAP Formulation
-
-To eliminate "black-box" skepticism, every ticket features an exact **SHAP (SHapley Additive exPlanations)** decomposition based on cooperative game theory:
-
-$$\text{Priority}(x) = \phi_0 + \sum_{i=1}^M \phi_i(x)$$
-
-* **$\phi_0$ (Base Value):** The expected campus baseline priority score ($\approx 54.5$ pts).
-* **$\phi_i$ (Shapley Attribution):** $\phi_i = w_i \cdot (x_i - E[X_i])$.
-  * **Positive $\phi_i$ (Red/Rose):** Pushes priority **UP** (e.g. high footfall zone, repeated failure history).
-  * **Negative $\phi_i$ (Blue/Teal):** Pulls priority **DOWN** (e.g. low-traffic building, first-time occurrence).
-
----
-
-## 6. Data Integrity & Transparent Separation
-
-* **Historical Demo Dataset (`is_demo = True`):** Pre-seeded with 20 realistic campus incident patterns across Blocks A–E, Library, Cafeteria, Hostels, and Sports Arena (including the Block C 12-complaint chronic case study).
-* **Live Campus Tickets (`is_demo = False`):** All user submissions made through the web form are saved and tagged as real-time tickets (`LIVE-XXXXXX` / `CMP-2026-85X`).
-* **Predictive Issue-Risk Forecasting:** Explicitly labeled as:
-  > *“Prediction ≠ Confirmed Physical Breakdown. Algorithmic issue-risk forecast indicating elevated complaint probability based on historical recurrence cycles and footfall telemetry.”*
-
----
-
-## 7. Quick Start & Execution
-
-### Prerequisites
-* Python 3.10+ (Tested on Python 3.12)
-* Any modern web browser (Chrome, Edge, Firefox, Safari)
-
-### Installation & Execution
-
-```bash
-# 1. Clone or navigate to the project directory
-cd Unsuper
-
-# 2. Launch the application (starts FastAPI & web server)
-.\.venv\Scripts\python.exe run_server.py
-```
-
-Open your browser at:
-👉 **`http://127.0.0.1:8000`**
-
-### Running Automated Test Suite
-```bash
-.\.venv\Scripts\python.exe tests/test_system.py
+.
+├── app.py                             # Root Streamlit Launcher
+├── requirements.txt                   # Consolidated project dependencies
+├── README.md                          # Main project documentation
+├── LICENSE                            # MIT License
+├── push_to_github.bat                 # Helper script for automated git push
+├── run_server.py                      # FastAPI server launcher
+├── start_server.bat                   # Batch script for FastAPI server
+│
+├── smart-campus-facility-prediction/  # Core Streamlit Intelligence Platform
+│   ├── app.py                         # Streamlit application entry point
+│   ├── requirements.txt               # Streamlit-specific requirements
+│   ├── README.md                      # Detailed Streamlit architecture docs
+│   ├── .gitignore                     # Repository exclusions
+│   ├── dashboard/
+│   │   ├── components/
+│   │   │   ├── login_page.py          # Dedicated Administrator & Student login
+│   │   │   ├── role_selection.py      # Gateway portal
+│   │   │   ├── sidebar.py             # Right-side admin sidebar component
+│   │   │   ├── styles.py              # Global 60/30/10 CSS & button contrast rules
+│   │   │   └── empty_state.py         # Standardized empty state widget
+│   │   └── pages/
+│   │       ├── overview.py            # Overview metrics & charts
+│   │       ├── complaint_management.py# Lifecycle dispatch & status updates
+│   │       ├── student_dashboard.py   # Student portal & 7-field form
+│   │       ├── ai_analysis.py         # NLP classification pipeline
+│   │       ├── maintenance_priorities.py # Priority queue & crew dispatch
+│   │       ├── predictive_analytics.py # Predictive risk analysis
+│   │       ├── recurring_issues.py    # Recurrence detection & chronic analysis
+│   │       ├── explainable_ai.py      # SHAP attribution breakdown
+│   │       └── settings_weights.py    # Priority weight adjustment
+│   ├── data/
+│   │   ├── processed/complaints.json  # Persistent JSON ticket store
+│   │   ├── raw/                       # Raw input data directory
+│   │   └── synthetic/                 # Synthetic complaint generators
+│   ├── src/
+│   │   ├── data/complaints_store.py   # Ticket CRUD, sequential tokens, isolation
+│   │   ├── prediction/priority_scoring.py # Multi-criteria scoring engine
+│   │   ├── preprocessing/             # Text cleaning & tokenization
+│   │   ├── features/                  # TF-IDF feature extractors
+│   │   ├── training/                  # ML training scripts
+│   │   └── evaluation/                # Model evaluation metrics
+│   └── tests/                         # Comprehensive unit test suite (36 tests)
+│       ├── test_final_refinement.py   # RBAC, login, sidebar & button tests
+│       ├── test_student_raise_issue.py# Student issue intake & token tests
+│       ├── test_redesign.py           # Priority weights & KPI tests
+│       ├── test_role_routing.py       # Application router tests
+│       └── test_initialization.py     # Structure & package import tests
+│
+└── app/                               # FastAPI Backend & Web Application
+    ├── main.py                        # FastAPI REST API application
+    ├── auth.py                        # JWT/Session authentication logic
+    ├── data/                          # 5,500 historical complaint dataset & DB
+    ├── ml/                            # ML pipeline, severity & risk engines
+    ├── models/                        # Pydantic data schemas
+    └── static/                        # Vanilla JS, HTML, CSS web assets
 ```
 
 ---
 
-## 8. REST API Reference
+## 🚀 Quick Start
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/kpi` | Aggregated campus KPIs (total, open, high priority, avg resolution) |
-| `GET` | `/api/complaints` | Filtered complaints (`data_source`, `status`, `severity`, `facility`) |
-| `GET` | `/api/complaints/{id}` | Single ticket details with full SHAP explanation breakdown |
-| `POST` | `/api/complaints/submit` | Real-time intake running full 7-stage ML pipeline |
-| `POST` | `/api/analyze-preview` | Sandbox endpoint for testing text without saving to database |
-| `PATCH` | `/api/complaints/{id}/status` | Updates status (`Open` → `In Progress` → `Resolved`) |
-| `GET` | `/api/priority-queue` | Sorted dispatch queue by calculated priority score |
-| `GET` | `/api/risk-intelligence` | Campus location risk matrix & vulnerability rankings |
-| `GET` | `/api/recurring-issues` | Chronic recurrence profiles & failure timeline |
-| `GET` | `/api/predictive-maintenance` | 7–30 day forward-looking issue-risk forecasts |
-| `GET` | `/api/model-metrics` | Genuine Scikit-learn holdout evaluation metrics |
-| `GET` | `/api/settings/weights` | Current active prototype priority weights |
-| `POST` | `/api/settings/weights` | Updates weights and recalculates open ticket priorities |
-| `POST` | `/api/reset-demo-data` | Restores database to initial pristine demo dataset |
+### 1. Installation
+Clone the repository and install dependencies in your virtual environment:
+
+```powershell
+# Clone the repository
+git clone https://github.com/dheerajpothula/Smart-Campus-Facility-Issue-Prediction-Prioritization-System.git
+cd Smart-Campus-Facility-Issue-Prediction-Prioritization-System
+
+# Create and activate virtual environment
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# Install requirements
+pip install -r requirements.txt
+```
+
+### 2. Launch Streamlit Intelligence Platform (Recommended)
+Launch the primary interactive platform directly from workspace root:
+
+```powershell
+streamlit run app.py
+```
+*Or navigate to the subfolder:*
+```powershell
+cd smart-campus-facility-prediction
+streamlit run app.py
+```
+
+### 3. Launch FastAPI REST Service & Web Interface (Alternative)
+```powershell
+python run_server.py
+```
+Open browser at: `http://127.0.0.1:8000`
 
 ---
 
-## 9. Viva & College Presentation Q&A Guide
+## 🧪 Running Automated Tests
 
-**Q1: How does this system differ from an ordinary complaint ticketing portal?**  
-> *A: Standard portals only store tickets chronologically. This system executes an ML pipeline that classifies the problem, estimates hazard severity, identifies chronic recurrence, checks campus footfall exposure, computes an explainable 0–100 priority score, and forecasts future failure windows.*
+Run the comprehensive unit test suite:
 
-**Q2: How is the priority score calculated?**  
-> *A: We use a multi-factor weighted combination: Severity (35%), Recurrence (25%), Footfall (20%), Location Risk (10%), and Expected Operational Impact (10%). All weights are configurable prototype parameters.*
+```powershell
+python -m unittest discover -s smart-campus-facility-prediction/tests
+```
 
-**Q3: How do you explain the AI predictions to non-technical maintenance supervisors?**  
-> *A: We use game-theoretic SHAP (Shapley Additive exPlanations) values to break down the exact positive and negative point contributions relative to the campus baseline, accompanied by plain-language diagnostic recommendations.*
+**Results:**
+- **36 Unit Tests passing (100% pass rate)** covering role selection, dedicated login flow, student isolation, sequential `CMP-2026-XXX` tokens, 5-stage progress indicator, right sidebar navigation, button contrast tokens, and priority scoring algorithms.
 
-**Q4: How does the system detect recurring issues?**  
-> *A: It cross-references incoming facility types and locations against historical resolution logs and scans for linguistic recurrence markers (e.g. "again", "third time", "repeatedly"), computing the Mean Time Between Failures (MTBF).*
+---
+
+## 📄 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
