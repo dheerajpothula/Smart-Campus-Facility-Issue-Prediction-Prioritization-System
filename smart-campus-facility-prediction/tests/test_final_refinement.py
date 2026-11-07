@@ -57,18 +57,17 @@ class TestFinalRefinementRequirements(unittest.TestCase):
             "Found removed notice banner on Role Selection page.",
         )
 
-        # No arrow symbols after titles or headings
-        self.assertNotIn("→", source, "Found decorative arrow symbol '→' on Role Selection page.")
-
-        # Exact required descriptions must be present
+        # Exact required descriptions matching FIPP landing page mockup
         self.assertIn(
-            "Manage campus maintenance, facility issues, AI predictions, and maintenance priorities.",
+            "Manage system operations, monitor facility issues, and prioritize maintenance tasks.",
             source,
         )
         self.assertIn(
-            "Report facility issues and track your complaints.",
+            "Report facility issues, track their status, and view updates.",
             source,
         )
+        self.assertIn("Continue as Administrator →", source)
+        self.assertIn("Continue as Student →", source)
 
     def test_requirement_2_student_sees_no_sample_complaints(self):
         """2. Student dashboard must display ONLY complaints submitted by that student."""
