@@ -1,5 +1,5 @@
 """
-Smart Campus Facility Issue Prediction & Prioritization System
+FIPP — Facility Issue Prediction & Prioritization
 Root Launcher: Delegates execution to smart-campus-facility-prediction/app.py
 """
 import sys

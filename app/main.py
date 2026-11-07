@@ -1,5 +1,5 @@
 """
-FastAPI Application for Smart Campus Facility Issue Prediction & Prioritization System.
+FastAPI Application for FIPP — Facility Issue Prediction & Prioritization.
 Provides RESTful APIs with strict Role-Based Access Control (RBAC):
 - Authentication (Student / Admin login, session validation)
 - Student Portal APIs (isolated to authenticated student's tickets, ticket submission)
@@ -43,7 +43,7 @@ from app.ml.priority_engine import active_priority_weights, priority_engine
 from app.data.sample_data import DEMO_LOCATIONS, CHRONIC_RECURRENCE_DATA
 
 app = FastAPI(
-    title="Smart Campus Facility Issue Prediction & Prioritization API",
+    title="FIPP — Facility Issue Prediction & Prioritization API",
     description="AI/ML-powered predictive maintenance and intelligent complaint prioritization system with RBAC.",
     version="2.0.0"
 )
@@ -561,4 +561,4 @@ def serve_index():
     index_file = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index_file):
         return FileResponse(index_file)
-    return {"message": "Smart Campus Facility Issue Prediction & Prioritization System API is running."}
+    return {"message": "FIPP — Facility Issue Prediction & Prioritization API is running."}

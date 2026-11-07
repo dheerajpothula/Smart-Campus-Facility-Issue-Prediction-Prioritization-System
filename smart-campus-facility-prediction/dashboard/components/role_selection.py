@@ -30,7 +30,7 @@ def render_role_selection_screen() -> None:
                 🏫
             </div>
             <h1 style="font-size: 2.15rem; color: #1A1A1A; margin-bottom: 0; font-weight: 700; letter-spacing: -0.025em;">
-                Smart Campus Facility Issue Prediction & Prioritization System
+                FIPP — Facility Issue Prediction &amp; Prioritization
             </h1>
         </div>
         """,

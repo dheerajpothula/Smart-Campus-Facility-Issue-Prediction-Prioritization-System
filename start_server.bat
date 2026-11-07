@@ -1,9 +1,9 @@
 @echo off
-title Smart Campus AI - Facility Maintenance Platform
+title FIPP — Facility Issue Prediction & Prioritization
 cd /d "%~dp0"
 
 echo ================================================================
-echo   Smart Campus Facility Issue Prediction & Prioritization System
+echo   FIPP — Facility Issue Prediction & Prioritization
 echo ================================================================
 echo.
 

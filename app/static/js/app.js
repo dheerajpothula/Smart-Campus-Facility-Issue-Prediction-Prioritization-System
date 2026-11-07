@@ -1,5 +1,5 @@
 /**
- * Smart Campus Facility Issue Prediction & Prioritization System
+ * FIPP — Facility Issue Prediction & Prioritization
  * Master Client Application Controller
  * Version 2.0 - Role-Based Access Control, CSV Dataset Management & AI Triage
  */

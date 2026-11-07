@@ -1,4 +1,4 @@
-# Smart Campus Facility Issue Prediction & Prioritization System
+# FIPP — Facility Issue Prediction & Prioritization
 # Core Dependencies (Python 3.11+)
 
 # User Interface & Dashboard

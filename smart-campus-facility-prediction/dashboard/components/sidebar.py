@@ -65,10 +65,10 @@ def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = N
                 </div>
                 <div>
                     <h3 style="margin: 0; font-size: 1.05rem; color: #1A1A1A; font-weight: 700;">
-                        Smart Campus AI
+                        FIPP Intelligence
                     </h3>
                     <p style="margin: 0; font-size: 0.76rem; color: #555555;">
-                        Facility Management Intelligence
+                        Facility Issue Prediction &amp; Prioritization
                     </p>
                 </div>
             </div>
@@ -182,7 +182,7 @@ def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = N
     st.markdown(
         """
         <div style="font-size: 0.72rem; color: #767676; text-align: center; margin-top: 1rem;">
-            Smart Campus v0.4.0 • Light Theme
+            FIPP v0.4.0 • Light Theme
         </div>
         """,
         unsafe_allow_html=True,

@@ -1,4 +1,4 @@
-# Smart Campus Facility Issue Prediction & Prioritization System
+# FIPP — Facility Issue Prediction & Prioritization
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Framework Streamlit](https://img.shields.io/badge/framework-Streamlit-FF4B4B.svg)](https://streamlit.io/)

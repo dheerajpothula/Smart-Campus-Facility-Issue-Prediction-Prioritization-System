@@ -47,7 +47,7 @@ def render_login_screen(role: str) -> None:
                 🏫
             </div>
             <h1 style="font-size: 1.95rem; color: #1A1A1A; margin-bottom: 0.25rem; font-weight: 700; letter-spacing: -0.02em;">
-                Smart Campus Facility Issue Prediction & Prioritization System
+                FIPP — Facility Issue Prediction &amp; Prioritization
             </h1>
         </div>
         """,

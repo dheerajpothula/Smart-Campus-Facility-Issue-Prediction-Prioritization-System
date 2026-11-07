@@ -1,7 +1,7 @@
 @echo off
 setlocal
 echo ====================================================================
-echo  Smart Campus Facility Issue Prediction & Prioritization System
+echo  FIPP — Facility Issue Prediction & Prioritization
 echo  Pushing code to GitHub...
 echo ====================================================================
 echo.

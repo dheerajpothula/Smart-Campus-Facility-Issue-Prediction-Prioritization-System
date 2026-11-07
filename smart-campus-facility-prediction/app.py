@@ -1,5 +1,5 @@
 """
-Smart Campus Facility Issue Prediction & Prioritization System
+FIPP — Facility Issue Prediction & Prioritization
 Main Application Entry Point with Role-Based Access Control, Dedicated Login Flow,
 and Right-Side Admin Sidebar.
 Adheres strictly to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2).
@@ -35,7 +35,7 @@ from dashboard.pages import (
 def configure_page() -> None:
     """Sets standard Streamlit page configuration and injects clean light theme."""
     st.set_page_config(
-        page_title="Smart Campus Facility Issue AI",
+        page_title="FIPP — Facility Issue Prediction & Prioritization",
         page_icon="🏫",
         layout="wide",
         initial_sidebar_state="collapsed",

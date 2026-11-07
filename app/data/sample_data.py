@@ -1,5 +1,5 @@
 """
-Historical Sample Dataset for Smart Campus Facility Issue Prediction & Prioritization System.
+Historical Sample Dataset for FIPP — Facility Issue Prediction & Prioritization.
 All sample records are strictly labeled as is_demo=True to maintain clear separation
 between demonstration data and live campus submissions.
 """

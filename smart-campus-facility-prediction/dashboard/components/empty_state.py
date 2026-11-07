@@ -1,5 +1,5 @@
 """
-Empty state component for Smart Campus Facility Issue Prediction & Prioritization System.
+Empty state component for FIPP — Facility Issue Prediction & Prioritization.
 Provides a clean, uniform, and professional empty-state visual with context and roadmap notes.
 """
 import streamlit as st

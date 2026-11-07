@@ -1,5 +1,5 @@
 """
-Launcher script for Smart Campus Facility Issue Prediction & Prioritization System.
+Launcher script for FIPP — Facility Issue Prediction & Prioritization.
 Starts the FastAPI application with Uvicorn on an available local port.
 """
 
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     port = find_open_port(8000)
     url = f"http://127.0.0.1:{port}"
     print("=" * 65)
-    print("  Smart Campus Facility Issue Prediction & Prioritization System")
+    print("  FIPP — Facility Issue Prediction & Prioritization")
     print(f"  Live Server: {url}")
     print("  Opening browser automatically...")
     print("  Press Ctrl+C to stop the server.")

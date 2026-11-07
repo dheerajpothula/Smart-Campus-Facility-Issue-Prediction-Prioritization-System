@@ -1,3 +1,3 @@
 """
-Test suite for Smart Campus Facility Issue Prediction & Prioritization System.
+Test suite for FIPP — Facility Issue Prediction & Prioritization.
 """
