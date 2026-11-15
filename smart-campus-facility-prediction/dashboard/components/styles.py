@@ -1,5 +1,5 @@
 """
-Global Light Theme Styling and UI Utilities.
+Global Light Theme Styling and UI Utilities for FIPP.
 Strict 60/30/10 Color Harmony with High-Contrast Accessible Buttons:
 - 60% Warm Chalk: #FDFBF7 (background canvas, large areas)
 - 30% Deep Charcoal: #1A1A1A (typography, icons, thin borders, headers)
@@ -50,9 +50,10 @@ GLOBAL_LIGHT_THEME_CSS = """
         --card-bg: #FFFFFF;
         --card-border: #EAE3D2;
 
-        --radius: 10px;
+        --radius: 12px;
+        --radius-sm: 8px;
         --shadow-soft: 0 1px 3px rgba(26, 26, 26, 0.04), 0 4px 6px -1px rgba(26, 26, 26, 0.03);
-        --shadow-hover: 0 10px 15px -3px rgba(26, 26, 26, 0.06), 0 4px 6px -4px rgba(26, 26, 26, 0.03);
+        --shadow-hover: 0 8px 16px -2px rgba(26, 26, 26, 0.06), 0 4px 6px -4px rgba(26, 26, 26, 0.03);
     }
 
     /* Enforce Warm Chalk background and Deep Charcoal readable typography */
@@ -64,7 +65,7 @@ GLOBAL_LIGHT_THEME_CSS = """
 
     /* Main view container padding */
     .block-container {
-        padding-top: 1.8rem !important;
+        padding-top: 1.5rem !important;
         padding-bottom: 3.5rem !important;
         max-width: 1320px !important;
     }
@@ -79,21 +80,22 @@ GLOBAL_LIGHT_THEME_CSS = """
         color: var(--deep-charcoal) !important;
         font-weight: 700 !important;
         font-size: 1.85rem !important;
-        letter-spacing: -0.02em !important;
-        margin-bottom: 0.4rem !important;
+        letter-spacing: -0.025em !important;
+        margin-bottom: 0.35rem !important;
     }
     h2 {
         color: var(--deep-charcoal) !important;
         font-weight: 600 !important;
         font-size: 1.35rem !important;
-        letter-spacing: -0.01em !important;
-        margin-top: 1.2rem !important;
-        margin-bottom: 0.5rem !important;
+        letter-spacing: -0.015em !important;
+        margin-top: 1.1rem !important;
+        margin-bottom: 0.45rem !important;
     }
     h3 {
         color: var(--deep-charcoal) !important;
         font-weight: 600 !important;
         font-size: 1.12rem !important;
+        letter-spacing: -0.01em !important;
         margin-bottom: 0.35rem !important;
     }
     p, li, span {
@@ -125,7 +127,7 @@ GLOBAL_LIGHT_THEME_CSS = """
         background-color: var(--primary-btn-bg) !important;
         color: var(--primary-btn-text) !important;
         border: 1px solid var(--primary-btn-border) !important;
-        border-radius: 8px !important;
+        border-radius: var(--radius-sm) !important;
         font-weight: 600 !important;
         font-size: 0.9rem !important;
         padding: 0.55rem 1.25rem !important;
@@ -193,7 +195,7 @@ GLOBAL_LIGHT_THEME_CSS = """
         background-color: var(--secondary-btn-bg) !important;
         color: var(--secondary-btn-text) !important;
         border: 1px solid var(--secondary-btn-border) !important;
-        border-radius: 8px !important;
+        border-radius: var(--radius-sm) !important;
         font-weight: 600 !important;
         font-size: 0.9rem !important;
         padding: 0.55rem 1.25rem !important;
@@ -260,7 +262,7 @@ GLOBAL_LIGHT_THEME_CSS = """
         background-color: transparent !important;
         color: var(--deep-charcoal) !important;
         border: 1px solid var(--deep-charcoal) !important;
-        border-radius: 8px !important;
+        border-radius: var(--radius-sm) !important;
         font-weight: 600 !important;
         font-size: 0.9rem !important;
         padding: 0.55rem 1.25rem !important;
@@ -372,12 +374,12 @@ GLOBAL_LIGHT_THEME_CSS = """
         margin-top: 0.3rem;
     }
 
-    /* Inputs, Selectboxes, Tabs */
+    /* Inputs, Selectboxes, Textareas */
     .stTextInput input, .stSelectbox select, .stTextArea textarea,
     [data-baseweb="select"] {
         background-color: #FFFFFF !important;
         border: 1px solid var(--soft-tan-border) !important;
-        border-radius: 8px !important;
+        border-radius: var(--radius-sm) !important;
         color: var(--deep-charcoal) !important;
         font-size: 0.92rem !important;
     }
@@ -386,6 +388,31 @@ GLOBAL_LIGHT_THEME_CSS = """
         border-color: var(--primary-btn-bg) !important;
         outline: none !important;
         box-shadow: 0 0 0 3px rgba(117, 96, 68, 0.25) !important;
+    }
+
+    /* Streamlit Expanders */
+    [data-testid="stExpander"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid var(--soft-tan) !important;
+        border-radius: var(--radius) !important;
+        box-shadow: var(--shadow-soft) !important;
+        margin-bottom: 1rem !important;
+        overflow: hidden !important;
+    }
+    [data-testid="stExpander"] details summary {
+        color: var(--deep-charcoal) !important;
+        font-weight: 600 !important;
+        font-size: 0.92rem !important;
+    }
+
+    /* Streamlit Sliders (Replace default red/blue with FIPP brown/tan) */
+    [data-testid="stSlider"] [role="slider"] {
+        background-color: var(--primary-btn-bg) !important;
+        border: 2px solid #FFFFFF !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    }
+    [data-testid="stSlider"] [data-baseweb="slider"] div {
+        background-color: var(--soft-tan) !important;
     }
 
     /* Tab navigation polish */
@@ -421,6 +448,25 @@ GLOBAL_LIGHT_THEME_CSS = """
     [data-testid="stRadio"] label:hover {
         background-color: var(--soft-tan-light) !important;
     }
+    [data-testid="stRadio"] input:checked + div {
+        border-color: var(--primary-btn-bg) !important;
+        background-color: var(--primary-btn-bg) !important;
+    }
+
+    /* Streamlit Alert Softening */
+    [data-testid="stAlert"] {
+        border-radius: var(--radius-sm) !important;
+        border: 1px solid var(--soft-tan-border) !important;
+        background-color: var(--soft-tan-light) !important;
+        color: var(--deep-charcoal) !important;
+    }
+
+    /* Clean Dataframe Container */
+    [data-testid="stDataFrame"] {
+        border: 1px solid var(--soft-tan) !important;
+        border-radius: var(--radius-sm) !important;
+        overflow: hidden !important;
+    }
 
     /* File uploader button */
     [data-testid="stFileUploader"] section button {
@@ -442,6 +488,27 @@ GLOBAL_LIGHT_THEME_CSS = """
 def apply_theme() -> None:
     """Injects standard 60/30/10 light theme CSS with high-contrast button styling."""
     st.markdown(GLOBAL_LIGHT_THEME_CSS, unsafe_allow_html=True)
+
+
+def render_section_header(title: str, subtitle: str = "", badge: str = "") -> None:
+    """
+    Renders a unified SaaS page or section header adhering strictly to FIPP typography.
+    Replaces inconsistent markdown h1 tags across views.
+    """
+    badge_html = f'<span style="background-color: #EAE3D2; color: #1A1A1A; border: 1px solid #D8CFBD; font-size: 0.72rem; font-weight: 700; padding: 0.18rem 0.5rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.4rem; display: inline-block;">{badge}</span>' if badge else ""
+    sub_html = f'<p style="margin: 0.2rem 0 0 0; color: #555555; font-size: 0.92rem; line-height: 1.5;">{subtitle}</p>' if subtitle else ""
+    st.markdown(
+        f"""
+        <div style="margin-bottom: 1.25rem;">
+            {badge_html}
+            <h1 style="margin: 0; font-size: 1.75rem; color: #1A1A1A; font-weight: 700; letter-spacing: -0.025em;">
+                {title}
+            </h1>
+            {sub_html}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def get_priority_badge(priority: str) -> str:
