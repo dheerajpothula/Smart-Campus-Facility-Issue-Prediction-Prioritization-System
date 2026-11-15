@@ -143,12 +143,11 @@ class TestBadgesAndTheme(unittest.TestCase):
         self.assertNotIn("Intelligent campus maintenance operations", src)
         self.assertNotIn("Role-Based Access Demo", src)
 
-        # Arrow checks
-        self.assertNotIn("→", src)
-
-        # Clean descriptions
-        self.assertIn("Manage campus maintenance, facility issues, AI predictions, and maintenance priorities.", src)
-        self.assertIn("Report facility issues and track your complaints.", src)
+        # Clean descriptions matching FIPP reference mockup
+        self.assertIn("Manage system operations, monitor facility issues, and prioritize maintenance tasks.", src)
+        self.assertIn("Report facility issues, track their status, and view updates.", src)
+        self.assertIn("Continue as Administrator →", src)
+        self.assertIn("Continue as Student →", src)
 
 
 class TestPageExecution(unittest.TestCase):
