@@ -209,7 +209,7 @@ def render_role_selection_screen() -> None:
         """
         <div class="fipp-curved-top-bar">
             <h1 class="fipp-title-heading">
-                <span class="fipp-title-dark" style="color: #1A1A1A;">FIPP - </span><span class="fipp-title-brown" style="color: #756044;">Facility Issue Prediction &amp; Prioritisation System</span>
+                <span class="fipp-title-dark" style="color: #1A1A1A;">FIPP - </span><span class="fipp-title-brown" style="color: #756044;">Facility Issue Prediction &amp; Prioritisation</span>
             </h1>
             <div class="fipp-title-underline" style="background-color: #756044;"></div>
         </div>
