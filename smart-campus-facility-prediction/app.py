@@ -1,8 +1,8 @@
 """
-FIPP — Facility Issue Prediction & Prioritization
-Main Application Entry Point with Role-Based Access Control, Dedicated Login Flow,
-and Right-Side Admin Sidebar.
-Adheres strictly to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2).
+FIPP — Facility Issue Prediction & Prioritisation
+Main Application Entry Point with Modern Sage & Forest Theme, Role-Based Access Control,
+Dedicated Login Flow, Left-Side Admin Navigation Sidebar, and Student Portal.
+Palette: Soft Ivory (#F5F7F2), Forest Green (#203A32), Sage (#A8B9A3), Pale Sage (#DCE5D8), White (#FFFFFF).
 """
 import sys
 from pathlib import Path
@@ -33,12 +33,12 @@ from dashboard.pages import (
 
 
 def configure_page() -> None:
-    """Sets standard Streamlit page configuration and injects clean light theme."""
+    """Sets standard Streamlit wide page configuration and injects Modern Sage & Forest theme."""
     st.set_page_config(
-        page_title="FIPP — Facility Issue Prediction & Prioritization",
+        page_title="FIPP — Facility Issue Prediction & Prioritisation",
         page_icon="🏫",
         layout="wide",
-        initial_sidebar_state="collapsed",
+        initial_sidebar_state="expanded",
     )
     apply_theme()
 
@@ -85,7 +85,7 @@ def main() -> None:
     selected_role = st.session_state.get("selected_role")
     user_role = st.session_state.get("user_role")
 
-    # Seamless support for test harnesses that assign user_role directly
+    # Support for test harnesses that assign user_role directly
     if not auth and user_role in ["student", "admin"]:
         if user_role == "student":
             auth = {"role": "student", "name": "Student", "id": "STU-TEST-001"}
@@ -109,26 +109,25 @@ def main() -> None:
         return
 
     # =========================================================================
-    # 3. ROLE: Student Dashboard
+    # 3. ROLE: Student Dashboard (Spacious, Clean Student Experience)
     # =========================================================================
     if auth and auth.get("role") == "student":
         student_dashboard.render_student_dashboard()
         return
 
     # =========================================================================
-    # 4. ROLE: Administrator Dashboard (Content on Left, Sidebar on Right)
+    # 4. ROLE: Administrator Dashboard (LEFT-SIDE Navigation Sidebar & Full Main Workspace)
     # =========================================================================
     if auth and auth.get("role") == "admin":
         admin_name = auth.get("name", "Administrator")
         admin_id = auth.get("id", "ADM-2026-001")
 
-        col_content, col_sidebar = st.columns([3.5, 1.1], gap="large")
-
-        with col_sidebar:
+        # LEFT-SIDE navigation sidebar
+        with st.sidebar:
             selected_page = render_admin_sidebar(admin_name=admin_name, admin_id=admin_id)
 
-        with col_content:
-            render_admin_content(selected_page)
+        # Spacious main dashboard workspace
+        render_admin_content(selected_page)
         return
 
     # Fallback to role selection

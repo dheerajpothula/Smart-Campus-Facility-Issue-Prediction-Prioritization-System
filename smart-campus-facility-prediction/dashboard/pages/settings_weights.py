@@ -1,7 +1,12 @@
 """
 Settings & Priority Weights Configuration Page.
 Allows campus administrators to configure the multi-criteria priority scoring weights with validation and live updates.
-Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2), and Primary Brown (#756044).
+Modern Sage & Forest Theme:
+- Soft Ivory: #F5F7F2
+- Forest Green: #203A32
+- Sage: #A8B9A3
+- Pale Sage: #DCE5D8
+- White: #FFFFFF
 """
 import streamlit as st
 
@@ -26,17 +31,17 @@ def render_page() -> None:
 
     st.markdown(
         """
-        <div class="dashboard-card">
-            <h3 style="margin-top: 0; color: #1A1A1A; font-size: 1.15rem; font-weight: 700;">
+        <div class="dashboard-card" style="border: 1px solid #DCE5D8;">
+            <h3 style="margin-top: 0; color: #203A32; font-size: 1.15rem; font-weight: 700;">
                 📐 Mathematical Foundation: Multi-Criteria Priority Index (MCPI)
             </h3>
-            <p style="color: #4A4A4A; font-size: 0.9rem; margin-bottom: 0.5rem; line-height: 1.5;">
+            <p style="color: #4A6357; font-size: 0.9rem; margin-bottom: 0.5rem; line-height: 1.5;">
                 Every active work order is ranked by calculating an objective composite score (0–100):
             </p>
-            <div style="background-color: #FDFBF7; border: 1px solid #EAE3D2; border-radius: 6px; padding: 0.85rem 1.1rem; font-family: monospace; font-size: 0.95rem; color: #756044; font-weight: 700; margin-bottom: 0.6rem;">
+            <div style="background-color: #F5F7F2; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.85rem 1.1rem; font-family: monospace; font-size: 0.95rem; color: #203A32; font-weight: 700; margin-bottom: 0.6rem;">
                 Priority Score = 100 × [ (w₁ × Severity) + (w₂ × Criticality) + (w₃ × Recurrence) + (w₄ × Impact) ]
             </div>
-            <p style="color: #555555; font-size: 0.84rem; margin: 0;">
+            <p style="color: #6D8276; font-size: 0.84rem; margin: 0;">
                 <strong>Constraint:</strong> The sum of all four coefficients must equal 1.0 (100%) to maintain a calibrated 0–100 score distribution.
             </p>
         </div>

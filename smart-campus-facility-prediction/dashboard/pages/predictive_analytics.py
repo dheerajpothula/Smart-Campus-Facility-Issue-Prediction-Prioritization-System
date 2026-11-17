@@ -1,7 +1,12 @@
 """
 Predictive Maintenance Page.
 Analyzes campus vulnerability, forecasts recurring equipment failures, and provides proactive servicing recommendations.
-Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2), and Primary Brown (#756044).
+Modern Sage & Forest Theme:
+- Soft Ivory: #F5F7F2
+- Forest Green: #203A32
+- Sage: #A8B9A3
+- Pale Sage: #DCE5D8
+- White: #FFFFFF
 """
 import streamlit as st
 import pandas as pd
@@ -34,11 +39,11 @@ def render_page() -> None:
     # Methodological Disclaimer Banner
     st.markdown(
         """
-        <div style="background-color: #FFFFFF; border: 1px solid #EAE3D2; border-left: 4px solid #756044; border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: #1A1A1A; font-size: 0.92rem; margin-bottom: 0.2rem;">
+        <div style="background-color: #FFFFFF; border: 1px solid #DCE5D8; border-left: 4px solid #203A32; border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: #203A32; font-size: 0.92rem; margin-bottom: 0.2rem;">
                 🛡️ Algorithmic Forecast Notice
             </div>
-            <p style="margin: 0; font-size: 0.84rem; color: #555555; line-height: 1.45;">
+            <p style="margin: 0; font-size: 0.84rem; color: #4A6357; line-height: 1.45;">
                 <strong>Prediction ≠ Confirmed Physical Breakdown.</strong> Algorithmic issue-risk forecast based on historical recurrence cycles, equipment MTBF, and footfall telemetry.
             </p>
         </div>
@@ -89,23 +94,23 @@ def render_page() -> None:
         if top_risk is not None:
             st.markdown(
                 f"""
-                <div class="dashboard-card" style="border: 1px solid #EAE3D2; background-color: #FFFFFF;">
-                    <span style="font-size: 0.72rem; font-weight: 700; color: #756044; background: #EAE3D2; border-radius: 4px; padding: 0.15rem 0.5rem; text-transform: uppercase;">
+                <div class="dashboard-card" style="border: 1px solid #DCE5D8; background-color: #FFFFFF;">
+                    <span style="font-size: 0.72rem; font-weight: 700; color: #203A32; background: #DCE5D8; border-radius: 4px; padding: 0.15rem 0.5rem; text-transform: uppercase;">
                         Highest Urgency Area
                     </span>
-                    <h3 style="margin: 0.4rem 0 0.2rem 0; font-size: 1.2rem; color: #1A1A1A;">
+                    <h3 style="margin: 0.4rem 0 0.2rem 0; font-size: 1.2rem; color: #203A32;">
                         {top_risk['location']}
                     </h3>
-                    <p style="font-size: 0.85rem; color: #555555; margin-bottom: 0.8rem;">
+                    <p style="font-size: 0.85rem; color: #4A6357; margin-bottom: 0.8rem;">
                         Subsystem: <strong>{top_risk['facility_type']}</strong>
                     </p>
-                    <div style="font-size: 1.85rem; font-weight: 800; color: #756044; margin-bottom: 0.4rem;">
-                        {top_risk['Calculated_Risk_Score']} <span style="font-size: 0.95rem; font-weight: 500; color: #555555;">Risk Score / 100</span>
+                    <div style="font-size: 1.85rem; font-weight: 800; color: #203A32; margin-bottom: 0.4rem;">
+                        {top_risk['Calculated_Risk_Score']} <span style="font-size: 0.95rem; font-weight: 500; color: #6D8276;">Risk Score / 100</span>
                     </div>
-                    <p style="font-size: 0.84rem; color: #4A4A4A; line-height: 1.45; margin-bottom: 0.75rem;">
+                    <p style="font-size: 0.84rem; color: #203A32; line-height: 1.45; margin-bottom: 0.75rem;">
                         High recurring failure frequency detected. Recommended action: schedule comprehensive preventive maintenance inspection before peak class hours.
                     </p>
-                    <div style="border-top: 1px solid #EAE3D2; padding-top: 0.6rem; font-size: 0.8rem; color: #555555;">
+                    <div style="border-top: 1px solid #DCE5D8; padding-top: 0.6rem; font-size: 0.8rem; color: #4A6357;">
                         • Peak Severity: <strong>{top_risk['Max_Severity']}</strong><br>
                         • Cumulative Incidents: <strong>{top_risk['Incident_Count']}</strong>
                     </div>
@@ -123,13 +128,13 @@ def render_page() -> None:
     with c_rec1:
         st.markdown(
             """
-            <div class="dashboard-card">
-                <h4 style="margin: 0 0 0.35rem 0; color: #1A1A1A; font-weight: 700;">Hostel Block Washroom Valves & Plumbing</h4>
-                <p style="font-size: 0.85rem; color: #4A4A4A; line-height: 1.5; margin-bottom: 0.75rem;">
+            <div class="dashboard-card" style="border: 1px solid #DCE5D8;">
+                <h4 style="margin: 0 0 0.35rem 0; color: #203A32; font-weight: 700;">Hostel Block Washroom Valves &amp; Plumbing</h4>
+                <p style="font-size: 0.85rem; color: #4A6357; line-height: 1.5; margin-bottom: 0.75rem;">
                     Repeated flush valve leakages correlate with weekend water pressure fluctuations. Proactive pressure regulator installation recommended to prevent recurring pipe bursts.
                 </p>
-                <div style="font-size: 0.78rem; color: #756044; font-weight: 600;">
-                    Action: Replace gasket assemblies & install pressure balancing valve.
+                <div style="font-size: 0.78rem; color: #203A32; font-weight: 700;">
+                    Action: Replace gasket assemblies &amp; install pressure balancing valve.
                 </div>
             </div>
             """,
@@ -139,13 +144,13 @@ def render_page() -> None:
     with c_rec2:
         st.markdown(
             """
-            <div class="dashboard-card">
-                <h4 style="margin: 0 0 0.35rem 0; color: #1A1A1A; font-weight: 700;">Data Center & Server Room Precision HVAC</h4>
-                <p style="font-size: 0.85rem; color: #4A4A4A; line-height: 1.5; margin-bottom: 0.75rem;">
+            <div class="dashboard-card" style="border: 1px solid #DCE5D8;">
+                <h4 style="margin: 0 0 0.35rem 0; color: #203A32; font-weight: 700;">Data Center &amp; Server Room Precision HVAC</h4>
+                <p style="font-size: 0.85rem; color: #4A6357; line-height: 1.5; margin-bottom: 0.75rem;">
                     Compressor tripping telemetry indicates heat exchanger coil fouling. Servicing prior to summer temperature spikes will prevent critical server room thermal shutdowns.
                 </p>
-                <div style="font-size: 0.78rem; color: #756044; font-weight: 600;">
-                    Action: Deep chemical condenser flush & sensor calibration.
+                <div style="font-size: 0.78rem; color: #203A32; font-weight: 700;">
+                    Action: Deep chemical condenser flush &amp; sensor calibration.
                 </div>
             </div>
             """,

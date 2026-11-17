@@ -1,7 +1,12 @@
 """
 AI Analysis & Decision Pipeline Page.
 Presents the 5-stage automated machine learning and decision-support pipeline for campus facility complaints.
-Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2), and Primary Brown (#756044).
+Modern Sage & Forest Theme:
+- Soft Ivory: #F5F7F2
+- Forest Green: #203A32
+- Sage: #A8B9A3
+- Pale Sage: #DCE5D8
+- White: #FFFFFF
 """
 import streamlit as st
 import pandas as pd
@@ -23,38 +28,38 @@ def render_page() -> None:
     st.markdown(
         """
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.85rem; margin-bottom: 2rem;">
-            <div class="dashboard-card" style="border-top: 3px solid #756044; margin-bottom: 0;">
-                <span style="font-size: 0.72rem; font-weight: 700; color: #756044; text-transform: uppercase;">Stage 1</span>
-                <h4 style="margin: 0.3rem 0; color: #1A1A1A; font-size: 1rem; font-weight: 700;">1. Complaint Intake</h4>
-                <p style="color: #555555; font-size: 0.82rem; margin: 0; line-height: 1.45;">
+            <div class="dashboard-card" style="border-top: 3px solid #203A32; margin-bottom: 0;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #203A32; text-transform: uppercase;">Stage 1</span>
+                <h4 style="margin: 0.3rem 0; color: #203A32; font-size: 1rem; font-weight: 700;">1. Complaint Intake</h4>
+                <p style="color: #4A6357; font-size: 0.82rem; margin: 0; line-height: 1.45;">
                     Raw natural language description, location tag, and reporter metadata ingested.
                 </p>
             </div>
-            <div class="dashboard-card" style="border-top: 3px solid #756044; margin-bottom: 0;">
-                <span style="font-size: 0.72rem; font-weight: 700; color: #756044; text-transform: uppercase;">Stage 2</span>
-                <h4 style="margin: 0.3rem 0; color: #1A1A1A; font-size: 1rem; font-weight: 700;">2. NLP Classification</h4>
-                <p style="color: #555555; font-size: 0.82rem; margin: 0; line-height: 1.45;">
-                    TF-IDF feature extraction categorizes department (Electrical, Plumbing, HVAC) & severity.
+            <div class="dashboard-card" style="border-top: 3px solid #203A32; margin-bottom: 0;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #203A32; text-transform: uppercase;">Stage 2</span>
+                <h4 style="margin: 0.3rem 0; color: #203A32; font-size: 1rem; font-weight: 700;">2. NLP Classification</h4>
+                <p style="color: #4A6357; font-size: 0.82rem; margin: 0; line-height: 1.45;">
+                    TF-IDF feature extraction categorizes department (Electrical, Plumbing, HVAC) &amp; severity.
                 </p>
             </div>
-            <div class="dashboard-card" style="border-top: 3px solid #756044; margin-bottom: 0;">
-                <span style="font-size: 0.72rem; font-weight: 700; color: #756044; text-transform: uppercase;">Stage 3</span>
-                <h4 style="margin: 0.3rem 0; color: #1A1A1A; font-size: 1rem; font-weight: 700;">3. Risk Prediction</h4>
-                <p style="color: #555555; font-size: 0.82rem; margin: 0; line-height: 1.45;">
+            <div class="dashboard-card" style="border-top: 3px solid #A8B9A3; margin-bottom: 0;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #203A32; text-transform: uppercase;">Stage 3</span>
+                <h4 style="margin: 0.3rem 0; color: #203A32; font-size: 1rem; font-weight: 700;">3. Risk Prediction</h4>
+                <p style="color: #4A6357; font-size: 0.82rem; margin: 0; line-height: 1.45;">
                     Evaluates historical breakdown frequency, equipment age, and spatial vulnerability.
                 </p>
             </div>
-            <div class="dashboard-card" style="border-top: 3px solid #756044; margin-bottom: 0;">
-                <span style="font-size: 0.72rem; font-weight: 700; color: #756044; text-transform: uppercase;">Stage 4</span>
-                <h4 style="margin: 0.3rem 0; color: #1A1A1A; font-size: 1rem; font-weight: 700;">4. Priority Scoring</h4>
-                <p style="color: #555555; font-size: 0.82rem; margin: 0; line-height: 1.45;">
-                    Multi-Criteria Priority Index (MCPI) calculates 0-100 score & assigns P1-P4 tier.
+            <div class="dashboard-card" style="border-top: 3px solid #A8B9A3; margin-bottom: 0;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #203A32; text-transform: uppercase;">Stage 4</span>
+                <h4 style="margin: 0.3rem 0; color: #203A32; font-size: 1rem; font-weight: 700;">4. Priority Scoring</h4>
+                <p style="color: #4A6357; font-size: 0.82rem; margin: 0; line-height: 1.45;">
+                    Multi-Criteria Priority Index (MCPI) calculates 0-100 score &amp; assigns P1-P4 tier.
                 </p>
             </div>
-            <div class="dashboard-card" style="border-top: 3px solid #1A1A1A; margin-bottom: 0;">
-                <span style="font-size: 0.72rem; font-weight: 700; color: #1A1A1A; text-transform: uppercase;">Stage 5</span>
-                <h4 style="margin: 0.3rem 0; color: #1A1A1A; font-size: 1rem; font-weight: 700;">5. Dispatch Action</h4>
-                <p style="color: #555555; font-size: 0.82rem; margin: 0; line-height: 1.45;">
+            <div class="dashboard-card" style="border-top: 3px solid #203A32; margin-bottom: 0;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #203A32; text-transform: uppercase;">Stage 5</span>
+                <h4 style="margin: 0.3rem 0; color: #203A32; font-size: 1rem; font-weight: 700;">5. Dispatch Action</h4>
+                <p style="color: #4A6357; font-size: 0.82rem; margin: 0; line-height: 1.45;">
                     Automated SLA assignment, technician routing, and spare parts requisition advice.
                 </p>
             </div>
@@ -95,42 +100,42 @@ def render_page() -> None:
         st.markdown(
             f"""
             <div class="dashboard-card">
-                <div style="border-bottom: 1px solid #EAE3D2; padding-bottom: 0.75rem; margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="border-bottom: 1px solid #DCE5D8; padding-bottom: 0.75rem; margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                     <div>
-                        <strong style="color: #1A1A1A; font-size: 1.15rem;">Ticket {record['complaint_id']} Evaluation Trace</strong>
-                        <span style="font-size: 0.82rem; color: #555555; margin-left: 0.5rem;">📍 {record.get('location')}</span>
+                        <strong style="color: #203A32; font-size: 1.15rem;">Ticket {record['complaint_id']} Evaluation Trace</strong>
+                        <span style="font-size: 0.82rem; color: #4A6357; margin-left: 0.5rem;">📍 {record.get('location')}</span>
                     </div>
                     <div>
                         {get_priority_badge(tier)}
-                        <span style="font-weight: 700; font-size: 1.15rem; color: #756044; margin-left: 0.6rem;">Priority Score: {score} / 100</span>
+                        <span style="font-weight: 700; font-size: 1.15rem; color: #203A32; margin-left: 0.6rem;">Priority Score: {score} / 100</span>
                     </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
                     <div>
-                        <h4 style="font-size: 0.92rem; color: #1A1A1A; font-weight: 700; margin-bottom: 0.25rem;">Stage 1: Raw Intake</h4>
-                        <p style="font-size: 0.84rem; color: #4A4A4A; margin: 0; line-height: 1.5;">
+                        <h4 style="font-size: 0.92rem; color: #203A32; font-weight: 700; margin-bottom: 0.25rem;">Stage 1: Raw Intake</h4>
+                        <p style="font-size: 0.84rem; color: #4A6357; margin: 0; line-height: 1.5;">
                             <strong>Description:</strong> "{record.get('description')}"<br>
                             <strong>Reporter:</strong> {record.get('reported_by', 'Student')} | <strong>Reported:</strong> {record.get('date_reported')}
                         </p>
                     </div>
                     <div>
-                        <h4 style="font-size: 0.92rem; color: #1A1A1A; font-weight: 700; margin-bottom: 0.25rem;">Stage 2: NLP Classification</h4>
-                        <p style="font-size: 0.84rem; color: #4A4A4A; margin: 0; line-height: 1.5;">
+                        <h4 style="font-size: 0.92rem; color: #203A32; font-weight: 700; margin-bottom: 0.25rem;">Stage 2: NLP Classification</h4>
+                        <p style="font-size: 0.84rem; color: #4A6357; margin: 0; line-height: 1.5;">
                             <strong>Detected Subsystem:</strong> {record.get('facility_type')} (Confidence: 94.2%)<br>
-                            <strong>Extracted Severity:</strong> {record.get('severity')} | <strong>Keywords:</strong> <code>{record.get('facility_type').lower()}</code>
+                            <strong>Extracted Severity:</strong> {record.get('severity')} | <strong>Keywords:</strong> <code>{str(record.get('facility_type', '')).lower()}</code>
                         </p>
                     </div>
                     <div>
-                        <h4 style="font-size: 0.92rem; color: #1A1A1A; font-weight: 700; margin-bottom: 0.25rem;">Stage 3: Recurrence & Spatial Risk</h4>
-                        <p style="font-size: 0.84rem; color: #4A4A4A; margin: 0; line-height: 1.5;">
+                        <h4 style="font-size: 0.92rem; color: #203A32; font-weight: 700; margin-bottom: 0.25rem;">Stage 3: Recurrence &amp; Spatial Risk</h4>
+                        <p style="font-size: 0.84rem; color: #4A6357; margin: 0; line-height: 1.5;">
                             <strong>Recurrence Probability:</strong> {int(record.get('recurrence_risk', 0.2)*100)}%<br>
                             <strong>Prior Failures in Zone:</strong> {record.get('recurrence_count', 0)} incidents in past 60 days
                         </p>
                     </div>
                     <div>
-                        <h4 style="font-size: 0.92rem; color: #1A1A1A; font-weight: 700; margin-bottom: 0.25rem;">Stage 4: Multi-Criteria Scoring</h4>
-                        <p style="font-size: 0.84rem; color: #4A4A4A; margin: 0; line-height: 1.5;">
+                        <h4 style="font-size: 0.92rem; color: #203A32; font-weight: 700; margin-bottom: 0.25rem;">Stage 4: Multi-Criteria Scoring</h4>
+                        <p style="font-size: 0.84rem; color: #4A6357; margin: 0; line-height: 1.5;">
                             <strong>Severity ({int(weights.severity*100)}%):</strong> +{breakdown['Severity Contribution']} pts<br>
                             <strong>Criticality ({int(weights.location_criticality*100)}%):</strong> +{breakdown['Location Criticality Contribution']} pts<br>
                             <strong>Recurrence ({int(weights.recurrence_probability*100)}%):</strong> +{breakdown['Recurrence Risk Contribution']} pts<br>
@@ -139,9 +144,9 @@ def render_page() -> None:
                     </div>
                 </div>
 
-                <div style="background-color: #FDFBF7; border: 1px solid #EAE3D2; border-radius: 8px; padding: 0.85rem 1.1rem; margin-top: 1.1rem;">
-                    <h4 style="font-size: 0.92rem; color: #756044; font-weight: 700; margin: 0 0 0.25rem 0;">Stage 5: Autonomous Maintenance Recommendation</h4>
-                    <p style="font-size: 0.86rem; color: #2D2D2D; margin: 0; line-height: 1.5;">
+                <div style="background-color: #F5F7F2; border: 1px solid #DCE5D8; border-radius: 8px; padding: 0.85rem 1.1rem; margin-top: 1.1rem;">
+                    <h4 style="font-size: 0.92rem; color: #203A32; font-weight: 700; margin: 0 0 0.25rem 0;">Stage 5: Autonomous Maintenance Recommendation</h4>
+                    <p style="font-size: 0.86rem; color: #203A32; margin: 0; line-height: 1.5;">
                         {record.get('action_taken', 'Immediate technician dispatch recommended based on high impact radius.')} 
                         Target Resolution SLA: <strong>{record.get('estimated_resolution')}</strong>.
                     </p>

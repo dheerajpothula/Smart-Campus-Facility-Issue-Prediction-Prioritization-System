@@ -1,6 +1,12 @@
 """
-Empty state component for FIPP — Facility Issue Prediction & Prioritization.
+Empty state component for FIPP — Facility Issue Prediction & Prioritisation.
 Provides a clean, uniform, and professional empty-state visual with context and roadmap notes.
+Modern Sage & Forest Theme:
+- Soft Ivory: #F5F7F2
+- Forest Green: #203A32
+- Sage: #A8B9A3
+- Pale Sage: #DCE5D8
+- White: #FFFFFF
 """
 import streamlit as st
 
@@ -14,7 +20,7 @@ def render_empty_state(
     badge_label: str = "Awaiting Data / Model",
 ) -> None:
     """
-    Renders an elegant empty state container.
+    Renders an elegant empty state container in Modern Sage & Forest palette.
 
     Args:
         title: Main heading for the empty state.
@@ -27,7 +33,7 @@ def render_empty_state(
     st.markdown(
         f"""
         <div style="
-            border: 1px dashed #D8CFBD;
+            border: 1px dashed #A8B9A3;
             border-radius: 12px;
             padding: 2.2rem;
             background-color: #FFFFFF;
@@ -36,18 +42,18 @@ def render_empty_state(
         ">
             <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">{icon}</div>
             <span style="
-                background-color: #EAE3D2;
-                color: #1A1A1A;
+                background-color: #DCE5D8;
+                color: #203A32;
                 font-size: 0.75rem;
-                font-weight: 600;
+                font-weight: 700;
                 padding: 0.25rem 0.75rem;
                 border-radius: 9999px;
                 letter-spacing: 0.05em;
                 text-transform: uppercase;
-                border: 1px solid #D8CFBD;
+                border: 1px solid #A8B9A3;
             ">{badge_label}</span>
-            <h3 style="color: #1A1A1A; margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 600;">{title}</h3>
-            <p style="color: #555555; font-size: 0.95rem; max-width: 620px; margin: 0 auto 1.2rem auto; line-height: 1.5;">
+            <h3 style="color: #203A32; margin-top: 1rem; margin-bottom: 0.5rem; font-weight: 700;">{title}</h3>
+            <p style="color: #4A6357; font-size: 0.95rem; max-width: 620px; margin: 0 auto 1.2rem auto; line-height: 1.5;">
                 <strong>{subtitle}</strong><br>{description}
             </p>
         </div>

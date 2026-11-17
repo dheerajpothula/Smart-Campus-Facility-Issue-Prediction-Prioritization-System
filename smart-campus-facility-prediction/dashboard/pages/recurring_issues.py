@@ -1,7 +1,12 @@
 """
 Chronic Recurring Problem Tracking Page.
 Tracks chronic infrastructure failures, frequency metrics, prior repair logs, and permanent root-cause overhaul plans.
-Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2), and Primary Brown (#756044).
+Modern Sage & Forest Theme:
+- Soft Ivory: #F5F7F2
+- Forest Green: #203A32
+- Sage: #A8B9A3
+- Pale Sage: #DCE5D8
+- White: #FFFFFF
 """
 import streamlit as st
 import pandas as pd
@@ -55,19 +60,19 @@ def render_page() -> None:
 
         st.markdown(
             f"""
-            <div class="dashboard-card" style="border-left: 4px solid #756044; margin-bottom: 1rem;">
+            <div class="dashboard-card" style="border-left: 4px solid #203A32; border: 1px solid #DCE5D8; margin-bottom: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
                     <div>
-                        <span style="font-family: monospace; font-size: 0.8rem; font-weight: 700; color: #1A1A1A; background-color: #EAE3D2; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #D8CFBD;">
+                        <span style="font-family: monospace; font-size: 0.8rem; font-weight: 700; color: #203A32; background-color: #DCE5D8; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #A8B9A3;">
                             {cid}
                         </span>
-                        <span style="font-size: 0.76rem; font-weight: 600; color: #1A1A1A; background-color: #F6F3EB; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.35rem; border: 1px solid #EAE3D2;">
+                        <span style="font-size: 0.76rem; font-weight: 600; color: #203A32; background-color: #F0F4ED; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.35rem; border: 1px solid #DCE5D8;">
                             {fac}
                         </span>
-                        <span style="font-size: 0.76rem; font-weight: 700; color: #756044; background-color: #EAE3D2; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.35rem; border: 1px solid #D8CFBD;">
+                        <span style="font-size: 0.76rem; font-weight: 700; color: #203A32; background-color: #DCE5D8; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.35rem; border: 1px solid #A8B9A3;">
                             🔁 {rec_count} Previous Incidents
                         </span>
-                        <h3 style="margin: 0.35rem 0 0.2rem 0; color: #1A1A1A; font-size: 1.15rem; font-weight: 700;">{title}</h3>
+                        <h3 style="margin: 0.35rem 0 0.2rem 0; color: #203A32; font-size: 1.15rem; font-weight: 700;">{title}</h3>
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.6rem;">
                         {get_priority_badge(row.get('priority_tier', 'High'))}
@@ -75,12 +80,12 @@ def render_page() -> None:
                     </div>
                 </div>
 
-                <p style="color: #4A4A4A; font-size: 0.9rem; margin: 0 0 0.75rem 0; line-height: 1.5;">
+                <p style="color: #203A32; font-size: 0.9rem; margin: 0 0 0.75rem 0; line-height: 1.5;">
                     {desc}
                 </p>
 
-                <div style="background-color: #FDFBF7; border: 1px solid #EAE3D2; border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 0.75rem;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.65rem; font-size: 0.84rem; color: #2D2D2D;">
+                <div style="background-color: #F5F7F2; border: 1px solid #DCE5D8; border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 0.75rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.65rem; font-size: 0.84rem; color: #203A32;">
                         <div>📍 <strong>Location:</strong> {loc}</div>
                         <div>📊 <strong>Frequency:</strong> {rec_rate}</div>
                         <div>🔧 <strong>Latest Action:</strong> {action}</div>
@@ -88,7 +93,7 @@ def render_page() -> None:
                     </div>
                 </div>
 
-                <div style="font-size: 0.82rem; color: #1A1A1A; background-color: #EAE3D2; border: 1px solid #D8CFBD; padding: 0.5rem 0.85rem; border-radius: 6px; font-weight: 500;">
+                <div style="font-size: 0.82rem; color: #203A32; background-color: #DCE5D8; border: 1px solid #A8B9A3; padding: 0.5rem 0.85rem; border-radius: 6px; font-weight: 600;">
                     🛡️ <strong>Engineering Recommendation:</strong> Cease repetitive spot repairs. Request procurement of complete subsystem overhaul package.
                 </div>
             </div>

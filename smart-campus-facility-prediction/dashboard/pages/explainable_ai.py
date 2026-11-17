@@ -1,7 +1,12 @@
 """
 Explainable AI (SHAP) Page.
 Provides transparent feature-attribution visualizations and natural-language interpretations for model predictions.
-Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2), and Primary Brown (#756044).
+Modern Sage & Forest Theme:
+- Soft Ivory: #F5F7F2
+- Forest Green: #203A32
+- Sage: #A8B9A3
+- Pale Sage: #DCE5D8
+- White: #FFFFFF
 """
 import streamlit as st
 import pandas as pd
@@ -51,18 +56,18 @@ def render_page() -> None:
     # Explanation Header Card
     st.markdown(
         f"""
-        <div class="dashboard-card">
+        <div class="dashboard-card" style="border: 1px solid #DCE5D8;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <div>
-                    <span style="font-family: monospace; font-weight: 700; color: #1A1A1A; background-color: #EAE3D2; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #D8CFBD;">
+                    <span style="font-family: monospace; font-weight: 700; color: #203A32; background-color: #DCE5D8; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #A8B9A3;">
                         {record['complaint_id']}
                     </span>
-                    <strong style="margin-left: 0.5rem; font-size: 1.1rem; color: #1A1A1A;">{record.get('title')}</strong>
-                    <div style="font-size: 0.84rem; color: #555555; margin-top: 0.25rem;">📍 {record.get('location')} ({record.get('facility_type')})</div>
+                    <strong style="margin-left: 0.5rem; font-size: 1.1rem; color: #203A32;">{record.get('title')}</strong>
+                    <div style="font-size: 0.84rem; color: #4A6357; margin-top: 0.25rem;">📍 {record.get('location')} ({record.get('facility_type')})</div>
                 </div>
                 <div style="text-align: right;">
                     {get_priority_badge(tier)}
-                    <div style="font-size: 1.35rem; font-weight: 800; color: #756044; margin-top: 0.25rem;">
+                    <div style="font-size: 1.35rem; font-weight: 800; color: #203A32; margin-top: 0.25rem;">
                         Priority Index: {score} / 100
                     </div>
                 </div>
@@ -86,25 +91,25 @@ def render_page() -> None:
             {"Feature Dimension": "Campus Impact Scale", "Points Contributed": breakdown["Impact Population Contribution"]},
         ]).set_index("Feature Dimension")
 
-        st.bar_chart(contrib_data, color="#756044", horizontal=True)
+        st.bar_chart(contrib_data, color="#203A32", horizontal=True)
 
     with c_text:
         st.markdown("### 📝 Plain-Language AI Rationalization")
         st.markdown(
             f"""
-            <div class="dashboard-card" style="font-size: 0.88rem; line-height: 1.6; color: #2D2D2D;">
-                <strong style="color: #1A1A1A; font-size: 0.95rem;">Why did the model assign {score} ({tier})?</strong>
+            <div class="dashboard-card" style="font-size: 0.88rem; line-height: 1.6; color: #203A32; border: 1px solid #DCE5D8;">
+                <strong style="color: #203A32; font-size: 0.95rem;">Why did the model assign {score} ({tier})?</strong>
                 <ol style="padding-left: 1.2rem; margin-top: 0.5rem; margin-bottom: 0.75rem;">
                     <li><strong>Severity ({record.get('severity')})</strong>: Extracted high-urgency keywords contributed 
-                    <code style="color: #756044; font-weight: 700;">+{breakdown['Severity Contribution']} pts</code>.</li>
+                    <code style="color: #203A32; font-weight: 700;">+{breakdown['Severity Contribution']} pts</code>.</li>
                     <li><strong>Location ({record.get('location_type')})</strong>: High-occupancy asset weight added 
-                    <code style="color: #756044; font-weight: 700;">+{breakdown['Location Criticality Contribution']} pts</code>.</li>
+                    <code style="color: #203A32; font-weight: 700;">+{breakdown['Location Criticality Contribution']} pts</code>.</li>
                     <li><strong>Recurrence ({int(record.get('recurrence_risk', 0.2)*100)}%)</strong>: History of repeat failures added 
-                    <code style="color: #756044; font-weight: 700;">+{breakdown['Recurrence Risk Contribution']} pts</code>.</li>
+                    <code style="color: #203A32; font-weight: 700;">+{breakdown['Recurrence Risk Contribution']} pts</code>.</li>
                     <li><strong>Impact Scope</strong>: Estimated headcount disruption added 
-                    <code style="color: #756044; font-weight: 700;">+{breakdown['Impact Population Contribution']} pts</code>.</li>
+                    <code style="color: #203A32; font-weight: 700;">+{breakdown['Impact Population Contribution']} pts</code>.</li>
                 </ol>
-                <div style="background-color: #FDFBF7; border: 1px solid #EAE3D2; border-radius: 6px; padding: 0.55rem 0.75rem; color: #1A1A1A; font-size: 0.82rem;">
+                <div style="background-color: #F5F7F2; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.55rem 0.75rem; color: #203A32; font-size: 0.82rem;">
                     ✓ <strong>Fairness Audit</strong>: Decision based strictly on physical asset criticality and safety metrics without reporter bias.
                 </div>
             </div>

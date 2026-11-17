@@ -1,7 +1,12 @@
 """
 Overview Page — Maintenance Operations Dashboard.
 Presents campus-wide operational KPIs, facility distributions, and interactive filtering with modern SaaS styling.
-Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), and Soft Tan (#EAE3D2).
+Modern Sage & Forest Theme:
+- Soft Ivory: #F5F7F2
+- Forest Green: #203A32
+- Sage: #A8B9A3
+- Pale Sage: #DCE5D8
+- White: #FFFFFF
 """
 import streamlit as st
 import pandas as pd
@@ -84,17 +89,17 @@ def render_page() -> None:
         st.warning("No complaint records match the active filter criteria. Clear filters to resume view.")
         return
 
-    # Visual Distribution Charts in Warm Brown (#756044) and Deep Charcoal (#1A1A1A)
+    # Visual Distribution Charts in Forest Green (#203A32) and Sage (#A8B9A3)
     c_dist1, c_dist2 = st.columns(2)
 
     with c_dist1:
         st.markdown(
             """
             <div class="dashboard-card" style="margin-bottom: 0.5rem;">
-                <h3 style="margin-top: 0; font-size: 1.05rem; color: #1A1A1A; font-weight: 700;">
+                <h3 style="margin-top: 0; font-size: 1.05rem; color: #203A32; font-weight: 700;">
                     🏢 Complaints by Facility Subsystem
                 </h3>
-                <p style="color: #555555; font-size: 0.82rem; margin-bottom: 0.8rem;">
+                <p style="color: #4A6357; font-size: 0.82rem; margin-bottom: 0.8rem;">
                     Proportion of registered issues across campus engineering departments.
                 </p>
             </div>
@@ -102,16 +107,16 @@ def render_page() -> None:
             unsafe_allow_html=True,
         )
         facility_counts = filtered_df["facility_type"].value_counts()
-        st.bar_chart(facility_counts, color="#756044")
+        st.bar_chart(facility_counts, color="#203A32")
 
     with c_dist2:
         st.markdown(
             """
             <div class="dashboard-card" style="margin-bottom: 0.5rem;">
-                <h3 style="margin-top: 0; font-size: 1.05rem; color: #1A1A1A; font-weight: 700;">
-                    ⚠️ Severity & Risk Tier Distribution
+                <h3 style="margin-top: 0; font-size: 1.05rem; color: #203A32; font-weight: 700;">
+                    ⚠️ Severity &amp; Risk Tier Distribution
                 </h3>
-                <p style="color: #555555; font-size: 0.82rem; margin-bottom: 0.8rem;">
+                <p style="color: #4A6357; font-size: 0.82rem; margin-bottom: 0.8rem;">
                     Breakdown of urgent physical safety hazards vs routine maintenance tasks.
                 </p>
             </div>
@@ -119,7 +124,7 @@ def render_page() -> None:
             unsafe_allow_html=True,
         )
         sev_counts = filtered_df["severity"].value_counts()
-        st.bar_chart(sev_counts, color="#1A1A1A")
+        st.bar_chart(sev_counts, color="#A8B9A3")
 
     st.markdown("<div style='height: 1.25rem;'></div>", unsafe_allow_html=True)
 
@@ -127,10 +132,10 @@ def render_page() -> None:
     st.markdown(
         """
         <div class="dashboard-card" style="margin-bottom: 0.75rem;">
-            <h3 style="margin-top: 0; font-size: 1.05rem; color: #1A1A1A; font-weight: 700;">
-                📍 Campus Location Vulnerability & Density Analysis
+            <h3 style="margin-top: 0; font-size: 1.05rem; color: #203A32; font-weight: 700;">
+                📍 Campus Location Vulnerability &amp; Density Analysis
             </h3>
-            <p style="color: #555555; font-size: 0.82rem; margin-bottom: 0.5rem;">
+            <p style="color: #4A6357; font-size: 0.82rem; margin-bottom: 0.5rem;">
                 Cluster distribution of registered incidents across campus buildings and facility zones.
             </p>
         </div>

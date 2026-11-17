@@ -2,6 +2,12 @@
 Admin Complaint Management Page.
 Provides data ingestion, complete ticket registry, status lifecycle management, and technician dispatch actions.
 Displays all student complaints with Student ID, Student Name, ML predictions, and status controls.
+Modern Sage & Forest Theme:
+- Soft Ivory: #F5F7F2
+- Forest Green: #203A32
+- Sage: #A8B9A3
+- Pale Sage: #DCE5D8
+- White: #FFFFFF
 """
 from datetime import datetime, timedelta
 import pandas as pd
@@ -116,40 +122,40 @@ def render_page() -> None:
                 reported_by = r.get("reported_by", "Staff")
 
                 if stu_id:
-                    reporter_badge = f'<span style="background-color: #EAE3D2; color: #1A1A1A; border: 1px solid #D8CFBD; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">🎓 Student: {stu_name or "Student"} ({stu_id})</span>'
+                    reporter_badge = f'<span style="background-color: #DCE5D8; color: #203A32; border: 1px solid #A8B9A3; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">🎓 Student: {stu_name or "Student"} ({stu_id})</span>'
                 else:
-                    reporter_badge = f'<span style="background-color: #F6F3EB; color: #2D2D2D; border: 1px solid #EAE3D2; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">👤 {reported_by}</span>'
+                    reporter_badge = f'<span style="background-color: #F0F4ED; color: #203A32; border: 1px solid #DCE5D8; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">👤 {reported_by}</span>'
 
                 action_text = r.get("action_taken", "Under review by maintenance dispatcher.")
 
                 st.markdown(
                     _clean_html(
                         f"""
-                        <div class="dashboard-card" style="margin-bottom: 0.85rem; padding: 1.1rem 1.3rem; border: 1px solid #EAE3D2;">
+                        <div class="dashboard-card" style="margin-bottom: 0.85rem; padding: 1.1rem 1.3rem; border: 1px solid #DCE5D8;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
                                 <div>
-                                    <span style="font-family: monospace; font-size: 0.8rem; font-weight: 700; color: #1A1A1A; background-color: #EAE3D2; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid #D8CFBD;">
+                                    <span style="font-family: monospace; font-size: 0.8rem; font-weight: 700; color: #203A32; background-color: #DCE5D8; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid #A8B9A3;">
                                         {cid}
                                     </span>
-                                    <span style="font-size: 0.75rem; font-weight: 600; color: #1A1A1A; background-color: #F6F3EB; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.35rem; border: 1px solid #EAE3D2;">
+                                    <span style="font-size: 0.75rem; font-weight: 600; color: #203A32; background-color: #F0F4ED; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.35rem; border: 1px solid #DCE5D8;">
                                         {fac}
                                     </span>
                                     <span style="margin-left: 0.4rem;">
                                         {reporter_badge}
                                     </span>
-                                    <h4 style="margin: 0.35rem 0 0.2rem 0; color: #1A1A1A; font-size: 1.08rem; font-weight: 700;">{title}</h4>
+                                    <h4 style="margin: 0.35rem 0 0.2rem 0; color: #203A32; font-size: 1.08rem; font-weight: 700;">{title}</h4>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 0.6rem;">
-                                    <span style="font-size: 0.78rem; color: #555555;">Severity: <strong>{sev}</strong></span>
-                                    <span style="font-size: 0.78rem; color: #555555;">Score: <strong>{score}</strong></span>
+                                    <span style="font-size: 0.78rem; color: #4A6357;">Severity: <strong>{sev}</strong></span>
+                                    <span style="font-size: 0.78rem; color: #4A6357;">Score: <strong>{score}</strong></span>
                                     {p_badge}
                                     {s_badge}
                                 </div>
                             </div>
-                            <p style="color: #2D2D2D; font-size: 0.88rem; margin: 0.4rem 0 0.6rem 0; line-height: 1.5;">{desc}</p>
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #555555; border-top: 1px solid #EAE3D2; padding-top: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <p style="color: #203A32; font-size: 0.88rem; margin: 0.4rem 0 0.6rem 0; line-height: 1.5;">{desc}</p>
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #4A6357; border-top: 1px solid #DCE5D8; padding-top: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                                 <span>📍 <strong>Location:</strong> {loc} • Reported: {dt}</span>
-                                <span>⏱️ <strong>Est. SLA:</strong> <span style="color: #1A1A1A; font-weight: 600;">{est}</span></span>
+                                <span>⏱️ <strong>Est. Turnaround:</strong> <span style="color: #203A32; font-weight: 600;">{est}</span></span>
                             </div>
                         </div>
                         """
@@ -198,67 +204,55 @@ def render_page() -> None:
                 )
                 new_loc = st.text_input("Specific Location", placeholder="e.g., Academic Block 2 - Room 201")
             with col_t2:
-                new_loc_type = st.selectbox(
-                    "Zone Criticality",
-                    ["Computer Lab", "Chemistry Lab", "Server Room", "Lecture Hall", "Hostel Washroom", "Hostel Room", "Central Library", "Corridor / Common Area"],
-                )
-                new_severity = st.selectbox("Reported Severity", ["Low", "Medium", "High", "Critical"])
-                new_reporter = st.text_input("Reported By", placeholder="e.g., Facility Inspector / Campus Engineer")
+                new_desc = st.text_area("Detailed Description", placeholder="Observed symptoms, safety precautions, affected assets...", height=115)
+                new_reporter = st.text_input("Staff Logger Name / Badge", value="Admin Operations Desk")
 
-            new_desc = st.text_area(
-                "Detailed Description",
-                placeholder="Provide physical symptoms, affected students, sparking, water leaks, or potential safety hazards...",
-            )
+            btn_submit_intake = st.form_submit_button("Submit & Compute AI Priority", type="primary")
 
-            col_sub1, _ = st.columns([1.5, 3])
-            with col_sub1:
-                submitted = st.form_submit_button("Submit Admin Ticket", type="primary", use_container_width=True)
-
-            if submitted:
-                if not new_title.strip() or not new_desc.strip():
-                    st.error("Please provide both an issue headline and a detailed description.")
+            if btn_submit_intake:
+                if not new_title.strip() or not new_loc.strip():
+                    st.error("Please provide both an issue title and specific location.")
                 else:
-                    new_rec = {
+                    new_item = {
                         "title": new_title.strip(),
                         "description": new_desc.strip(),
                         "facility_type": new_facility,
-                        "location": new_loc.strip() if new_loc.strip() else "Campus",
-                        "location_type": new_loc_type,
-                        "severity": new_severity,
-                        "recurrence_risk": 0.45 if new_severity in ["Critical", "High"] else 0.20,
-                        "impact_scale": 0.80 if "Lab" in new_loc_type or "Server" in new_loc_type else 0.45,
-                        "is_recurring": False,
-                        "recurrence_count": 0,
+                        "location": new_loc.strip(),
+                        "reported_by": new_reporter.strip(),
                         "status": "Submitted",
-                        "reported_by": new_reporter.strip() if new_reporter.strip() else "Facility Staff",
-                        "estimated_resolution": (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d"),
-                        "action_taken": "Logged into active triage queue.",
                     }
-                    new_id = add_complaint(new_rec)
-                    st.success(f"Admin complaint registered successfully! Assigned Ticket ID: **{new_id}**")
+                    cid = add_complaint(new_item)
+                    st.success(f"Ticket successfully added! Assigned ID: **{cid}**.")
                     st.rerun()
 
     # =========================================================================
-    # TAB 3: DATA INGESTION & CSV IMPORT
+    # TAB 3: DATASET INGESTION (CSV)
     # =========================================================================
     with tab_upload:
-        st.markdown("### 📥 University Facility Records Ingestion")
-        st.markdown(
-            "Upload official university maintenance logs (CSV / Excel format) to append bulk records into the operational repository."
-        )
+        st.markdown("### 📥 Bulk Dataset Import")
+        st.caption("Upload historical university work orders or facility inspection logs in CSV format.")
 
-        uploaded_file = st.file_uploader("Upload complaint dataset (CSV format)", type=["csv"])
+        uploaded_file = st.file_uploader("Upload Maintenance Records (.CSV)", type=["csv"])
         if uploaded_file is not None:
             try:
-                uploaded_df = pd.read_csv(uploaded_file)
-                st.write("Uploaded dataset preview:", uploaded_df.head(3))
-                if st.button("Append Dataset to Campus Repository", type="primary"):
-                    records_to_add = uploaded_df.to_dict(orient="records")
-                    for rec in records_to_add:
-                        if "title" not in rec and "description" in rec:
-                            rec["title"] = str(rec["description"])[:40]
-                        add_complaint(rec)
-                    st.success(f"Appended {len(records_to_add)} records to the active repository.")
+                import_df = pd.read_csv(uploaded_file)
+                st.write(f"Previewing **{len(import_df)}** uploaded records:")
+                st.dataframe(import_df.head(5), use_container_width=True)
+
+                if st.button("Process & Merge into Active Repository", type="primary"):
+                    success_count = 0
+                    for _, row in import_df.iterrows():
+                        record = {
+                            "title": row.get("title", "Imported Issue"),
+                            "description": row.get("description", ""),
+                            "facility_type": row.get("facility_type", "Other maintenance issues"),
+                            "location": row.get("location", "Campus"),
+                            "reported_by": "CSV Ingestion Pipeline",
+                            "status": row.get("status", "Submitted"),
+                        }
+                        add_complaint(record)
+                        success_count += 1
+                    st.success(f"Successfully imported and analyzed **{success_count}** records with ML pipeline!")
                     st.rerun()
             except Exception as e:
-                st.error(f"Error parsing uploaded file: {e}")
+                st.error(f"Error parsing CSV dataset: {e}")

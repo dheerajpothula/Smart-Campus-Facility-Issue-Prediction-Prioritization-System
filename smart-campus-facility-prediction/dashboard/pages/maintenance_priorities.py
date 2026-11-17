@@ -1,7 +1,12 @@
 """
 Intelligent Maintenance Priority Queue Page.
 Displays real-time algorithmic ranking of active campus work orders with sorting, filtering, and dispatch actions.
-Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2), and Primary Brown (#756044).
+Modern Sage & Forest Theme:
+- Soft Ivory: #F5F7F2
+- Forest Green: #203A32
+- Sage: #A8B9A3
+- Pale Sage: #DCE5D8
+- White: #FFFFFF
 """
 import pandas as pd
 import streamlit as st
@@ -69,7 +74,7 @@ def render_page() -> None:
 
     weights = get_current_weights()
     st.markdown(
-        f"<div style='margin: 0.5rem 0 1rem 0; font-size: 0.88rem; color: #555555; background: #FFFFFF; border: 1px solid #EAE3D2; border-radius: 8px; padding: 0.6rem 0.9rem;'>"
+        f"<div style='margin: 0.5rem 0 1rem 0; font-size: 0.88rem; color: #4A6357; background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 8px; padding: 0.6rem 0.9rem;'>"
         f"Active Weights: <strong>Severity ({int(weights.severity*100)}%)</strong> • "
         f"<strong>Criticality ({int(weights.location_criticality*100)}%)</strong> • "
         f"<strong>Recurrence ({int(weights.recurrence_probability*100)}%)</strong> • "
@@ -96,35 +101,35 @@ def render_page() -> None:
         loc = row.get("location", "Campus")
         rec_count = row.get("recurrence_count", 0)
         is_rec = row.get("is_recurring", False)
-        rec_pill = f"<span style='background-color: #EBDCDA; color: #1A1A1A; border: 1px solid #D3BCB9; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;'>🔁 Repeat ({rec_count}x)</span>" if is_rec else ""
+        rec_pill = f"<span style='background-color: #FAF0DE; color: #8A5618; border: 1px solid #ECCF9B; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700;'>🔁 Repeat ({rec_count}x)</span>" if is_rec else ""
 
         st.markdown(
             f"""
-            <div class="dashboard-card" style="margin-bottom: 0.85rem; border-left: 4px solid #756044;">
+            <div class="dashboard-card" style="margin-bottom: 0.85rem; border-left: 4px solid #203A32; border: 1px solid #DCE5D8;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
                     <div>
-                        <span style="font-size: 0.78rem; font-weight: 700; color: #756044; background-color: #EAE3D2; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #D8CFBD;">
+                        <span style="font-size: 0.78rem; font-weight: 700; color: #203A32; background-color: #DCE5D8; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #A8B9A3;">
                             Rank #{rank}
                         </span>
-                        <span style="font-family: monospace; font-size: 0.8rem; font-weight: 700; color: #1A1A1A; margin-left: 0.35rem;">
+                        <span style="font-family: monospace; font-size: 0.8rem; font-weight: 700; color: #203A32; margin-left: 0.35rem;">
                             {cid}
                         </span>
-                        <span style="font-size: 0.76rem; color: #555555; background-color: #F6F3EB; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.35rem; border: 1px solid #EAE3D2;">
+                        <span style="font-size: 0.76rem; color: #4A6357; background-color: #F0F4ED; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.35rem; border: 1px solid #DCE5D8;">
                             {row.get('facility_type')}
                         </span>
                         {rec_pill}
-                        <h4 style="margin: 0.35rem 0 0.2rem 0; color: #1A1A1A; font-size: 1.08rem; font-weight: 700;">{title}</h4>
+                        <h4 style="margin: 0.35rem 0 0.2rem 0; color: #203A32; font-size: 1.08rem; font-weight: 700;">{title}</h4>
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.6rem;">
-                        <span style="font-size: 1.15rem; font-weight: 800; color: #756044;">{score} pts</span>
+                        <span style="font-size: 1.15rem; font-weight: 800; color: #203A32;">{score} pts</span>
                         {p_badge}
                         {s_badge}
                     </div>
                 </div>
 
-                <p style="color: #2D2D2D; font-size: 0.88rem; margin: 0.4rem 0 0.6rem 0; line-height: 1.5;">{desc}</p>
+                <p style="color: #203A32; font-size: 0.88rem; margin: 0.4rem 0 0.6rem 0; line-height: 1.5;">{desc}</p>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #EAE3D2; padding-top: 0.5rem; font-size: 0.8rem; color: #555555; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #DCE5D8; padding-top: 0.5rem; font-size: 0.8rem; color: #4A6357; flex-wrap: wrap; gap: 0.5rem;">
                     <div>📍 <strong>Location:</strong> {loc} • Reported: {row.get('date_reported')}</div>
                     <div>⚡ <strong>Action:</strong> {row.get('action_taken', 'Pending dispatch review')}</div>
                 </div>

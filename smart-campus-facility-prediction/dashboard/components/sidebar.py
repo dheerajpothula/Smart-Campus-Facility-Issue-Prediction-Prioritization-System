@@ -1,8 +1,8 @@
 """
-Admin Right-Side Sidebar Navigation Component.
+Admin Left-Side Sidebar Navigation Component.
 Renders the Administrator identity, navigation menu, live repository status,
-demo data controls, and logout button on the right side of the dashboard.
-Adheres strictly to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2).
+demo data controls, and logout button on the left sidebar of the dashboard.
+Palette: Soft Ivory (#F5F7F2), Forest Green (#203A32), Sage (#A8B9A3), Pale Sage (#DCE5D8), White (#FFFFFF).
 """
 import streamlit as st
 from src.data.complaints_store import get_complaints_df, clear_all_complaints, reset_to_default_dataset
@@ -31,7 +31,7 @@ ADMIN_NAVIGATION_OPTIONS = [
 
 def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = None) -> str:
     """
-    Renders the Administrator right-side sidebar panel.
+    Renders the Administrator left-side sidebar panel in Modern Sage & Forest styling.
 
     Args:
         admin_name: Logged-in administrator name.
@@ -45,17 +45,17 @@ def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = N
         admin_name = auth.get("name") or "Administrator"
         admin_id = auth.get("id") or "ADM-2026-001"
 
-    # Container with soft tan border and warm styling
+    # Container with pale sage border and warm forest styling
     st.markdown(
         f"""
         <div class="admin-sidebar-box">
-            <div style="display: flex; align-items: center; gap: 0.6rem; padding-bottom: 0.75rem; border-bottom: 1px solid #EAE3D2; margin-bottom: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.65rem; padding-bottom: 0.75rem; border-bottom: 1px solid #DCE5D8; margin-bottom: 0.75rem;">
                 <div style="
                     width: 38px;
                     height: 38px;
                     border-radius: 8px;
-                    background-color: #EAE3D2;
-                    border: 1px solid #D8CFBD;
+                    background-color: #DCE5D8;
+                    border: 1px solid #A8B9A3;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -64,17 +64,17 @@ def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = N
                     🏫
                 </div>
                 <div>
-                    <h3 style="margin: 0; font-size: 1.05rem; color: #1A1A1A; font-weight: 700;">
+                    <h3 style="margin: 0; font-size: 1.05rem; color: #203A32; font-weight: 700;">
                         FIPP Intelligence
                     </h3>
-                    <p style="margin: 0; font-size: 0.76rem; color: #555555;">
-                        Facility Issue Prediction &amp; Prioritization
+                    <p style="margin: 0; font-size: 0.76rem; color: #4A6357;">
+                        Facility Prediction &amp; Prioritisation
                     </p>
                 </div>
             </div>
             <div style="
-                background-color: #FDFBF7;
-                border: 1px solid #EAE3D2;
+                background-color: #F5F7F2;
+                border: 1px solid #DCE5D8;
                 border-radius: 8px;
                 padding: 0.65rem 0.8rem;
                 margin-bottom: 0.85rem;
@@ -83,19 +83,19 @@ def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = N
                     <span style="
                         font-size: 0.68rem;
                         font-weight: 700;
-                        color: #1A1A1A;
-                        background-color: #EAE3D2;
-                        padding: 0.12rem 0.45rem;
+                        color: #203A32;
+                        background-color: #DCE5D8;
+                        padding: 0.12rem 0.5rem;
                         border-radius: 4px;
                         text-transform: uppercase;
                         letter-spacing: 0.04em;
-                        border: 1px solid #D8CFBD;
+                        border: 1px solid #A8B9A3;
                     ">Administrator</span>
                 </div>
-                <div style="font-size: 0.88rem; font-weight: 600; color: #1A1A1A; margin-top: 0.2rem;">
+                <div style="font-size: 0.88rem; font-weight: 600; color: #203A32; margin-top: 0.2rem;">
                     {admin_name}
                 </div>
-                <div style="font-size: 0.75rem; color: #555555; font-family: monospace;">
+                <div style="font-size: 0.75rem; color: #6D8276; font-family: monospace;">
                     ID: {admin_id}
                 </div>
             </div>
@@ -106,7 +106,7 @@ def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = N
 
     # Navigation Menu Header
     st.markdown(
-        "<span style='font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #767676;'>Navigation</span>",
+        "<span style='font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #4A6357;'>Navigation</span>",
         unsafe_allow_html=True,
     )
 
@@ -123,14 +123,14 @@ def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = N
         options=ADMIN_NAVIGATION_OPTIONS,
         index=default_idx,
         label_visibility="collapsed",
-        key="radio_admin_right_nav",
+        key="radio_admin_left_nav",
     )
     st.session_state["admin_active_page"] = selected_page
 
     st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
 
-    # Logout Button
-    if st.button("Logout", key="btn_admin_sidebar_logout", type="secondary", use_container_width=True):
+    # Logout Button (Item 9 from User Requirements)
+    if st.button("🚪 Logout", key="btn_admin_sidebar_logout", type="secondary", use_container_width=True):
         st.session_state["auth_user"] = None
         st.session_state["selected_role"] = None
         st.session_state["user_role"] = None
@@ -148,15 +148,15 @@ def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = N
         f"""
         <div style="
             background-color: #FFFFFF;
-            border: 1px solid #EAE3D2;
+            border: 1px solid #DCE5D8;
             border-radius: 8px;
             padding: 0.75rem 0.85rem;
             margin-bottom: 0.75rem;
             font-size: 0.78rem;
-            color: #1A1A1A;
+            color: #203A32;
             line-height: 1.6;
         ">
-            <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #767676;">Repository Status</span><br>
+            <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4A6357;">Repository Status</span><br>
             • Total Tickets: <strong>{total_tickets}</strong><br>
             • Open Backlog: <strong>{open_backlog}</strong><br>
             • High Priority: <strong>{high_prio}</strong>
@@ -181,8 +181,8 @@ def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = N
     # Footer note
     st.markdown(
         """
-        <div style="font-size: 0.72rem; color: #767676; text-align: center; margin-top: 1rem;">
-            FIPP v0.4.0 • Light Theme
+        <div style="font-size: 0.72rem; color: #6D8276; text-align: center; margin-top: 1rem;">
+            FIPP 2.0 • Modern Sage &amp; Forest
         </div>
         """,
         unsafe_allow_html=True,

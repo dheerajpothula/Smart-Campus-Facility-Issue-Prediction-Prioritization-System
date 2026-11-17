@@ -1,9 +1,14 @@
 """
 Student Dashboard View.
-Provides a clean, modern SaaS interface for students to view their submitted complaints
-and raise new facility tickets with automated sequential token generation, strict data isolation,
-and 5-stage progress tracking.
-Adheres strictly to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2).
+Provides a clean, modern SaaS interface for students to view their submitted complaints,
+track ticket status, and raise new facility tickets with automated sequential token generation,
+strict data isolation, and 5-stage progress tracking.
+Modern Sage & Forest Theme:
+- Soft Ivory: #F5F7F2
+- Forest Green: #203A32
+- Sage: #A8B9A3
+- Pale Sage: #DCE5D8
+- White: #FFFFFF
 """
 import time
 from datetime import datetime
@@ -45,6 +50,21 @@ CAMPUS_BUILDINGS = [
 
 def render_student_dashboard() -> None:
     """Renders the dedicated, student-friendly facility status and issue submission portal."""
+    # Hide sidebar when in student mode for a clean, distraction-free widescreen view
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"] { display: none !important; }
+        .block-container {
+            max-width: 1200px !important;
+            margin: 0 auto !important;
+            padding-top: 1.5rem !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     # 1. Identity & Session Setup (Dynamic session-authenticated identity)
     trusted_student = get_current_student_identity()
     active_student_id = trusted_student.get("student_id")
@@ -64,22 +84,22 @@ def render_student_dashboard() -> None:
         st.session_state["show_raise_issue_form"] = False
 
     # Top Header & Primary Action Bar
-    header_col1, header_col2 = st.columns([3, 1.2])
+    header_col1, header_col2 = st.columns([3, 1.4])
 
     with header_col1:
         st.markdown(
             _clean_html(
                 f"""
-                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
-                <div style="width: 44px; height: 44px; border-radius: 10px; background-color: #EAE3D2; border: 1px solid #D8CFBD; display: flex; align-items: center; justify-content: center; font-size: 1.45rem;">
+                <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.25rem;">
+                <div style="width: 48px; height: 48px; border-radius: 12px; background-color: #DCE5D8; border: 1px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">
                 🎓
                 </div>
                 <div>
-                <h1 style="margin: 0; font-size: 1.65rem; color: #1A1A1A; font-weight: 700;">
+                <h1 style="margin: 0; font-size: 1.65rem; color: #203A32; font-weight: 700; letter-spacing: -0.02em;">
                 Student Facility Portal
                 </h1>
-                <p style="margin: 0; color: #555555; font-size: 0.88rem;">
-                Logged in as: <strong>{active_student_name}</strong> (ID: <code>{active_student_id}</code>)
+                <p style="margin: 0; color: #4A6357; font-size: 0.88rem;">
+                Logged in as: <strong>{active_student_name}</strong> (ID: <code style="background-color: #DCE5D8; color: #203A32; padding: 0.1rem 0.4rem; border-radius: 4px;">{active_student_id}</code>)
                 </p>
                 </div>
                 </div>
@@ -96,7 +116,6 @@ def render_student_dashboard() -> None:
             btn_type = "secondary" if st.session_state["show_raise_issue_form"] else "primary"
             if st.button(btn_label, key="btn_toggle_raise_issue", type=btn_type, use_container_width=True):
                 st.session_state["show_raise_issue_form"] = not st.session_state["show_raise_issue_form"]
-                # Close confirmation if opening form
                 if "submission_confirmation" in st.session_state:
                     del st.session_state["submission_confirmation"]
                 st.rerun()
@@ -122,29 +141,29 @@ def render_student_dashboard() -> None:
         st.markdown(
             _clean_html(
                 f"""
-                <div class="dashboard-card" style="text-align: center; padding: 2.5rem 2rem; max-width: 650px; margin: 1.5rem auto; border: 1px solid #EAE3D2;">
-                <div style="width: 64px; height: 64px; line-height: 64px; border-radius: 50%; background-color: #EAE3D2; border: 2px solid #D8CFBD; font-size: 2rem; color: #1A1A1A; margin: 0 auto 1.25rem auto;">
+                <div class="dashboard-card" style="text-align: center; padding: 2.5rem 2rem; max-width: 650px; margin: 1.5rem auto; border: 1px solid #DCE5D8;">
+                <div style="width: 64px; height: 64px; line-height: 64px; border-radius: 50%; background-color: #DCE5D8; border: 2px solid #A8B9A3; font-size: 2rem; color: #203A32; margin: 0 auto 1.25rem auto;">
                 ✓
                 </div>
-                <h2 style="color: #1A1A1A; font-size: 1.55rem; font-weight: 700; margin-bottom: 0.35rem;">
+                <h2 style="color: #203A32; font-size: 1.55rem; font-weight: 700; margin-bottom: 0.35rem;">
                 Issue submitted successfully
                 </h2>
-                <p style="color: #4A4A4A; font-size: 1.05rem; margin-bottom: 1.5rem;">
+                <p style="color: #4A6357; font-size: 1.05rem; margin-bottom: 1.5rem;">
                 Your complaint has been registered.
                 </p>
-                <div style="background-color: #FDFBF7; border: 1px solid #EAE3D2; border-radius: 10px; padding: 1.25rem 1.5rem; margin: 0 auto 1.5rem auto; text-align: left; max-width: 420px;">
+                <div style="background-color: #F5F7F2; border: 1px solid #DCE5D8; border-radius: 10px; padding: 1.25rem 1.5rem; margin: 0 auto 1.5rem auto; text-align: left; max-width: 420px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                <span style="font-size: 0.92rem; color: #555555; font-weight: 500;">Complaint Token:</span>
-                <span style="font-family: monospace; font-size: 1.05rem; font-weight: 700; color: #1A1A1A; background-color: #EAE3D2; padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid #D8CFBD;">
+                <span style="font-size: 0.92rem; color: #4A6357; font-weight: 500;">Complaint Token:</span>
+                <span style="font-family: monospace; font-size: 1.05rem; font-weight: 700; color: #203A32; background-color: #DCE5D8; padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid #A8B9A3;">
                 {conf_token}
                 </span>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.92rem; color: #555555; font-weight: 500;">Status:</span>
+                <span style="font-size: 0.92rem; color: #4A6357; font-weight: 500;">Status:</span>
                 {conf_status_badge}
                 </div>
                 </div>
-                <p style="color: #555555; font-size: 0.95rem; margin-bottom: 1.75rem;">
+                <p style="color: #6D8276; font-size: 0.95rem; margin-bottom: 1.75rem;">
                 You can track the progress of your complaint in My Complaints.
                 </p>
                 </div>
@@ -167,15 +186,15 @@ def render_student_dashboard() -> None:
         st.markdown(
             _clean_html(
                 """
-                <div style="background-color: #FFFFFF; border: 1px solid #EAE3D2; border-radius: 12px; padding: 1.5rem 1.6rem; box-shadow: 0 4px 6px -1px rgba(26, 26, 26, 0.04); margin-bottom: 2rem;">
+                <div style="background-color: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 12px; padding: 1.5rem 1.6rem; box-shadow: 0 4px 6px -1px rgba(32, 58, 50, 0.04); margin-bottom: 2rem;">
                 <div style="margin-bottom: 1rem;">
-                <span style="background-color: #EAE3D2; color: #1A1A1A; border: 1px solid #D8CFBD; font-size: 0.74rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.04em;">
+                <span style="background-color: #DCE5D8; color: #203A32; border: 1px solid #A8B9A3; font-size: 0.74rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.04em;">
                 New Complaint
                 </span>
-                <h2 style="margin: 0.35rem 0 0 0; font-size: 1.35rem; color: #1A1A1A; font-weight: 700;">
+                <h2 style="margin: 0.35rem 0 0 0; font-size: 1.35rem; color: #203A32; font-weight: 700;">
                 Submit a Campus Facility Issue
                 </h2>
-                <p style="color: #555555; font-size: 0.88rem; margin: 0.3rem 0 0 0;">
+                <p style="color: #4A6357; font-size: 0.88rem; margin: 0.3rem 0 0 0;">
                 Fill in the details below. Required fields are validated upon submission.
                 </p>
                 </div>
@@ -306,36 +325,18 @@ def render_student_dashboard() -> None:
     # =========================================================================
     # 4. MY COMPLAINTS — STRICTLY RETRIEVED BY AUTHENTICATED STUDENT ID
     # =========================================================================
-    st.markdown(
-        _clean_html(
-            """
-            <div style="margin-bottom: 1rem;">
-            <h2 style="margin: 0; font-size: 1.35rem; color: #1A1A1A; font-weight: 700;">
-            My Complaints
-            </h2>
-            </div>
-            """
-        ),
-        unsafe_allow_html=True,
-    )
-
-    # Backend retrieval strictly scoped to authenticated student ID
-    student_complaints_list = get_student_complaints(active_student_id)
-
-    # Clean empty state when no complaints exist for this student
-    if not student_complaints_list:
+    # Top Section Filter & Search Bar
+    c_hdr, c_srch = st.columns([2, 1.5])
+    with c_hdr:
         st.markdown(
             _clean_html(
                 """
-                <div class="dashboard-card" style="text-align: center; padding: 3rem 2rem; margin: 1.5rem 0;">
-                <div style="width: 56px; height: 56px; line-height: 56px; border-radius: 16px; background-color: #EAE3D2; border: 1px solid #D8CFBD; font-size: 1.8rem; margin: 0 auto 1.25rem auto;">
-                📋
-                </div>
-                <h3 style="color: #1A1A1A; font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">
-                No complaints submitted yet.
-                </h3>
-                <p style="color: #555555; font-size: 0.95rem; max-width: 450px; margin: 0 auto 1.5rem auto; line-height: 1.5;">
-                Raise an issue to report a facility problem on campus.
+                <div style="margin-bottom: 0.5rem;">
+                <h2 style="margin: 0; font-size: 1.35rem; color: #203A32; font-weight: 700;">
+                My Complaints &amp; Tracking
+                </h2>
+                <p style="margin: 0.2rem 0 0 0; color: #4A6357; font-size: 0.88rem;">
+                Monitor maintenance progress timelines and status updates in real-time.
                 </p>
                 </div>
                 """
@@ -343,11 +344,61 @@ def render_student_dashboard() -> None:
             unsafe_allow_html=True,
         )
 
-        col_empty_btn, _ = st.columns([1.5, 4])
-        with col_empty_btn:
-            if st.button("➕ Raise an Issue", key="btn_empty_raise_issue", type="primary", use_container_width=True):
-                st.session_state["show_raise_issue_form"] = True
-                st.rerun()
+    # Scoped retrieval by authenticated student ID
+    student_complaints_list = get_student_complaints(active_student_id)
+
+    with c_srch:
+        search_token = st.text_input(
+            "Track Complaint by Token",
+            placeholder="Search token (e.g. CMP-2026-001)...",
+            label_visibility="collapsed",
+            key="search_student_complaints",
+        )
+
+    # Filter by search token if entered
+    if search_token.strip():
+        term = search_token.strip().lower()
+        student_complaints_list = [
+            c for c in student_complaints_list
+            if term in str(c.get("complaint_id", "")).lower()
+            or term in str(c.get("title", "")).lower()
+            or term in str(c.get("facility_type", "")).lower()
+        ]
+
+    # Clean empty state when no complaints exist for this student
+    if not student_complaints_list:
+        if search_token.strip():
+            msg_title = "No matching complaints found."
+            msg_desc = f"No complaints found matching '{search_token}'. Check the token ID."
+        else:
+            msg_title = "No complaints submitted yet."
+            msg_desc = "Raise an issue to report a facility problem on campus."
+
+        st.markdown(
+            _clean_html(
+                f"""
+                <div class="dashboard-card" style="text-align: center; padding: 3rem 2rem; margin: 1.5rem 0;">
+                <div style="width: 56px; height: 56px; line-height: 56px; border-radius: 16px; background-color: #DCE5D8; border: 1px solid #A8B9A3; font-size: 1.8rem; margin: 0 auto 1.25rem auto;">
+                📋
+                </div>
+                <h3 style="color: #203A32; font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">
+                {msg_title}
+                </h3>
+                <p style="color: #4A6357; font-size: 0.95rem; max-width: 450px; margin: 0 auto 1.5rem auto; line-height: 1.5;">
+                {msg_desc}
+                </p>
+                </div>
+                """
+            ),
+            unsafe_allow_html=True,
+        )
+
+        if not search_token.strip():
+            col_empty_btn, _ = st.columns([1.5, 4])
+            with col_empty_btn:
+                if st.button("➕ Raise an Issue", key="btn_empty_raise_issue", type="primary", use_container_width=True):
+                    st.session_state["show_raise_issue_form"] = True
+                    st.rerun()
         return
 
     # Render each student complaint card (clean, spacious, NO priority labels/ML scores, 5-stage progress indicator)
@@ -361,36 +412,36 @@ def render_student_dashboard() -> None:
         loc = item.get("location", "Campus")
         date_rep = item.get("date_reported", "Recently")
         est_res = item.get("estimated_resolution")
-        est_res_text = f"<span>⏱️ <strong>Est. Resolution:</strong> <span style='color: #1A1A1A; font-weight: 600;'>{est_res}</span></span>" if est_res else ""
+        est_res_text = f"<span>⏱️ <strong>Est. Turnaround:</strong> <span style='color: #203A32; font-weight: 600;'>{est_res}</span></span>" if est_res else ""
 
         progress_indicator_html = render_student_progress_timeline(status)
 
         # Card rendered with zero-indented HTML to prevent Markdown parser from converting HTML into code blocks
         card_html = _clean_html(
             f"""
-            <div class="dashboard-card" style="margin-bottom: 1.25rem; padding: 1.4rem 1.6rem; border: 1px solid #EAE3D2;">
+            <div class="dashboard-card" style="margin-bottom: 1.25rem; padding: 1.4rem 1.6rem; border: 1px solid #DCE5D8;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
             <div>
-            <span style="font-family: monospace; font-size: 0.82rem; font-weight: 700; color: #1A1A1A; background-color: #EAE3D2; padding: 0.2rem 0.55rem; border-radius: 6px; border: 1px solid #D8CFBD;">
+            <span style="font-family: monospace; font-size: 0.82rem; font-weight: 700; color: #203A32; background-color: #DCE5D8; padding: 0.2rem 0.55rem; border-radius: 6px; border: 1px solid #A8B9A3;">
             {cid}
             </span>
-            <span style="font-size: 0.76rem; font-weight: 600; color: #1A1A1A; background-color: #F6F3EB; padding: 0.2rem 0.55rem; border-radius: 6px; margin-left: 0.4rem; border: 1px solid #EAE3D2;">
+            <span style="font-size: 0.76rem; font-weight: 600; color: #203A32; background-color: #F0F4ED; padding: 0.2rem 0.55rem; border-radius: 6px; margin-left: 0.4rem; border: 1px solid #DCE5D8;">
             {fac}
             </span>
-            <h3 style="margin: 0.5rem 0 0 0; color: #1A1A1A; font-size: 1.15rem; font-weight: 700;">
+            <h3 style="margin: 0.5rem 0 0 0; color: #203A32; font-size: 1.15rem; font-weight: 700;">
             {title}
             </h3>
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <span style="font-size: 0.8rem; color: #555555; font-weight: 500;">Status:</span>
+            <span style="font-size: 0.8rem; color: #4A6357; font-weight: 500;">Status:</span>
             {s_badge}
             </div>
             </div>
             {progress_indicator_html}
-            <p style="color: #2D2D2D; font-size: 0.92rem; margin: 0.85rem 0 0.85rem 0; line-height: 1.55;">
+            <p style="color: #203A32; font-size: 0.92rem; margin: 0.85rem 0 0.85rem 0; line-height: 1.55;">
             {desc}
             </p>
-            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #EAE3D2; padding-top: 0.75rem; font-size: 0.82rem; color: #555555; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #DCE5D8; padding-top: 0.75rem; font-size: 0.82rem; color: #4A6357; flex-wrap: wrap; gap: 0.75rem;">
             <div>
             📍 <strong>Location:</strong> {loc}
             </div>
@@ -409,7 +460,7 @@ def render_student_dashboard() -> None:
     st.markdown(
         _clean_html(
             """
-            <div style="background-color: #FFFFFF; border: 1px dashed #D8CFBD; border-radius: 8px; padding: 0.85rem 1.1rem; margin-top: 1.5rem; text-align: center; font-size: 0.82rem; color: #555555;">
+            <div style="background-color: #FFFFFF; border: 1px dashed #A8B9A3; border-radius: 8px; padding: 0.85rem 1.1rem; margin-top: 1.5rem; text-align: center; font-size: 0.82rem; color: #4A6357;">
             💡 Need immediate assistance for an emergency? Contact your hostel warden or campus security desk.
             Campus facility updates and maintenance dispatches are tracked directly in this portal.
             </div>
