@@ -183,8 +183,53 @@ def render_role_selection_screen() -> None:
             st.session_state["selected_role"] = "student"
             st.rerun()
 
-    # Clean bottom spacing
+    # Clean spacing before How FIPP Works
     st.markdown(
-        """<div style="height: 4rem;"></div>""",
+        _clean_html(
+            """
+            <div style="max-width: 1080px; margin: 3.25rem auto 3.5rem auto; padding: 0 1.5rem;">
+            <div style="text-align: center; margin-bottom: 1.75rem;">
+            <h3 style="font-size: 1.35rem; color: #203A32; font-weight: 700; margin: 0; letter-spacing: -0.015em;">
+            How FIPP Works
+            </h3>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem;">
+            <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 12px; padding: 1.75rem 1.4rem; text-align: center; box-shadow: 0 2px 8px rgba(32, 58, 50, 0.04);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #DCE5D8; border: 1px solid #A8B9A3; display: inline-flex; align-items: center; justify-content: center; font-size: 1.45rem; margin-bottom: 0.85rem;">
+            📝
+            </div>
+            <h4 style="font-size: 1.1rem; font-weight: 700; color: #203A32; margin: 0 0 0.35rem 0;">
+            Report
+            </h4>
+            <p style="color: #4A6357; font-size: 0.9rem; line-height: 1.5; margin: 0;">
+            Collect campus facility complaints.
+            </p>
+            </div>
+            <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 12px; padding: 1.75rem 1.4rem; text-align: center; box-shadow: 0 2px 8px rgba(32, 58, 50, 0.04);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #DCE5D8; border: 1px solid #A8B9A3; display: inline-flex; align-items: center; justify-content: center; font-size: 1.45rem; margin-bottom: 0.85rem;">
+            🔍
+            </div>
+            <h4 style="font-size: 1.1rem; font-weight: 700; color: #203A32; margin: 0 0 0.35rem 0;">
+            Analyze
+            </h4>
+            <p style="color: #4A6357; font-size: 0.9rem; line-height: 1.5; margin: 0;">
+            Identify and assess facility issues.
+            </p>
+            </div>
+            <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 12px; padding: 1.75rem 1.4rem; text-align: center; box-shadow: 0 2px 8px rgba(32, 58, 50, 0.04);">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background: #DCE5D8; border: 1px solid #A8B9A3; display: inline-flex; align-items: center; justify-content: center; font-size: 1.45rem; margin-bottom: 0.85rem;">
+            ⚡
+            </div>
+            <h4 style="font-size: 1.1rem; font-weight: 700; color: #203A32; margin: 0 0 0.35rem 0;">
+            Prioritize
+            </h4>
+            <p style="color: #4A6357; font-size: 0.9rem; line-height: 1.5; margin: 0;">
+            Support maintenance decisions.
+            </p>
+            </div>
+            </div>
+            </div>
+            """
+        ),
         unsafe_allow_html=True,
     )

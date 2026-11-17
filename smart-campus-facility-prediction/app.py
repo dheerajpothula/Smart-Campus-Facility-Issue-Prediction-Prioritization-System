@@ -17,6 +17,7 @@ import streamlit as st
 from dashboard.components.styles import apply_theme
 from dashboard.components.role_selection import render_role_selection_screen
 from dashboard.components.login_page import render_login_screen
+from dashboard.components.admin_login import render_admin_login_screen
 from dashboard.components.sidebar import render_admin_sidebar, render_sidebar
 from dashboard.pages import (
     ai_analysis,
@@ -85,6 +86,13 @@ def main() -> None:
     selected_role = st.session_state.get("selected_role")
     user_role = st.session_state.get("user_role")
 
+    # Support URL query parameter for direct portal access (e.g. ?role=admin)
+    if not selected_role and not auth:
+        param_role = st.query_params.get("role")
+        if param_role in ["admin", "student"]:
+            st.session_state["selected_role"] = param_role
+            selected_role = param_role
+
     # Support for test harnesses that assign user_role directly
     if not auth and user_role in ["student", "admin"]:
         if user_role == "student":
@@ -104,7 +112,11 @@ def main() -> None:
     # =========================================================================
     # 2. DEDICATED LOGIN: When role is selected but user is not yet logged in
     # =========================================================================
-    if not auth and selected_role in ["admin", "student"]:
+    if not auth and selected_role == "admin":
+        render_admin_login_screen()
+        return
+
+    if not auth and selected_role == "student":
         render_login_screen(selected_role)
         return
 
