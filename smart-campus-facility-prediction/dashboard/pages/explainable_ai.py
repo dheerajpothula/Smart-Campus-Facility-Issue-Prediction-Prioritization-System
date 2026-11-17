@@ -1,11 +1,12 @@
 """
 Explainable AI (SHAP) Page.
 Provides transparent feature-attribution visualizations and natural-language interpretations for model predictions.
+Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2), and Primary Brown (#756044).
 """
 import streamlit as st
 import pandas as pd
 
-from dashboard.components.styles import get_priority_badge
+from dashboard.components.styles import get_priority_badge, render_section_header
 from dashboard.components.empty_state import render_empty_state
 from src.data.complaints_store import get_complaints_df
 from src.prediction.priority_scoring import calculate_priority_score, get_current_weights
@@ -13,18 +14,10 @@ from src.prediction.priority_scoring import calculate_priority_score, get_curren
 
 def render_page() -> None:
     """Renders the Explainable AI (SHAP) diagnostics view."""
-    st.markdown(
-        """
-        <div style="margin-bottom: 1.25rem;">
-            <h1 style="margin: 0; font-size: 1.75rem; color: #0f172a; font-weight: 700;">
-                🔬 Explainable AI (SHAP) & Feature Interpretability
-            </h1>
-            <p style="margin: 0.2rem 0 0 0; color: #64748b; font-size: 0.92rem;">
-                Inspecting feature importances and individual prediction drivers behind automated priority decisions.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    render_section_header(
+        title="Explainable AI (SHAP) & Feature Interpretability",
+        subtitle="Inspecting feature importances and individual prediction drivers behind automated priority decisions.",
+        badge="Model Interpretability",
     )
 
     df = get_complaints_df()
@@ -61,15 +54,15 @@ def render_page() -> None:
         <div class="dashboard-card">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <div>
-                    <span style="font-family: monospace; font-weight: 700; color: #1A1A1A; background-color: #EAE3D2; padding: 0.15rem 0.45rem; border-radius: 4px; border: 1px solid #D8CFBD;">
+                    <span style="font-family: monospace; font-weight: 700; color: #1A1A1A; background-color: #EAE3D2; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #D8CFBD;">
                         {record['complaint_id']}
                     </span>
-                    <strong style="margin-left: 0.4rem; font-size: 1.05rem; color: #1A1A1A;">{record.get('title')}</strong>
-                    <div style="font-size: 0.82rem; color: #555555; margin-top: 0.2rem;">📍 {record.get('location')} ({record.get('facility_type')})</div>
+                    <strong style="margin-left: 0.5rem; font-size: 1.1rem; color: #1A1A1A;">{record.get('title')}</strong>
+                    <div style="font-size: 0.84rem; color: #555555; margin-top: 0.25rem;">📍 {record.get('location')} ({record.get('facility_type')})</div>
                 </div>
                 <div style="text-align: right;">
                     {get_priority_badge(tier)}
-                    <div style="font-size: 1.25rem; font-weight: 700; color: #1A1A1A; margin-top: 0.2rem;">
+                    <div style="font-size: 1.35rem; font-weight: 800; color: #756044; margin-top: 0.25rem;">
                         Priority Index: {score} / 100
                     </div>
                 </div>
@@ -79,7 +72,7 @@ def render_page() -> None:
         unsafe_allow_html=True,
     )
 
-    c_plot, c_text = st.columns([1.4, 1])
+    c_plot, c_text = st.columns([1.5, 1])
 
     with c_plot:
         st.markdown("### 📊 Multi-Factor SHAP Feature Attribution")
@@ -93,25 +86,25 @@ def render_page() -> None:
             {"Feature Dimension": "Campus Impact Scale", "Points Contributed": breakdown["Impact Population Contribution"]},
         ]).set_index("Feature Dimension")
 
-        st.bar_chart(contrib_data, color="#1A1A1A", horizontal=True)
+        st.bar_chart(contrib_data, color="#756044", horizontal=True)
 
     with c_text:
         st.markdown("### 📝 Plain-Language AI Rationalization")
         st.markdown(
             f"""
-            <div class="dashboard-card" style="font-size: 0.86rem; line-height: 1.6; color: #334155;">
-                <strong>Why did the model assign {score} ({tier})?</strong>
-                <ol style="padding-left: 1.2rem; margin-top: 0.5rem;">
+            <div class="dashboard-card" style="font-size: 0.88rem; line-height: 1.6; color: #2D2D2D;">
+                <strong style="color: #1A1A1A; font-size: 0.95rem;">Why did the model assign {score} ({tier})?</strong>
+                <ol style="padding-left: 1.2rem; margin-top: 0.5rem; margin-bottom: 0.75rem;">
                     <li><strong>Severity ({record.get('severity')})</strong>: Extracted high-urgency keywords contributed 
-                    <code>+{breakdown['Severity Contribution']} pts</code>.</li>
+                    <code style="color: #756044; font-weight: 700;">+{breakdown['Severity Contribution']} pts</code>.</li>
                     <li><strong>Location ({record.get('location_type')})</strong>: High-occupancy asset weight added 
-                    <code>+{breakdown['Location Criticality Contribution']} pts</code>.</li>
+                    <code style="color: #756044; font-weight: 700;">+{breakdown['Location Criticality Contribution']} pts</code>.</li>
                     <li><strong>Recurrence ({int(record.get('recurrence_risk', 0.2)*100)}%)</strong>: History of repeat failures added 
-                    <code>+{breakdown['Recurrence Risk Contribution']} pts</code>.</li>
+                    <code style="color: #756044; font-weight: 700;">+{breakdown['Recurrence Risk Contribution']} pts</code>.</li>
                     <li><strong>Impact Scope</strong>: Estimated headcount disruption added 
-                    <code>+{breakdown['Impact Population Contribution']} pts</code>.</li>
+                    <code style="color: #756044; font-weight: 700;">+{breakdown['Impact Population Contribution']} pts</code>.</li>
                 </ol>
-                <div style="background-color: #f7fee7; border: 1px solid #d9f99d; border-radius: 6px; padding: 0.45rem 0.65rem; color: #365314; margin-top: 0.6rem;">
+                <div style="background-color: #FDFBF7; border: 1px solid #EAE3D2; border-radius: 6px; padding: 0.55rem 0.75rem; color: #1A1A1A; font-size: 0.82rem;">
                     ✓ <strong>Fairness Audit</strong>: Decision based strictly on physical asset criticality and safety metrics without reporter bias.
                 </div>
             </div>

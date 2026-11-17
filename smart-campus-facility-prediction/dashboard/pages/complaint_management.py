@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import streamlit as st
 
-from dashboard.components.styles import get_priority_badge, get_status_badge, _clean_html
+from dashboard.components.styles import get_priority_badge, get_status_badge, _clean_html, render_section_header
 from dashboard.components.empty_state import render_empty_state
 from src.data.complaints_store import (
     get_complaints_df,
@@ -21,18 +21,10 @@ PROGRESS_STAGES = ["Submitted", "Under Review", "Assigned", "In Progress", "Reso
 
 def render_page() -> None:
     """Renders the Admin Complaint Management view."""
-    st.markdown(
-        """
-        <div style="margin-bottom: 1.25rem;">
-            <h1 style="margin: 0; font-size: 1.75rem; color: #1A1A1A; font-weight: 700;">
-                📋 Campus Complaint Management & Dispatch
-            </h1>
-            <p style="margin: 0.2rem 0 0 0; color: #555555; font-size: 0.92rem;">
-                Unified management of student-submitted issues, external dataset ingestion, and operational ticket lifecycles.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    render_section_header(
+        title="Campus Complaint Management & Dispatch",
+        subtitle="Unified management of student-submitted issues, external dataset ingestion, and operational ticket lifecycles.",
+        badge="Operations Register",
     )
 
     tab_register, tab_new, tab_upload = st.tabs(
@@ -91,7 +83,18 @@ def render_page() -> None:
                     | view_df["student_name"].fillna("").str.lower().str.contains(query, na=False)
                 ]
 
-            st.markdown(f"**Showing {len(view_df)} tickets** in active university register (including Student submissions):")
+            col_count, col_exp = st.columns([3, 1.2])
+            with col_count:
+                st.markdown(f"**Showing {len(view_df)} tickets** in active university register (including Student submissions):")
+            with col_exp:
+                st.download_button(
+                    "📥 Export Filtered CSV",
+                    data=view_df.to_csv(index=False),
+                    file_name="campus_complaints_export.csv",
+                    mime="text/csv",
+                    type="secondary",
+                    use_container_width=True,
+                )
 
             # Render styled complaint rows
             for _, r in view_df.iterrows():

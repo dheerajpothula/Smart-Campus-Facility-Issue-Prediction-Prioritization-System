@@ -63,11 +63,14 @@ GLOBAL_LIGHT_THEME_CSS = """
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
     }
 
-    /* Main view container padding */
+    /* Main view container padding - Full-width wide desktop SaaS layout */
     .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 3.5rem !important;
-        max-width: 1320px !important;
+        padding-top: 1.25rem !important;
+        padding-bottom: 3rem !important;
+        padding-left: 2.25rem !important;
+        padding-right: 2.25rem !important;
+        max-width: 100% !important;
+        width: 100% !important;
     }
 
     /* Hide default Streamlit left sidebar so Admin right sidebar is primary */

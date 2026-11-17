@@ -1,9 +1,11 @@
 """
 Settings & Priority Weights Configuration Page.
 Allows campus administrators to configure the multi-criteria priority scoring weights with validation and live updates.
+Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2), and Primary Brown (#756044).
 """
 import streamlit as st
 
+from dashboard.components.styles import render_section_header
 from src.prediction.priority_scoring import (
     PriorityWeights,
     get_current_weights,
@@ -14,18 +16,10 @@ from src.prediction.priority_scoring import (
 
 def render_page() -> None:
     """Renders the Configurable Priority Weights & System Settings view."""
-    st.markdown(
-        """
-        <div style="margin-bottom: 1.25rem;">
-            <h1 style="margin: 0; font-size: 1.75rem; color: #0f172a; font-weight: 700;">
-                ⚙️ Configurable Priority Weights & Scoring Settings
-            </h1>
-            <p style="margin: 0.2rem 0 0 0; color: #64748b; font-size: 0.92rem;">
-                Adjust the sensitivity coefficients of the Multi-Criteria Priority Index (MCPI) algorithm.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    render_section_header(
+        title="Configurable Priority Weights & Scoring Settings",
+        subtitle="Adjust the sensitivity coefficients of the Multi-Criteria Priority Index (MCPI) algorithm.",
+        badge="Algorithm Configuration",
     )
 
     current = get_current_weights()
@@ -33,17 +27,17 @@ def render_page() -> None:
     st.markdown(
         """
         <div class="dashboard-card">
-            <h3 style="margin-top: 0; color: #0f172a; font-size: 1.1rem;">
-                📐 Mathematical Foundation: Multi-Criteria Priority Index
+            <h3 style="margin-top: 0; color: #1A1A1A; font-size: 1.15rem; font-weight: 700;">
+                📐 Mathematical Foundation: Multi-Criteria Priority Index (MCPI)
             </h3>
-            <p style="color: #475569; font-size: 0.88rem; margin-bottom: 0.5rem;">
+            <p style="color: #4A4A4A; font-size: 0.9rem; margin-bottom: 0.5rem; line-height: 1.5;">
                 Every active work order is ranked by calculating an objective composite score (0–100):
             </p>
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem 1rem; font-family: monospace; font-size: 0.95rem; color: #1e40af; margin-bottom: 0.5rem;">
+            <div style="background-color: #FDFBF7; border: 1px solid #EAE3D2; border-radius: 6px; padding: 0.85rem 1.1rem; font-family: monospace; font-size: 0.95rem; color: #756044; font-weight: 700; margin-bottom: 0.6rem;">
                 Priority Score = 100 × [ (w₁ × Severity) + (w₂ × Criticality) + (w₃ × Recurrence) + (w₄ × Impact) ]
             </div>
-            <p style="color: #64748b; font-size: 0.82rem; margin: 0;">
-                <strong>Constraint:</strong> The sum of all four coefficients must equal 1.0 (100%) to maintain calibrated 0–100 score distribution.
+            <p style="color: #555555; font-size: 0.84rem; margin: 0;">
+                <strong>Constraint:</strong> The sum of all four coefficients must equal 1.0 (100%) to maintain a calibrated 0–100 score distribution.
             </p>
         </div>
         """,

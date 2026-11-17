@@ -1,8 +1,9 @@
 """
 FIPP — Facility Issue Prediction & Prioritisation System
-Role Selection Gateway Screen with Panoramic Campus Hero Banner and Pixel-Accurate Reference Styling.
+Role Selection Gateway Screen with Full-Width Panoramic Campus Hero Banner
+and Pixel-Accurate Reference Styling.
 Adheres strictly to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), and Soft Tan (#EAE3D2).
-Engineered to fit completely within the viewport without vertical scrolling.
+Engineered to span the full browser width with zero top whitespace.
 """
 import base64
 from pathlib import Path
@@ -30,20 +31,20 @@ def get_hero_banner_base64() -> str:
 
 def render_role_selection_screen() -> None:
     """
-    Renders the exact FIPP Landing Page matching the user's reference mockup:
-    - Panoramic university campus hero banner at the top, without whitespace above it.
-    - Rounded card overlay container with arch top.
-    - Centered title: 'FIPP - Facility Issue Prediction & Prioritisation System' with dual-tone color.
+    Renders the full-width FIPP Landing Page matching the user's reference mockup:
+    - Panoramic university campus hero banner spanning 100% of the browser width with zero whitespace.
+    - Arched cutout card header overlapping the banner.
+    - Centered title: 'FIPP - Facility Issue Prediction & Prioritisation' with dual-tone color.
     - Subtle horizontal underline pill (#756044).
-    - Two equal-sized Administrator and Student cards.
+    - Two prominent equal-sized Administrator and Student cards.
     - Icons on the left, with headings and descriptions beside them.
     - Brown action buttons inside the bottom of their respective cards:
       'Continue as Administrator →' and 'Continue as Student →'.
-    - Fits the full screen comfortably without vertical scrolling.
+    - Fully responsive wide SaaS layout.
     """
     b64_banner = get_hero_banner_base64()
 
-    # Scoped styles for the pixel-perfect compact landing page
+    # Scoped styles for the edge-to-edge panoramic landing page
     st.markdown(
         """
         <style>
@@ -53,41 +54,54 @@ def render_role_selection_screen() -> None:
             height: 0 !important;
         }
 
-        /* Scoped Container Styling - Zero top whitespace */
+        /* Scoped Container Styling - Zero margins, full browser width */
         .block-container {
             padding-top: 0 !important;
-            padding-bottom: 1.5rem !important;
-            max-width: 1040px !important;
-            margin: 0 auto !important;
+            padding-bottom: 2.5rem !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
         }
 
+        /* Full-width edge-to-edge panoramic campus hero banner */
         .fipp-hero-banner-wrapper {
-            width: 100%;
-            border-radius: 18px 18px 0 0;
+            width: 100% !important;
+            height: 380px !important;
+            max-height: 380px !important;
             overflow: hidden;
-            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
             position: relative;
-            max-height: 250px;
-            margin-top: 0.5rem !important;
+            margin-top: 0 !important;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
         }
 
         .fipp-hero-banner-img {
             width: 100%;
-            height: 250px;
+            height: 100%;
             object-fit: cover;
-            object-position: center 28%;
+            object-position: center 30%;
             display: block;
+        }
+
+        /* Centered content wrapper for the curved tab and role cards */
+        .fipp-landing-main-wrap {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 10;
         }
 
         .fipp-curved-top-bar {
             background-color: #FDFBF7;
             border-radius: 36px 36px 0 0;
-            margin-top: -55px;
-            padding: 1.25rem 2rem 0.25rem 2rem;
+            margin-top: -65px;
+            padding: 1.6rem 2.5rem 0.5rem 2.5rem;
             text-align: center;
             position: relative;
             z-index: 10;
-            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.03);
+            box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.04);
             border-top: 1px solid #EAE3D2;
             border-left: 1px solid #EAE3D2;
             border-right: 1px solid #EAE3D2;
@@ -95,11 +109,11 @@ def render_role_selection_screen() -> None:
 
         .fipp-title-heading {
             text-align: center;
-            font-size: 1.95rem;
+            font-size: 2.2rem;
             font-weight: 800;
             margin: 0;
             letter-spacing: -0.025em;
-            line-height: 1.2;
+            line-height: 1.25;
         }
 
         .fipp-title-dark {
@@ -111,35 +125,41 @@ def render_role_selection_screen() -> None:
         }
 
         .fipp-title-underline {
-            width: 64px;
-            height: 3.5px;
+            width: 72px;
+            height: 4px;
             background-color: #756044;
             border-radius: 9999px;
-            margin: 0.45rem auto 1.1rem auto;
+            margin: 0.5rem auto 1.25rem auto;
         }
 
         /* Style the st.container(border=True) to match reference card */
         div[data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #FFFFFF !important;
             border: 1px solid #EAE3D2 !important;
-            border-radius: 16px !important;
-            padding: 1.2rem 1.4rem 1.1rem 1.4rem !important;
-            box-shadow: 0 4px 14px rgba(26, 26, 26, 0.04) !important;
+            border-radius: 18px !important;
+            padding: 1.6rem 1.8rem 1.4rem 1.8rem !important;
+            box-shadow: 0 4px 16px rgba(26, 26, 26, 0.04) !important;
+            transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+        }
+
+        div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+            border-color: #D8CFBD !important;
+            box-shadow: 0 8px 24px rgba(26, 26, 26, 0.08) !important;
         }
 
         .fipp-card-header {
             display: flex;
-            gap: 1rem;
+            gap: 1.15rem;
             align-items: flex-start;
-            margin-bottom: 0.85rem;
-            min-height: 80px;
+            margin-bottom: 1.1rem;
+            min-height: 85px;
         }
 
         .fipp-icon-badge {
-            width: 48px;
-            height: 48px;
-            min-width: 48px;
-            border-radius: 12px;
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            border-radius: 14px;
             background-color: #EAE3D2;
             border: 1px solid #D8CFBD;
             display: flex;
@@ -153,17 +173,17 @@ def render_role_selection_screen() -> None:
         }
 
         .fipp-card-title {
-            margin: 0 0 0.25rem 0;
-            font-size: 1.35rem;
+            margin: 0 0 0.35rem 0;
+            font-size: 1.45rem;
             font-weight: 700;
             color: #1A1A1A;
             letter-spacing: -0.015em;
         }
 
         .fipp-card-desc {
-            font-size: 0.88rem;
+            font-size: 0.95rem;
             color: #4A4A4A;
-            line-height: 1.45;
+            line-height: 1.5;
             margin: 0;
         }
 
@@ -174,18 +194,18 @@ def render_role_selection_screen() -> None:
             border: 1px solid #756044 !important;
             border-radius: 10px !important;
             font-weight: 600 !important;
-            font-size: 0.92rem !important;
-            padding: 0.65rem 1.2rem !important;
+            font-size: 1rem !important;
+            padding: 0.75rem 1.4rem !important;
             box-shadow: 0 2px 8px rgba(117, 96, 68, 0.25) !important;
             transition: all 0.2s ease-in-out !important;
-            margin-top: 0.2rem !important;
+            margin-top: 0.4rem !important;
         }
 
         div[data-testid="stButton"] > button[kind="primary"]:hover {
             background-color: #5D4A32 !important;
             border-color: #5D4A32 !important;
             color: #FFFFFF !important;
-            box-shadow: 0 4px 12px rgba(93, 74, 50, 0.35) !important;
+            box-shadow: 0 4px 14px rgba(93, 74, 50, 0.35) !important;
             transform: translateY(-1px) !important;
         }
         </style>
@@ -193,7 +213,7 @@ def render_role_selection_screen() -> None:
         unsafe_allow_html=True,
     )
 
-    # 1. Panoramic Campus Hero Banner
+    # 1. Full-Width Edge-to-Edge Panoramic Campus Hero Banner
     if b64_banner:
         st.markdown(
             f"""
@@ -207,18 +227,21 @@ def render_role_selection_screen() -> None:
     # 2. Arched Cutout Header with FIPP Title & Underline
     st.markdown(
         """
-        <div class="fipp-curved-top-bar">
-            <h1 class="fipp-title-heading">
-                <span class="fipp-title-dark" style="color: #1A1A1A;">FIPP - </span><span class="fipp-title-brown" style="color: #756044;">Facility Issue Prediction &amp; Prioritisation</span>
-            </h1>
-            <div class="fipp-title-underline" style="background-color: #756044;"></div>
+        <div class="fipp-landing-main-wrap">
+            <div class="fipp-curved-top-bar">
+                <h1 class="fipp-title-heading">
+                    <span class="fipp-title-dark" style="color: #1A1A1A;">FIPP - </span><span class="fipp-title-brown" style="color: #756044;">Facility Issue Prediction &amp; Prioritisation</span>
+                </h1>
+                <div class="fipp-title-underline" style="background-color: #756044;"></div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # 3. Two Equal-Sized Role Cards Side-by-Side (Buttons integrated directly inside the cards)
-    col_admin, col_student = st.columns(2, gap="medium")
+    # 3. Two Equal-Sized Role Cards Side-by-Side in Spacious Container
+    st.markdown('<div class="fipp-landing-main-wrap" style="padding-top: 1rem;">', unsafe_allow_html=True)
+    col_admin, col_student = st.columns(2, gap="large")
 
     with col_admin:
         with st.container(border=True):
@@ -226,7 +249,7 @@ def render_role_selection_screen() -> None:
                 """
                 <div class="fipp-card-header">
                     <div class="fipp-icon-badge">
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="#756044" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="#756044" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h9.2c-.13-.64-.2-1.31-.2-2 0-1.85.73-3.52 1.93-4.76C13.9 14.47 12.92 14 12 14zm7.25 1.5v1.08c-.3.12-.57.28-.82.47l-.95-.55-.75 1.3.95.55c-.06.32-.08.64-.08.95s.02.63.08.95l-.95.55.75 1.3.95-.55c.25.19.52.35.82.47V23h1.5v-1.08c.3-.12.57-.28.82-.47l.95.55.75-1.3-.95-.55c.06-.32.08-.64.08-.95s-.02-.63-.08-.95l.95-.55-.75-1.3-.95.55c-.25-.19-.52-.35-.82-.47V15.5h-1.5zm.75 4.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
                         </svg>
                     </div>
@@ -251,7 +274,7 @@ def render_role_selection_screen() -> None:
                 """
                 <div class="fipp-card-header">
                     <div class="fipp-icon-badge">
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="#756044" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="#756044" xmlns="http://www.w3.org/2000/svg">
                             <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
                         </svg>
                     </div>
@@ -269,3 +292,5 @@ def render_role_selection_screen() -> None:
                 st.session_state["selected_role"] = "student"
                 st.session_state["user_role"] = None
                 st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)

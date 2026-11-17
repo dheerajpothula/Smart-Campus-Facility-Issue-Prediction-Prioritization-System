@@ -3,23 +3,16 @@ Model Insights Page.
 Presents machine learning model evaluation, feature importances, and diagnostic metrics.
 """
 import streamlit as st
+from dashboard.components.styles import render_section_header
 from dashboard.components.empty_state import render_empty_state
 
 
 def render_page() -> None:
     """Renders the Model Insights view."""
-    st.markdown(
-        """
-        <div style="margin-bottom: 1.25rem;">
-            <h1 style="margin: 0; font-size: 1.75rem; color: #0f172a; font-weight: 700;">
-                🧠 Machine Learning Model Insights & Architecture
-            </h1>
-            <p style="margin: 0.2rem 0 0 0; color: #64748b; font-size: 0.92rem;">
-                Pipeline specifications, TF-IDF vectorization parameters, and academic validation protocols.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    render_section_header(
+        title="Machine Learning Model Insights & Architecture",
+        subtitle="Pipeline specifications, TF-IDF vectorization parameters, and academic validation protocols.",
+        badge="Architecture Specs",
     )
 
     # Empty State Display with light-theme styling

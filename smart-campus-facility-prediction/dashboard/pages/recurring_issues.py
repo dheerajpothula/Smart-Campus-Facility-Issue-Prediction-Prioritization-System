@@ -1,29 +1,22 @@
 """
 Chronic Recurring Problem Tracking Page.
 Tracks chronic infrastructure failures, frequency metrics, prior repair logs, and permanent root-cause overhaul plans.
+Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2), and Primary Brown (#756044).
 """
 import streamlit as st
 import pandas as pd
 
-from dashboard.components.styles import get_priority_badge, get_status_badge
+from dashboard.components.styles import get_priority_badge, get_status_badge, render_section_header
 from dashboard.components.empty_state import render_empty_state
 from src.data.complaints_store import get_complaints_df
 
 
 def render_page() -> None:
     """Renders the Chronic Recurring Problem Tracking view."""
-    st.markdown(
-        """
-        <div style="margin-bottom: 1.25rem;">
-            <h1 style="margin: 0; font-size: 1.75rem; color: #0f172a; font-weight: 700;">
-                🔁 Chronic Recurring Problem Tracking
-            </h1>
-            <p style="margin: 0.2rem 0 0 0; color: #64748b; font-size: 0.92rem;">
-                Surveillance of repetitive equipment breakdowns across campus requiring structural overhaul rather than temporary patches.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    render_section_header(
+        title="Chronic Recurring Problem Tracking",
+        subtitle="Surveillance of repetitive equipment breakdowns across campus requiring structural overhaul rather than temporary patches.",
+        badge="Pattern Recognition",
     )
 
     df = get_complaints_df()
@@ -62,36 +55,40 @@ def render_page() -> None:
 
         st.markdown(
             f"""
-            <div class="dashboard-card" style="border-left: 4px solid #ef4444; margin-bottom: 1rem;">
+            <div class="dashboard-card" style="border-left: 4px solid #756044; margin-bottom: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem;">
                     <div>
-                        <span style="font-family: monospace; font-size: 0.78rem; font-weight: 700; color: #1e40af;">{cid}</span>
-                        <span style="font-size: 0.75rem; font-weight: 600; color: #2563eb; background-color: #eff6ff; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.3rem;">{fac}</span>
-                        <span style="font-size: 0.75rem; font-weight: 700; color: #b91c1c; background-color: #fee2e2; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.3rem;">
+                        <span style="font-family: monospace; font-size: 0.8rem; font-weight: 700; color: #1A1A1A; background-color: #EAE3D2; padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid #D8CFBD;">
+                            {cid}
+                        </span>
+                        <span style="font-size: 0.76rem; font-weight: 600; color: #1A1A1A; background-color: #F6F3EB; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.35rem; border: 1px solid #EAE3D2;">
+                            {fac}
+                        </span>
+                        <span style="font-size: 0.76rem; font-weight: 700; color: #756044; background-color: #EAE3D2; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.35rem; border: 1px solid #D8CFBD;">
                             🔁 {rec_count} Previous Incidents
                         </span>
-                        <h3 style="margin: 0.35rem 0 0.2rem 0; color: #0f172a; font-size: 1.1rem;">{title}</h3>
+                        <h3 style="margin: 0.35rem 0 0.2rem 0; color: #1A1A1A; font-size: 1.15rem; font-weight: 700;">{title}</h3>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.6rem;">
                         {get_priority_badge(row.get('priority_tier', 'High'))}
                         {get_status_badge(status)}
                     </div>
                 </div>
 
-                <p style="color: #475569; font-size: 0.88rem; margin: 0 0 0.65rem 0;">
+                <p style="color: #4A4A4A; font-size: 0.9rem; margin: 0 0 0.75rem 0; line-height: 1.5;">
                     {desc}
                 </p>
 
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.7rem 0.9rem; margin-bottom: 0.65rem;">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.5rem; font-size: 0.82rem; color: #334155;">
+                <div style="background-color: #FDFBF7; border: 1px solid #EAE3D2; border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 0.75rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.65rem; font-size: 0.84rem; color: #2D2D2D;">
                         <div>📍 <strong>Location:</strong> {loc}</div>
-                        <div>📊 <strong>Recurrence Frequency:</strong> {rec_rate}</div>
-                        <div>🔧 <strong>Latest Action Logged:</strong> {action}</div>
-                        <div>💡 <strong>Root Cause Analysis:</strong> Material fatigue / improper original installation</div>
+                        <div>📊 <strong>Frequency:</strong> {rec_rate}</div>
+                        <div>🔧 <strong>Latest Action:</strong> {action}</div>
+                        <div>💡 <strong>Root Cause:</strong> Material fatigue / improper original installation</div>
                     </div>
                 </div>
 
-                <div style="font-size: 0.8rem; color: #0369a1; background-color: #e0f2fe; padding: 0.4rem 0.75rem; border-radius: 4px;">
+                <div style="font-size: 0.82rem; color: #1A1A1A; background-color: #EAE3D2; border: 1px solid #D8CFBD; padding: 0.5rem 0.85rem; border-radius: 6px; font-weight: 500;">
                     🛡️ <strong>Engineering Recommendation:</strong> Cease repetitive spot repairs. Request procurement of complete subsystem overhaul package.
                 </div>
             </div>

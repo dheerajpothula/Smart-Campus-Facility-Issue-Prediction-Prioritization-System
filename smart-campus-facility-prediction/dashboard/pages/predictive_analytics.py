@@ -1,29 +1,22 @@
 """
 Predictive Maintenance Page.
 Analyzes campus vulnerability, forecasts recurring equipment failures, and provides proactive servicing recommendations.
+Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), Soft Tan (#EAE3D2), and Primary Brown (#756044).
 """
 import streamlit as st
 import pandas as pd
 
-from dashboard.components.styles import get_priority_badge
+from dashboard.components.styles import get_priority_badge, render_section_header
 from dashboard.components.empty_state import render_empty_state
 from src.data.complaints_store import get_complaints_df
 
 
 def render_page() -> None:
     """Renders the Predictive Maintenance & Failure Forecasting view."""
-    st.markdown(
-        """
-        <div style="margin-bottom: 1.25rem;">
-            <h1 style="margin: 0; font-size: 1.75rem; color: #0f172a; font-weight: 700;">
-                🔮 Predictive Maintenance & Vulnerability Forecasting
-            </h1>
-            <p style="margin: 0.2rem 0 0 0; color: #64748b; font-size: 0.92rem;">
-                Anticipating high-risk facilities and recommending pre-emptive maintenance actions before disruptive breakdowns occur.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    render_section_header(
+        title="Predictive Maintenance & Failure Forecasting",
+        subtitle="Anticipating high-risk facilities and recommending pre-emptive maintenance actions before disruptive breakdowns occur.",
+        badge="Proactive Telemetry",
     )
 
     df = get_complaints_df()
@@ -38,8 +31,23 @@ def render_page() -> None:
         )
         return
 
+    # Methodological Disclaimer Banner
+    st.markdown(
+        """
+        <div style="background-color: #FFFFFF; border: 1px solid #EAE3D2; border-left: 4px solid #756044; border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; color: #1A1A1A; font-size: 0.92rem; margin-bottom: 0.2rem;">
+                🛡️ Algorithmic Forecast Notice
+            </div>
+            <p style="margin: 0; font-size: 0.84rem; color: #555555; line-height: 1.45;">
+                <strong>Prediction ≠ Confirmed Physical Breakdown.</strong> Algorithmic issue-risk forecast based on historical recurrence cycles, equipment MTBF, and footfall telemetry.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     # High-Risk Facilities Ranking
-    st.subheader("🗺️ High-Risk Campus Facilities Ranking")
+    st.markdown("### 🗺️ High-Risk Campus Facilities Ranking")
     st.caption("Identified through multi-incident density, repeat breakdown probability, and location criticality:")
 
     risk_group = (
@@ -59,7 +67,7 @@ def render_page() -> None:
 
     risk_group = risk_group.sort_values(by="Calculated_Risk_Score", ascending=False)
 
-    col_rk1, col_rk2 = st.columns([1.5, 1])
+    col_rk1, col_rk2 = st.columns([1.6, 1])
 
     with col_rk1:
         st.dataframe(
@@ -77,62 +85,67 @@ def render_page() -> None:
         )
 
     with col_rk2:
+        top_risk = risk_group.iloc[0] if not risk_group.empty else None
+        if top_risk is not None:
+            st.markdown(
+                f"""
+                <div class="dashboard-card" style="border: 1px solid #EAE3D2; background-color: #FFFFFF;">
+                    <span style="font-size: 0.72rem; font-weight: 700; color: #756044; background: #EAE3D2; border-radius: 4px; padding: 0.15rem 0.5rem; text-transform: uppercase;">
+                        Highest Urgency Area
+                    </span>
+                    <h3 style="margin: 0.4rem 0 0.2rem 0; font-size: 1.2rem; color: #1A1A1A;">
+                        {top_risk['location']}
+                    </h3>
+                    <p style="font-size: 0.85rem; color: #555555; margin-bottom: 0.8rem;">
+                        Subsystem: <strong>{top_risk['facility_type']}</strong>
+                    </p>
+                    <div style="font-size: 1.85rem; font-weight: 800; color: #756044; margin-bottom: 0.4rem;">
+                        {top_risk['Calculated_Risk_Score']} <span style="font-size: 0.95rem; font-weight: 500; color: #555555;">Risk Score / 100</span>
+                    </div>
+                    <p style="font-size: 0.84rem; color: #4A4A4A; line-height: 1.45; margin-bottom: 0.75rem;">
+                        High recurring failure frequency detected. Recommended action: schedule comprehensive preventive maintenance inspection before peak class hours.
+                    </p>
+                    <div style="border-top: 1px solid #EAE3D2; padding-top: 0.6rem; font-size: 0.8rem; color: #555555;">
+                        • Peak Severity: <strong>{top_risk['Max_Severity']}</strong><br>
+                        • Cumulative Incidents: <strong>{top_risk['Incident_Count']}</strong>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("<div style='height: 1.25rem;'></div>", unsafe_allow_html=True)
+
+    # Proactive Maintenance Recommendations
+    st.markdown("### 🛠️ Proactive Maintenance Recommendations")
+
+    c_rec1, c_rec2 = st.columns(2)
+    with c_rec1:
         st.markdown(
             """
-            <div class="dashboard-card" style="height: 100%;">
-                <h4 style="margin-top: 0; color: #0f172a; font-size: 0.95rem;">Risk Assessment Criteria</h4>
-                <ul style="font-size: 0.82rem; color: #475569; padding-left: 1.1rem; line-height: 1.6;">
-                    <li><strong>Temporal Clustering</strong>: Incidents logged within consecutive 14-day operational cycles.</li>
-                    <li><strong>Asset Criticality</strong>: Server rooms, chemistry laboratories, and central examination halls receive 1.5x risk multiplier.</li>
-                    <li><strong>Subsystem Degradation</strong>: Recurring HVAC and plumbing lines indicate structural line fatigue rather than user error.</li>
-                </ul>
+            <div class="dashboard-card">
+                <h4 style="margin: 0 0 0.35rem 0; color: #1A1A1A; font-weight: 700;">Hostel Block Washroom Valves & Plumbing</h4>
+                <p style="font-size: 0.85rem; color: #4A4A4A; line-height: 1.5; margin-bottom: 0.75rem;">
+                    Repeated flush valve leakages correlate with weekend water pressure fluctuations. Proactive pressure regulator installation recommended to prevent recurring pipe bursts.
+                </p>
+                <div style="font-size: 0.78rem; color: #756044; font-weight: 600;">
+                    Action: Replace gasket assemblies & install pressure balancing valve.
+                </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    st.markdown("---")
-
-    # Predicted Recurring Problems & Recommended Preventive Actions
-    st.subheader("🛠️ Recommended Proactive Maintenance Actions")
-    st.caption("Automated preventative work orders generated by the risk forecasting engine:")
-
-    c_act1, c_act2 = st.columns(2)
-
-    with c_act1:
+    with c_rec2:
         st.markdown(
             """
-            <div class="dashboard-card" style="border-left: 4px solid #ea580c;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: #c2410c; text-transform: uppercase;">Forecasted Failure</span>
-                    <span style="font-size: 0.75rem; background-color: #ffedd5; color: #9a3412; font-weight: 600; padding: 0.15rem 0.45rem; border-radius: 4px;">Next 7 Days (88% Prob.)</span>
-                </div>
-                <h4 style="margin: 0.2rem 0; color: #0f172a;">Hostel Block B Main Line Joint Rupture</h4>
-                <p style="font-size: 0.84rem; color: #475569; margin: 0.3rem 0 0.6rem 0;">
-                    Repeated pressure valve spikes in 2nd floor washroom indicate corrosion on the shared riser pipe.
+            <div class="dashboard-card">
+                <h4 style="margin: 0 0 0.35rem 0; color: #1A1A1A; font-weight: 700;">Data Center & Server Room Precision HVAC</h4>
+                <p style="font-size: 0.85rem; color: #4A4A4A; line-height: 1.5; margin-bottom: 0.75rem;">
+                    Compressor tripping telemetry indicates heat exchanger coil fouling. Servicing prior to summer temperature spikes will prevent critical server room thermal shutdowns.
                 </p>
-                <div style="background-color: #f8fafc; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.8rem; color: #334155;">
-                    🔧 <strong>Recommended Action:</strong> Replace 4-inch PVC elbow junction with galvanized steel connector; install inline pressure relief regulator.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with c_act2:
-        st.markdown(
-            """
-            <div class="dashboard-card" style="border-left: 4px solid #2563eb;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                    <span style="font-size: 0.75rem; font-weight: 700; color: #1e40af; text-transform: uppercase;">Forecasted Failure</span>
-                    <span style="font-size: 0.75rem; background-color: #dbeafe; color: #1e40af; font-weight: 600; padding: 0.15rem 0.45rem; border-radius: 4px;">Next 14 Days (76% Prob.)</span>
-                </div>
-                <h4 style="margin: 0.2rem 0; color: #0f172a;">Server Room Precision AC Compressor Lockout</h4>
-                <p style="font-size: 0.84rem; color: #475569; margin: 0.3rem 0 0.6rem 0;">
-                    Compressor thermal trips logged 3 times this month due to condenser coil dust accumulation.
-                </p>
-                <div style="background-color: #f8fafc; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.8rem; color: #334155;">
-                    🔧 <strong>Recommended Action:</strong> Chemical cleaning of external condenser fins and refrigerant top-up scheduled prior to weekend server load test.
+                <div style="font-size: 0.78rem; color: #756044; font-weight: 600;">
+                    Action: Deep chemical condenser flush & sensor calibration.
                 </div>
             </div>
             """,

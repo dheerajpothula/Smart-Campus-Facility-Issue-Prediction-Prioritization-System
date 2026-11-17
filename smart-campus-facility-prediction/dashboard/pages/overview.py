@@ -1,30 +1,23 @@
 """
 Overview Page — Maintenance Operations Dashboard.
 Presents campus-wide operational KPIs, facility distributions, and interactive filtering with modern SaaS styling.
+Strictly adheres to the 60/30/10 palette: Warm Chalk (#FDFBF7), Deep Charcoal (#1A1A1A), and Soft Tan (#EAE3D2).
 """
 import streamlit as st
 import pandas as pd
 
-from dashboard.components.styles import render_kpi, get_priority_badge, get_status_badge
+from dashboard.components.styles import render_kpi, get_priority_badge, get_status_badge, render_section_header
 from dashboard.components.empty_state import render_empty_state
 from src.data.complaints_store import get_complaints_df, get_kpi_summary
 
 
 def render_page() -> None:
     """Renders the Maintenance Operations Dashboard view."""
-    # Header
-    st.markdown(
-        """
-        <div style="margin-bottom: 1.25rem;">
-            <h1 style="margin: 0; font-size: 1.75rem; color: #0f172a; font-weight: 700;">
-                📊 Maintenance Operations Dashboard
-            </h1>
-            <p style="margin: 0.2rem 0 0 0; color: #64748b; font-size: 0.92rem;">
-                Campus-wide infrastructure surveillance, workload KPIs, and maintenance dispatch telemetry.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    # Section Header
+    render_section_header(
+        title="Maintenance Operations Dashboard",
+        subtitle="Campus-wide infrastructure surveillance, workload KPIs, and maintenance dispatch telemetry.",
+        badge="Executive Operations",
     )
 
     # Fetch live data
@@ -70,7 +63,7 @@ def render_page() -> None:
     # Calculate KPIs from filtered data
     kpis = get_kpi_summary(filtered_df)
 
-    # Render KPI Cards in a clean 6-column grid
+    # Render KPI Cards in a clean 6-column grid across wide desktop screen
     k1, k2, k3, k4, k5, k6 = st.columns(6)
     with k1:
         render_kpi("Total Issues", kpis["total"], caption="Active campus scope", icon="📋")
@@ -91,53 +84,53 @@ def render_page() -> None:
         st.warning("No complaint records match the active filter criteria. Clear filters to resume view.")
         return
 
-    # Visual Distribution Charts in Deep Charcoal and Soft Tan
+    # Visual Distribution Charts in Warm Brown (#756044) and Deep Charcoal (#1A1A1A)
     c_dist1, c_dist2 = st.columns(2)
 
     with c_dist1:
         st.markdown(
             """
-            <div class="dashboard-card">
-                <h3 style="margin-top: 0; font-size: 1.05rem; color: #1A1A1A;">
+            <div class="dashboard-card" style="margin-bottom: 0.5rem;">
+                <h3 style="margin-top: 0; font-size: 1.05rem; color: #1A1A1A; font-weight: 700;">
                     🏢 Complaints by Facility Subsystem
                 </h3>
-                <p style="color: #555555; font-size: 0.8rem; margin-bottom: 0.8rem;">
-                    Proportion of issues across campus engineering departments.
+                <p style="color: #555555; font-size: 0.82rem; margin-bottom: 0.8rem;">
+                    Proportion of registered issues across campus engineering departments.
                 </p>
             </div>
             """,
             unsafe_allow_html=True,
         )
         facility_counts = filtered_df["facility_type"].value_counts()
-        st.bar_chart(facility_counts, color="#1A1A1A")
+        st.bar_chart(facility_counts, color="#756044")
 
     with c_dist2:
         st.markdown(
             """
-            <div class="dashboard-card">
-                <h3 style="margin-top: 0; font-size: 1.05rem; color: #1A1A1A;">
+            <div class="dashboard-card" style="margin-bottom: 0.5rem;">
+                <h3 style="margin-top: 0; font-size: 1.05rem; color: #1A1A1A; font-weight: 700;">
                     ⚠️ Severity & Risk Tier Distribution
                 </h3>
-                <p style="color: #555555; font-size: 0.8rem; margin-bottom: 0.8rem;">
-                    Breakdown of urgent safety hazards vs routine maintenance.
+                <p style="color: #555555; font-size: 0.82rem; margin-bottom: 0.8rem;">
+                    Breakdown of urgent physical safety hazards vs routine maintenance tasks.
                 </p>
             </div>
             """,
             unsafe_allow_html=True,
         )
         sev_counts = filtered_df["severity"].value_counts()
-        st.bar_chart(sev_counts, color="#D8CFBD")
+        st.bar_chart(sev_counts, color="#1A1A1A")
 
-    st.markdown("<div style='height: 0.8rem;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 1.25rem;'></div>", unsafe_allow_html=True)
 
     # Location-wise breakdown table
     st.markdown(
         """
-        <div class="dashboard-card">
-            <h3 style="margin-top: 0; font-size: 1.05rem; color: #0f172a;">
+        <div class="dashboard-card" style="margin-bottom: 0.75rem;">
+            <h3 style="margin-top: 0; font-size: 1.05rem; color: #1A1A1A; font-weight: 700;">
                 📍 Campus Location Vulnerability & Density Analysis
             </h3>
-            <p style="color: #64748b; font-size: 0.82rem; margin-bottom: 0.5rem;">
+            <p style="color: #555555; font-size: 0.82rem; margin-bottom: 0.5rem;">
                 Cluster distribution of registered incidents across campus buildings and facility zones.
             </p>
         </div>
