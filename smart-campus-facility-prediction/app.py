@@ -92,6 +92,15 @@ def main() -> None:
         if param_role in ["admin", "student"]:
             st.session_state["selected_role"] = param_role
             selected_role = param_role
+            if param_role == "student" and st.query_params.get("auth") == "true":
+                s_name = st.query_params.get("name", "Alex Chen")
+                s_id = st.query_params.get("id", "STU-2026-101")
+                auth = {"role": "student", "name": s_name, "id": s_id}
+                st.session_state["auth_user"] = auth
+                st.session_state["user_role"] = "student"
+                if st.query_params.get("agreed") == "true":
+                    st.session_state["student_agreed"] = True
+                    st.session_state["student_active_view"] = st.query_params.get("view", "raise")
 
     # Support for test harnesses that assign user_role directly
     if not auth and user_role in ["student", "admin"]:
