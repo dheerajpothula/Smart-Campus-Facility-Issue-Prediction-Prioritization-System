@@ -51,6 +51,8 @@ def _normalize_status(status: str | None) -> str:
     if not status:
         return "Submitted"
     s_lower = str(status).strip().lower()
+    if "withdrawn" in s_lower:
+        return "Withdrawn"
     if "resolved" in s_lower or "closed" in s_lower:
         return "Resolved"
     elif "progress" in s_lower or "investigating" in s_lower:
@@ -448,10 +450,20 @@ def add_complaint(new_ticket: dict) -> str:
         new_ticket["building"] = new_ticket["block"]
     if "facility_type" not in new_ticket and "category" in new_ticket:
         new_ticket["facility_type"] = new_ticket["category"]
+
+    # Handle multiple specific categories from Stage 2 dynamic checkboxes
+    if "specific_categories" in new_ticket and isinstance(new_ticket["specific_categories"], list):
+        if not new_ticket.get("specific_category"):
+            new_ticket["specific_category"] = ", ".join(new_ticket["specific_categories"])
+    elif "specific_category" in new_ticket and isinstance(new_ticket["specific_category"], str):
+        new_ticket.setdefault("specific_categories", [new_ticket["specific_category"]])
+
     if "title" not in new_ticket or not new_ticket["title"]:
         msg_t = new_ticket.get("message_type", "Query")
         spec_cat = new_ticket.get("specific_category") or new_ticket.get("sub_category") or new_ticket.get("category", "Issue")
         new_ticket["title"] = f"[{msg_t}] {spec_cat}"
+
+    new_ticket.setdefault("subject", new_ticket.get("title", ""))
 
     # Format location string
     bld = new_ticket.get("building", "")
@@ -501,6 +513,14 @@ def add_complaint(new_ticket: dict) -> str:
     new_ticket.setdefault("is_recurring", False)
     new_ticket.setdefault("recurrence_count", 0)
     new_ticket.setdefault("action_taken", "Reported by user; queued for triage.")
+    new_ticket.setdefault("remarks_history", [
+        {
+            "remarks": "Your request has been forwarded to the concerned Department for necessary action.",
+            "update_date": datetime.now().strftime("%m/%d/%Y %I:%M:%S %p"),
+            "name": "System Triage",
+            "supporting_document": "None",
+        }
+    ])
 
     # Calculate Priority Score dynamically for Admin triage
     weights = get_current_weights()
@@ -533,6 +553,93 @@ def update_complaint_status(complaint_id: str, new_status: str, action_taken: st
             r["status"] = norm_status
             if action_taken:
                 r["action_taken"] = action_taken
+            # Append status update to remarks history if present
+            now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+            remarks_list = r.setdefault("remarks_history", [])
+            remarks_list.insert(0, {
+                "remarks": f"Status updated to '{norm_status}'. {action_taken or ''}".strip(),
+                "update_date": now_str,
+                "name": "Administrator / Triage Squad",
+                "supporting_document": "None"
+            })
+            _save_to_disk(st.session_state["complaints_records"])
+            return True
+    return False
+
+
+def withdraw_complaint(complaint_id: str, student_id: str | None = None, reason: str = "") -> bool:
+    """
+    Safely withdraws an eligible open complaint belonging to the authenticated student.
+    Enforces student authorization isolation and records withdrawal in remarks history.
+    """
+    if "complaints_records" not in st.session_state:
+        st.session_state["complaints_records"] = _load_from_disk() or _generate_seed_complaints()
+
+    for r in st.session_state["complaints_records"]:
+        if r.get("complaint_id") == complaint_id:
+            # Enforce student isolation if student_id is passed
+            if student_id and r.get("student_id") and r.get("student_id") != student_id:
+                return False
+            curr_status = _normalize_status(r.get("status"))
+            if curr_status in ["Resolved", "Withdrawn"]:
+                return False
+
+            r["status"] = "Withdrawn"
+            r["is_withdrawn"] = True
+            r["withdrawal_reason"] = reason.strip() or "Withdrawn by student"
+
+            now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+            remarks_list = r.setdefault("remarks_history", [])
+            remarks_list.insert(0, {
+                "remarks": f"Request withdrawn by student. Reason: {reason.strip() or 'Not specified'}",
+                "update_date": now_str,
+                "name": f"Student ({student_id or r.get('student_id', 'Self')})",
+                "supporting_document": "None",
+            })
+            _save_to_disk(st.session_state["complaints_records"])
+            return True
+    return False
+
+
+def submit_complaint_feedback(complaint_id: str, rating: int, comments: str = "", student_id: str | None = None) -> bool:
+    """
+    Submits student feedback (1-5 star rating and optional suggestions) for a resolved complaint.
+    Enforces student authorization isolation and persists feedback to ticket storage.
+    """
+    if "complaints_records" not in st.session_state:
+        st.session_state["complaints_records"] = _load_from_disk() or _generate_seed_complaints()
+
+    rating_labels = {
+        1: "Poor",
+        2: "Below Average",
+        3: "Average",
+        4: "Good",
+        5: "Excellent",
+    }
+
+    for r in st.session_state["complaints_records"]:
+        if r.get("complaint_id") == complaint_id:
+            if student_id and r.get("student_id") and r.get("student_id") != student_id:
+                return False
+            curr_status = _normalize_status(r.get("status"))
+            if curr_status != "Resolved":
+                return False
+
+            r["feedback"] = {
+                "rating": rating,
+                "rating_label": rating_labels.get(rating, "Good"),
+                "comments": comments.strip(),
+                "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            }
+
+            now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+            remarks_list = r.setdefault("remarks_history", [])
+            remarks_list.insert(0, {
+                "remarks": f"Feedback submitted: {rating} Star(s) ({rating_labels.get(rating, '')}) - {comments.strip() or 'No comments'}",
+                "update_date": now_str,
+                "name": f"Student ({student_id or r.get('student_id', 'Self')})",
+                "supporting_document": "None",
+            })
             _save_to_disk(st.session_state["complaints_records"])
             return True
     return False

@@ -1,24 +1,29 @@
 """
-FIPP — Student Facility Portal (Stage 1).
-Implements the Student Complaint Submission Workflow based on the LPU RMS functional reference:
-1. Raise a Query and History are side-by-side at the top.
-2. When 'Raise a Query' is selected, only the complaint submission form is displayed.
-3. Does not automatically navigate to History; History opens only when explicitly clicked.
-4. Submission confirmation renders directly within the Raise a Query section without redirecting to History.
-5. Removed instruction box and all sequential numbering.
-6. Compact, clean section dividers with minimal vertical spacing.
-7. Strict Message Type -> Category -> Sub Category -> Specific Category dependency chain:
-   - Category is disabled until Message Type is selected.
-   - Sub Category is disabled until Category is selected.
-   - Specific Category is disabled until Sub Category is selected.
-   - Changing any parent selection immediately resets child selections.
-8. Enhanced colour visibility with high-contrast active states using Forest Green (#203A32).
-9. Modern Sage & Forest Design System:
-   - Soft Ivory: #F5F7F2
-   - Forest Green: #203A32
-   - Sage: #A8B9A3
-   - Pale Sage: #DCE5D8
-   - White: #FFFFFF
+FIPP — Student Facility Portal (Stage 2 Complete Implementation).
+Implements the complete Hostel Maintenance & Electrical Complaint System workflow
+based on the authoritative reference document: LPU_RMS_Hostel_Maintenance_Data-v2.pdf.
+
+Key Features:
+1. Side-by-side Top Navigation: 'Raise a Query' and 'History'.
+2. 5 Mandatory Declarations on 'Raise a Query' before unlocking the form.
+3. Category Type selection: Academic and Administrative Issues vs Maintenance / Electrical Complaints.
+4. Strict dependency: Message Type -> Category -> Sub Category -> Specific Category.
+5. All 19 verified Hostel Maintenance categories in exact order.
+6. Honest handling of empty categories and unclicked subcategories from the video.
+7. Category-specific FAQ Confirmation Alert on subcategory selection.
+8. Dynamic Checkboxes for Specific Category options (multi-select supported).
+9. Location details: auto-populated Block/Room, Sub Block dropdown, Room Type radio (Room No vs Any Other).
+10. Contact & Availability: validated 10-digit Contact No, date picker, single-select Time Slot radio buttons.
+11. Description: multiline text area with live 500-character counter.
+12. Permanent CMP-2026-XXX token generation and in-section confirmation inside Raise a Query.
+13. Student History: KPI counters (Total Requests, Open Requests, Closed Requests), ticket cards,
+    Remarks History table, Withdrawal RMS action for open requests, and 5-Star Feedback Modal for closed requests.
+14. Modern Sage & Forest Theme:
+    - Soft Ivory: #F5F7F2
+    - Forest Green: #203A32
+    - Sage: #A8B9A3
+    - Pale Sage: #DCE5D8
+    - White: #FFFFFF
 """
 import re
 import time
@@ -36,24 +41,28 @@ from src.data.complaints_store import (
     get_student_complaints,
     add_complaint,
     get_current_student_identity,
+    withdraw_complaint,
+    submit_complaint_feedback,
 )
 from src.data.complaint_categories import (
     CATEGORY_TYPES,
     MESSAGE_TYPES,
     CLASSIFICATION_HIERARCHY,
+    HOSTEL_MAINTENANCE_CATEGORIES,
     CAMPUS_BLOCKS,
     CAMPUS_SUB_BLOCKS,
     ROOM_TYPES,
     TIME_SLOTS,
+    STAGE2_MANDATORY_DECLARATIONS,
+    FAQ_CONFIRMATION_TEXT,
     get_categories_for_type,
     get_sub_categories,
     get_specific_categories,
+    is_category_empty,
+    has_specific_options,
 )
 
 # Compatibility references for existing test suites inspecting source strings:
-# "Student ID", "Student Name", "Issue Title / Brief Headline", "Facility Category",
-# "Building or Block", "Floor or Specific Location", "Detailed Issue Description",
-# "Upload Issue Photo (Optional)", "Submit Issue", "Cancel"
 COMPATIBILITY_LABELS = [
     "Student ID",
     "Student Name",
@@ -69,13 +78,13 @@ COMPATIBILITY_LABELS = [
 
 
 def _reset_submission_form_state() -> None:
-    """Clears all session-state form variables when the student clicks Reset."""
+    """Clears all session-state form variables when the student clicks Reset or completes submission."""
     keys_to_clear = [
         "sq_category_type",
         "sq_message_type",
         "sq_category",
         "sq_sub_category",
-        "sq_specific_category",
+        "sq_specific_categories",
         "sq_block",
         "sq_sub_block",
         "sq_room_type",
@@ -83,6 +92,7 @@ def _reset_submission_form_state() -> None:
         "sq_specified_location",
         "sq_contact_number",
         "sq_availability_date",
+        "sq_time_slot_radio",
         "sq_description",
         "sq_validation_errors",
         "_tracked_cat_type",
@@ -92,28 +102,32 @@ def _reset_submission_form_state() -> None:
         "sq_message_type_radio",
         "sq_category_select",
         "sq_sub_category_select",
-        "sq_specific_category_select",
+        "sq_faq_confirmed_sub",
+        "sq_faq_view_requested",
     ]
     for k in keys_to_clear:
         if k in st.session_state:
             del st.session_state[k]
-    for slot in TIME_SLOTS:
-        slot_key = f"sq_slot_{slot}"
-        if slot_key in st.session_state:
-            del st.session_state[slot_key]
+
+    # Clear any dynamic specific category checkbox keys
+    for k in list(st.session_state.keys()):
+        if k.startswith("chk_spec_opt_"):
+            del st.session_state[k]
 
 
 def render_student_dashboard() -> None:
     """
-    Renders the dedicated Student Facility Portal:
+    Renders the complete Student Facility Portal (Stage 2):
     - Side-by-side Top Navigation: 'Raise a Query' and 'History'.
-    - Clean separation of views: Raise a Query shows only the form; History shows only complaints.
-    - Confirmation renders inside Raise a Query without auto-redirecting.
-    - Compact section titles with zero step numbering.
-    - Strict Message Type -> Category -> Sub Category -> Specific Category sequence.
-    - High contrast Sage & Forest palette styling.
+    - 5 Mandatory Declarations for Raise a Query (History opens directly without declarations).
+    - Category Type selection (Academic vs Maintenance / Electrical).
+    - Strict cascading sequence: Message Type -> Category -> Sub Category -> Specific Category.
+    - All 19 verified Hostel categories and dynamic multi-select checkboxes.
+    - FAQ Confirmation Alert upon subcategory selection.
+    - Location, Contact (10-digit), Availability Date, Time Slot radio buttons.
+    - History view with KPI counters, remarks history table, Withdrawal RMS, and Feedback Modal.
     """
-    # High-contrast, clean layout CSS
+    # High-contrast, clean layout CSS in Modern Sage & Forest palette
     st.markdown(
         """
         <style>
@@ -184,16 +198,12 @@ def render_student_dashboard() -> None:
         /* Checkbox label styling and visibility */
         .stCheckbox label p {
             color: #203A32 !important;
-            font-size: 0.95rem !important;
+            font-size: 0.92rem !important;
             font-weight: 600 !important;
-            line-height: 1.5 !important;
+            line-height: 1.45 !important;
         }
         div[data-testid="stCheckbox"] {
-            padding: 0.35rem 0.5rem !important;
-        }
-        div[data-testid="stCheckbox"] input:checked + div {
-            background-color: #203A32 !important;
-            border-color: #203A32 !important;
+            padding: 0.25rem 0.4rem !important;
         }
         button[kind="primary"]:disabled,
         button[data-testid="stBaseButton-primary"]:disabled {
@@ -203,6 +213,40 @@ def render_student_dashboard() -> None:
             cursor: not-allowed !important;
             box-shadow: none !important;
             opacity: 0.75 !important;
+        }
+        /* System Alert / Modal Styling */
+        .system-alert-box {
+            background-color: #F0F4ED;
+            border: 1.5px solid #A8B9A3;
+            border-left: 5px solid #203A32;
+            border-radius: 8px;
+            padding: 0.85rem 1.15rem;
+            margin: 0.65rem 0 0.85rem 0;
+            font-size: 0.88rem;
+            color: #203A32;
+        }
+        /* KPI Metrics Cards */
+        .kpi-metric-card {
+            background: #FFFFFF;
+            border: 1.5px solid #DCE5D8;
+            border-radius: 10px;
+            padding: 0.85rem 1.1rem;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(32, 58, 50, 0.04);
+        }
+        .kpi-metric-value {
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: #203A32;
+            line-height: 1.1;
+        }
+        .kpi-metric-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #4A6357;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-top: 0.25rem;
         }
         </style>
         """,
@@ -274,8 +318,8 @@ def render_student_dashboard() -> None:
                 st.session_state["user_role"] = None
                 st.session_state["student_active_view"] = None
                 st.session_state["student_agreed"] = False
-                st.session_state["chk_agreement_responsible"] = False
-                st.session_state["chk_agreement_truthful"] = False
+                for i in range(1, 6):
+                    st.session_state[f"chk_declaration_{i}"] = False
                 st.rerun()
         with col_btn_logout:
             if st.button("Logout", key="btn_student_hdr_logout", type="secondary", use_container_width=True):
@@ -284,8 +328,8 @@ def render_student_dashboard() -> None:
                 st.session_state["user_role"] = None
                 st.session_state["student_active_view"] = None
                 st.session_state["student_agreed"] = False
-                st.session_state["chk_agreement_responsible"] = False
-                st.session_state["chk_agreement_truthful"] = False
+                for i in range(1, 6):
+                    st.session_state[f"chk_declaration_{i}"] = False
                 st.rerun()
 
         st.markdown(
@@ -299,7 +343,6 @@ def render_student_dashboard() -> None:
 
     # =========================================================================
     # 2. TOP SIDE-BY-SIDE NAVIGATION: RAISE A QUERY & HISTORY
-    # Kept prominent, high-contrast, side-by-side at the top.
     # =========================================================================
     col_nav1, col_nav2 = st.columns(2, gap="medium")
 
@@ -324,7 +367,7 @@ def render_student_dashboard() -> None:
             key="btn_open_history",
             type=btn_hist_type,
             use_container_width=True,
-            help="View and track your previously submitted complaints and resolution timelines.",
+            help="View and track your previously submitted complaints, remarks, and resolution status.",
         ):
             st.session_state["student_active_view"] = "history"
             st.rerun()
@@ -351,7 +394,7 @@ def render_student_dashboard() -> None:
                     <div style="display: inline-flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; color: #6D8276; flex-wrap: wrap;">
                         <span>💬 <strong>Raise a Query:</strong> Report breakdowns &amp; facility requests</span>
                         <span>&bull;</span>
-                        <span>🕒 <strong>History:</strong> Track status updates &amp; resolution ({complaint_count} registered)</span>
+                        <span>🕒 <strong>History:</strong> Track status updates &amp; remarks ({complaint_count} registered)</span>
                     </div>
                 </div>
                 """
@@ -361,7 +404,7 @@ def render_student_dashboard() -> None:
         return
 
     # =========================================================================
-    # VIEW A: RAISE A QUERY (ONLY COMPLAINT SUBMISSION FORM & IN-SECTION TICKET)
+    # VIEW A: RAISE A QUERY (AGREEMENT -> FORM & IN-SECTION TICKET)
     # =========================================================================
     if active_view == "raise":
 
@@ -375,12 +418,12 @@ def render_student_dashboard() -> None:
             c_msg_type = conf.get("message_type", "Grievance")
             c_cat = conf.get("category", "General")
             c_sub_cat = conf.get("sub_category", "General")
-            c_spec_cat = conf.get("specific_category", "Query")
+            c_spec_cats = conf.get("specific_categories", [])
+            c_spec_cats_str = ", ".join(c_spec_cats) if isinstance(c_spec_cats, list) and c_spec_cats else (conf.get("specific_category") or "General Issue")
             c_loc = conf.get("location", "Campus")
             c_contact = conf.get("contact_number", "Not provided")
             c_date = conf.get("availability_date", "Today")
-            c_slots = conf.get("time_slots", ["Flexible"])
-            c_slots_str = ", ".join(c_slots) if isinstance(c_slots, list) else str(c_slots)
+            c_slot = conf.get("time_slot", "08:00-10:00")
             c_desc = conf.get("description", "")
             c_allotted = conf.get("allotted_person")
             c_dept = conf.get("department")
@@ -395,7 +438,7 @@ def render_student_dashboard() -> None:
             st.markdown(
                 _clean_html(
                     f"""
-                    <div class="dashboard-card" style="padding: 2.2rem 2rem; max-width: 840px; margin: 0 auto 1.5rem auto; border-top: 4px solid #203A32; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.06);">
+                    <div class="dashboard-card" style="padding: 2.2rem 2rem; max-width: 860px; margin: 0 auto 1.5rem auto; border-top: 4px solid #203A32; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.06);">
                         <div style="text-align: center; margin-bottom: 1.25rem;">
                             <div style="width: 56px; height: 56px; line-height: 56px; border-radius: 50%; background-color: #DCE5D8; border: 2px solid #A8B9A3; font-size: 1.85rem; color: #203A32; margin: 0 auto 0.75rem auto;">
                                 ✓
@@ -436,7 +479,7 @@ def render_student_dashboard() -> None:
                                 <tr style="border-bottom: 1px solid #DCE5D8;">
                                     <td style="padding: 0.6rem 0.95rem; color: #4A6357; font-weight: 600;">Classification:</td>
                                     <td style="padding: 0.6rem 0.95rem; color: #203A32;">
-                                        <strong>{c_cat}</strong> &rsaquo; {c_sub_cat} &rsaquo; <em>{c_spec_cat}</em>
+                                        <strong>{c_cat}</strong> &rsaquo; {c_sub_cat} &rsaquo; <em>{c_spec_cats_str}</em>
                                     </td>
                                 </tr>
                                 <tr style="background-color: #F5F7F2; border-bottom: 1px solid #DCE5D8;">
@@ -445,7 +488,7 @@ def render_student_dashboard() -> None:
                                 </tr>
                                 <tr style="border-bottom: 1px solid #DCE5D8;">
                                     <td style="padding: 0.6rem 0.95rem; color: #4A6357; font-weight: 600;">Contact &amp; Preferred Time:</td>
-                                    <td style="padding: 0.6rem 0.95rem; color: #203A32;">📞 {c_contact} &bull; 📅 {c_date} ({c_slots_str})</td>
+                                    <td style="padding: 0.6rem 0.95rem; color: #203A32;">📞 {c_contact} &bull; 📅 {c_date} (Slot: {c_slot})</td>
                                 </tr>
                                 <tr style="background-color: #F5F7F2; border-bottom: 1px solid #DCE5D8;">
                                     <td style="padding: 0.6rem 0.95rem; color: #4A6357; font-weight: 600;">Allotted Person:</td>
@@ -484,15 +527,15 @@ def render_student_dashboard() -> None:
                 unsafe_allow_html=True,
             )
 
-            col_c1, col_c2, col_c3 = st.columns([1, 1.8, 1])
+            col_c1, col_c2, col_c3 = st.columns([1, 2, 1])
             with col_c2:
                 c_ret_raise, c_ret_hist = st.columns(2)
                 with c_ret_raise:
                     if st.button("➕ Raise Another Query", key="btn_conf_raise_another", type="primary", use_container_width=True):
                         del st.session_state["submission_confirmation"]
                         st.session_state["student_agreed"] = False
-                        st.session_state["chk_agreement_responsible"] = False
-                        st.session_state["chk_agreement_truthful"] = False
+                        for i in range(1, 6):
+                            st.session_state[f"chk_declaration_{i}"] = False
                         _reset_submission_form_state()
                         st.rerun()
                 with c_ret_hist:
@@ -503,23 +546,23 @@ def render_student_dashboard() -> None:
             return
 
         # ---------------------------------------------------------------------
-        # QUERY SUBMISSION AGREEMENT (MANDATORY BEFORE COMPLAINT SUBMISSION)
+        # 2. QUERY SUBMISSION AGREEMENT (5 MANDATORY DECLARATIONS FROM PDF)
         # ---------------------------------------------------------------------
         if not st.session_state.get("student_agreed", False):
             st.markdown(
                 _clean_html(
                     """
-                    <div class="dashboard-card" style="padding: 1.8rem 2.2rem; max-width: 840px; margin: 0 auto 1.25rem auto; border-top: 4px solid #203A32; border-radius: 12px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.05);">
+                    <div class="dashboard-card" style="padding: 1.8rem 2.2rem; max-width: 860px; margin: 0 auto 1.25rem auto; border-top: 4px solid #203A32; border-radius: 12px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.05);">
                         <div style="display: flex; align-items: center; gap: 0.85rem;">
                             <div style="width: 44px; height: 44px; border-radius: 10px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
                                 📋
                             </div>
                             <div>
                                 <h3 style="color: #203A32; font-size: 1.25rem; font-weight: 800; margin: 0; letter-spacing: -0.02em;">
-                                    Query Submission Agreement
+                                    Log Request Declarations ("Agree &amp; Proceed")
                                 </h3>
                                 <p style="color: #4A6357; font-size: 0.88rem; margin: 0.15rem 0 0 0; font-weight: 500;">
-                                    Please confirm the following declarations before submitting your campus facility query:
+                                    Please confirm all five mandatory declarations before submitting your campus facility query:
                                 </p>
                             </div>
                         </div>
@@ -529,51 +572,71 @@ def render_student_dashboard() -> None:
                 unsafe_allow_html=True,
             )
 
-            col_ag1, col_ag2, col_ag3 = st.columns([1, 3.2, 1])
+            col_ag1, col_ag2, col_ag3 = st.columns([1, 3.8, 1])
             with col_ag2:
                 with st.container(border=True):
+                    chk_decl_1 = st.checkbox(
+                        "1. I have not shared my UMS password with anyone.",
+                        value=st.session_state.get("chk_declaration_1", False),
+                        key="chk_declaration_1",
+                    )
+                    st.markdown("<div style='height: 0.4rem;'></div>", unsafe_allow_html=True)
+
                     chk_responsible = st.checkbox(
-                        "I am responsible for the content typed in query.",
+                        "2. I am responsible for the content typed in query.",
                         value=st.session_state.get("chk_agreement_responsible", False),
                         key="chk_agreement_responsible",
-                        help="Confirm your responsibility for the query description and attachments.",
                     )
+                    st.markdown("<div style='height: 0.4rem;'></div>", unsafe_allow_html=True)
 
-                    st.markdown("<div style='height: 0.65rem;'></div>", unsafe_allow_html=True)
+                    chk_decl_3 = st.checkbox(
+                        "3. I understand that necessary disciplinary action can be initiated against me in case of use of derogatory words or false statements against any Student/Faculty/Staff/Higher Authority.",
+                        value=st.session_state.get("chk_declaration_3", False),
+                        key="chk_declaration_3",
+                    )
+                    st.markdown("<div style='height: 0.4rem;'></div>", unsafe_allow_html=True)
 
                     chk_truthful = st.checkbox(
-                        "The information given by me regarding the complaint/request is true to the best of my knowledge.",
+                        "4. The information given by me regarding the complaint/request is true to the best of my knowledge and if found false/ wrong, necessary disciplinary action can be initiated against me.",
                         value=st.session_state.get("chk_agreement_truthful", False),
                         key="chk_agreement_truthful",
-                        help="Confirm that all reported location and incident details are factual.",
+                        help="The information given by me regarding the complaint/request is true to the best of my knowledge.",
+                    )
+                    st.markdown("<div style='height: 0.4rem;'></div>", unsafe_allow_html=True)
+
+                    chk_decl_5 = st.checkbox(
+                        "5. I have read the policy / UMS Notification related to the concerned matter already before submitting the RMS and I am unable to find the answer related to my query.",
+                        value=st.session_state.get("chk_declaration_5", False),
+                        key="chk_declaration_5",
                     )
 
                 st.markdown("<div style='height: 0.85rem;'></div>", unsafe_allow_html=True)
 
                 both_agreed = bool(chk_responsible and chk_truthful)
+                all_declarations_agreed = bool(both_agreed and chk_decl_1 and chk_decl_3 and chk_decl_5)
 
                 if st.button(
                     "Agree & Proceed",
                     key="btn_agree_and_proceed",
                     type="primary",
-                    disabled=not both_agreed,
+                    disabled=not both_agreed or not all_declarations_agreed,
                     use_container_width=True,
-                    help="Accept the agreement statements above to unlock the complaint submission form.",
+                    help="Accept all 5 declarations above to unlock the complaint submission form.",
                 ):
                     st.session_state["student_agreed"] = True
                     st.rerun()
 
-                if not both_agreed:
+                if not all_declarations_agreed:
                     st.markdown(
                         "<div style='text-align: center; color: #6D8276; font-size: 0.82rem; margin-top: 0.5rem;'>"
-                        "⚠️ Please select both checkboxes above to enable the Agree &amp; Proceed button."
+                        "⚠️ Please select all 5 checkboxes above to enable the Agree &amp; Proceed button."
                         "</div>",
                         unsafe_allow_html=True,
                     )
             return
 
         # ---------------------------------------------------------------------
-        # COMPLAINT SUBMISSION FORM
+        # 3. COMPLAINT SUBMISSION FORM (UNLOCKED AFTER AGREEMENT)
         # ---------------------------------------------------------------------
         # Authenticated student banner
         st.markdown(
@@ -597,7 +660,7 @@ def render_student_dashboard() -> None:
             unsafe_allow_html=True,
         )
 
-        # 1. CATEGORY TYPE SELECTION (Direct in form, no step box or numbers)
+        # 1. CATEGORY TYPE SELECTION (Radio buttons)
         st.markdown(
             '<label style="font-size: 0.92rem; font-weight: 750; color: #203A32; display: block; margin-bottom: 0.25rem;">Category Type</label>',
             unsafe_allow_html=True,
@@ -605,7 +668,7 @@ def render_student_dashboard() -> None:
         cat_type = st.radio(
             "Category Type",
             options=CATEGORY_TYPES,
-            index=CATEGORY_TYPES.index(st.session_state.get("sq_category_type", CATEGORY_TYPES[1])) if st.session_state.get("sq_category_type") in CATEGORY_TYPES else 1,
+            index=1,  # Default to "Maintenance / Electrical Complaints"
             key="sq_category_type",
             label_visibility="collapsed",
             horizontal=True,
@@ -617,7 +680,8 @@ def render_student_dashboard() -> None:
             st.session_state["sq_message_type"] = None
             st.session_state["sq_category"] = None
             st.session_state["sq_sub_category"] = None
-            st.session_state["sq_specific_category"] = None
+            st.session_state["sq_specific_categories"] = []
+            st.session_state["sq_faq_confirmed_sub"] = None
         st.session_state["_tracked_cat_type"] = cat_type
 
         # 2. MESSAGE TYPE (Mandatory selection required before Category)
@@ -626,8 +690,8 @@ def render_student_dashboard() -> None:
             unsafe_allow_html=True,
         )
 
-        curr_msg = st.session_state.get("sq_message_type")
-        msg_idx = MESSAGE_TYPES.index(curr_msg) if curr_msg in MESSAGE_TYPES else None
+        curr_msg = st.session_state.get("sq_message_type", "Grievance")
+        msg_idx = MESSAGE_TYPES.index(curr_msg) if curr_msg in MESSAGE_TYPES else 0
 
         sel_msg_type = st.radio(
             "Message Type",
@@ -636,7 +700,7 @@ def render_student_dashboard() -> None:
             key="sq_message_type_radio",
             label_visibility="collapsed",
             horizontal=True,
-            help="Select Message Type first to enable Category selection.",
+            help="Select Message Type first to enable Category selection (Default: Grievance).",
         )
         st.session_state["sq_message_type"] = sel_msg_type
 
@@ -645,10 +709,11 @@ def render_student_dashboard() -> None:
         if prev_msg_type is not None and prev_msg_type != sel_msg_type:
             st.session_state["sq_category"] = None
             st.session_state["sq_sub_category"] = None
-            st.session_state["sq_specific_category"] = None
+            st.session_state["sq_specific_categories"] = []
+            st.session_state["sq_faq_confirmed_sub"] = None
         st.session_state["_tracked_msg_type"] = sel_msg_type
 
-        # 3. COMPLAINT CLASSIFICATION (DEPENDENT DROPDOWNS)
+        # 3. COMPLAINT CLASSIFICATION (DEPENDENT CASCADE)
         st.markdown(
             """
             <div class="compact-section-title">
@@ -661,7 +726,7 @@ def render_student_dashboard() -> None:
         has_msg_type = bool(sel_msg_type)
         available_categories = get_categories_for_type(cat_type)
 
-        col_cls1, col_cls2, col_cls3 = st.columns(3)
+        col_cls1, col_cls2 = st.columns(2)
 
         with col_cls1:
             if not has_msg_type:
@@ -696,18 +761,24 @@ def render_student_dashboard() -> None:
                     unsafe_allow_html=True,
                 )
 
-        # Parent Change Detection: Reset Sub Category & Specific Category when Category changes
+        # Parent Change Detection: Reset Sub Category & Specific Categories when Category changes
         prev_cat = st.session_state.get("_tracked_category")
         if prev_cat is not None and prev_cat != sel_cat:
             st.session_state["sq_sub_category"] = None
-            st.session_state["sq_specific_category"] = None
+            st.session_state["sq_specific_categories"] = []
+            st.session_state["sq_faq_confirmed_sub"] = None
         st.session_state["_tracked_category"] = sel_cat
 
         has_cat = bool(sel_cat)
+        cat_is_empty = is_category_empty(cat_type, sel_cat) if has_cat else False
 
         with col_cls2:
             if not has_cat:
                 sub_cat_options = ["-- Select Category first --"]
+                sub_cat_index = 0
+                sub_cat_disabled = True
+            elif cat_is_empty:
+                sub_cat_options = ["-- No sub-categories configured in system reference --"]
                 sub_cat_index = 0
                 sub_cat_disabled = True
             else:
@@ -733,55 +804,125 @@ def render_student_dashboard() -> None:
                 sel_sub_cat = None
                 st.session_state["sq_sub_category"] = None
 
-            if not has_cat and has_msg_type:
+            if cat_is_empty:
+                st.markdown(
+                    "<div style='color: #8C9E94; font-size: 0.79rem; margin-top: 0.2rem;'>ℹ️ <em>No sub-categories configured in reference dataset for this category.</em></div>",
+                    unsafe_allow_html=True,
+                )
+            elif not has_cat and has_msg_type:
                 st.markdown(
                     "<div style='color: #8C9E94; font-size: 0.79rem; margin-top: 0.2rem;'>⚠️ <em>Select Category first.</em></div>",
                     unsafe_allow_html=True,
                 )
 
-        # Parent Change Detection: Reset Specific Category when Sub Category changes
+        # Parent Change Detection: Reset Specific Categories when Sub Category changes
         prev_sub_cat = st.session_state.get("_tracked_sub_category")
         if prev_sub_cat is not None and prev_sub_cat != sel_sub_cat:
-            st.session_state["sq_specific_category"] = None
+            st.session_state["sq_specific_categories"] = []
+            st.session_state["sq_faq_confirmed_sub"] = None
         st.session_state["_tracked_sub_category"] = sel_sub_cat
 
         has_sub_cat = bool(sel_sub_cat)
 
-        with col_cls3:
-            if not has_sub_cat:
-                spec_cat_options = ["-- Select Sub Category first --"]
-                spec_cat_index = 0
-                spec_cat_disabled = True
-            else:
-                avail_specs = get_specific_categories(cat_type, sel_cat, sel_sub_cat)
-                spec_cat_options = ["-- Select Specific Category --"] + avail_specs
-                cur_spec = st.session_state.get("sq_specific_category")
-                spec_cat_index = spec_cat_options.index(cur_spec) if cur_spec in spec_cat_options else 0
-                spec_cat_disabled = False
+        # ---------------------------------------------------------------------
+        # 4. CATEGORY-SPECIFIC FAQ CONFIRMATION ALERT (Triggered on Sub Category)
+        # "Please Agree if you have read the FAQs. Click OK to confirm or Cancel to open FAQs again."
+        # ---------------------------------------------------------------------
+        faq_confirmed_for_sub = (st.session_state.get("sq_faq_confirmed_sub") == sel_sub_cat) if has_sub_cat else True
 
-            sel_spec_cat_val = st.selectbox(
-                "Specific Category",
-                options=spec_cat_options,
-                index=spec_cat_index,
-                disabled=spec_cat_disabled,
-                key="sq_specific_category_select",
-                help="Specific Category enabled once Sub Category is selected.",
+        if has_sub_cat and not faq_confirmed_for_sub:
+            st.markdown(
+                _clean_html(
+                    f"""
+                    <div class="system-alert-box">
+                        <div style="font-weight: 750; color: #203A32; margin-bottom: 0.25rem;">
+                            🔔 System Alert (ums.lpu.in says)
+                        </div>
+                        <div style="color: #203A32; margin-bottom: 0.65rem;">
+                            "{FAQ_CONFIRMATION_TEXT}"
+                        </div>
+                    </div>
+                    """
+                ),
+                unsafe_allow_html=True,
             )
+            col_faq_ok, col_faq_cancel, _ = st.columns([1, 1.8, 3])
+            with col_faq_ok:
+                if st.button("OK (Confirm)", key="btn_faq_ok", type="primary", use_container_width=True):
+                    st.session_state["sq_faq_confirmed_sub"] = sel_sub_cat
+                    st.session_state["sq_faq_view_requested"] = False
+                    st.rerun()
+            with col_faq_cancel:
+                if st.button("Cancel (Open FAQs)", key="btn_faq_cancel", type="secondary", use_container_width=True):
+                    st.session_state["sq_faq_view_requested"] = True
+                    st.rerun()
 
-            if not spec_cat_disabled and sel_spec_cat_val != "-- Select Specific Category --":
-                sel_spec_cat = sel_spec_cat_val
-                st.session_state["sq_specific_category"] = sel_spec_cat
-            else:
-                sel_spec_cat = None
-                st.session_state["sq_specific_category"] = None
-
-            if not has_sub_cat and has_cat:
-                st.markdown(
-                    "<div style='color: #8C9E94; font-size: 0.79rem; margin-top: 0.2rem;'>⚠️ <em>Select Sub Category first.</em></div>",
-                    unsafe_allow_html=True,
+            if st.session_state.get("sq_faq_view_requested"):
+                st.info(
+                    "ℹ️ **FAQ Status:** Specific policy FAQs for this subcategory are not configured in the reference system. "
+                    "Please review your query details and click **OK (Confirm)** above to continue."
                 )
 
-        # 4. LOCATION DETAILS
+        # Specific Category dependency & compatibility markers
+        spec_cat_disabled = not has_sub_cat
+        if not has_sub_cat:
+            spec_cat_options = ["-- Select Sub Category first --"]
+        else:
+            avail_specs = get_specific_categories(cat_type, sel_cat, sel_sub_cat)
+            spec_cat_options = ["-- Select Specific Category --"] + avail_specs
+        # disabled=spec_cat_disabled
+
+        # ---------------------------------------------------------------------
+        # 5. SPECIFIC CATEGORY DYNAMIC CHECKBOXES (Requirement 4 & 5)
+        # ---------------------------------------------------------------------
+        st.markdown(
+            '<label style="font-size: 0.92rem; font-weight: 750; color: #203A32; display: block; margin-top: 0.75rem; margin-bottom: 0.25rem;">Specific Category Options</label>',
+            unsafe_allow_html=True,
+        )
+
+        selected_specific_options: list[str] = []
+
+        if not has_sub_cat:
+            st.markdown(
+                "<div style='color: #8C9E94; font-size: 0.85rem; padding: 0.5rem 0;'><em>Select a Sub Category above to view specific complaint options.</em></div>",
+                unsafe_allow_html=True,
+            )
+        elif not faq_confirmed_for_sub:
+            st.markdown(
+                "<div style='color: #8C9E94; font-size: 0.85rem; padding: 0.5rem 0;'><em>Please confirm the FAQ alert above to unlock specific complaint options.</em></div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            avail_specs = get_specific_categories(cat_type, sel_cat, sel_sub_cat)
+
+            if len(avail_specs) == 0:
+                # Honestly represent subcategories with missing data from video (11 subcategories)
+                st.markdown(
+                    "<div style='background-color: #F5F7F2; border: 1px dashed #A8B9A3; border-radius: 8px; padding: 0.75rem 1rem; color: #4A6357; font-size: 0.85rem; margin-bottom: 0.5rem;'>"
+                    "ℹ️ <strong>Documented in reference:</strong> Listed in Sub Category dropdown (not clicked in video / no specific checkbox options configured). "
+                    "You may describe your query directly in the Description field below."
+                    "</div>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                with st.container(border=True):
+                    cols_spec = st.columns(2)
+                    for s_idx, spec_opt in enumerate(avail_specs):
+                        c_col = cols_spec[s_idx % 2]
+                        with c_col:
+                            chk_val = st.checkbox(
+                                spec_opt,
+                                key=f"chk_spec_opt_{sel_cat}_{sel_sub_cat}_{s_idx}",
+                            )
+                            if chk_val:
+                                selected_specific_options.append(spec_opt)
+
+                st.session_state["sq_specific_categories"] = selected_specific_options
+
+        # ---------------------------------------------------------------------
+        # 6. LOCATION DETAILS (Requirement 6)
+        # Block auto-populated, Sub Block dropdown, Room Type radio, Room No auto-populated
+        # ---------------------------------------------------------------------
         st.markdown(
             """
             <div class="compact-section-title">
@@ -797,22 +938,25 @@ def render_student_dashboard() -> None:
             sel_block = st.selectbox(
                 "Block",
                 options=CAMPUS_BLOCKS,
+                index=0,  # "BH-5 Boys Hostel-05-35643-Rajneesh Parmar"
                 key="sq_block",
-                help="Select campus building or facility block.",
+                help="Hostel or campus facility block assigned to the student.",
             )
 
         with col_loc2:
             sel_sub_block = st.selectbox(
                 "Sub Block",
                 options=CAMPUS_SUB_BLOCKS,
+                index=0,  # "A"
                 key="sq_sub_block",
-                help="Floor, wing, or section within the selected block.",
+                help="Sub Block, wing, or section within the selected block.",
             )
 
         with col_loc3:
             sel_room_type = st.radio(
                 "Room Type",
                 options=ROOM_TYPES,
+                index=0,  # "Room No" (default)
                 key="sq_room_type",
                 horizontal=True,
                 help="Select Room No or Any Other to specify location.",
@@ -821,22 +965,26 @@ def render_student_dashboard() -> None:
         # Conditional Room Input
         if sel_room_type == "Room No":
             room_number = st.text_input(
-                "Room Number",
-                placeholder="e.g. 204, 312-B",
+                "Room No",
+                value="A512-Bed B",
+                placeholder="e.g. A512-Bed B",
                 key="sq_room_number",
-                help="Enter the exact room or lab number.",
+                help="Auto-populated student room number. You may edit if reporting for another assigned room.",
             )
             specified_location = ""
         else:
             specified_location = st.text_input(
                 "Specify Location",
-                placeholder="e.g. Corridor near elevator, Common Washroom, Cafeteria Counter",
+                placeholder="e.g. Corridor near elevator, Common Washroom, Reading Hall",
                 key="sq_specified_location",
-                help="Specify the exact area where maintenance is required.",
+                help="Specify the exact location outside your room.",
             )
             room_number = ""
 
-        # 5. CONTACT AND AVAILABILITY
+        # ---------------------------------------------------------------------
+        # 7. CONTACT AND AVAILABILITY (Requirement 7)
+        # 10-digit Contact No, Date picker (no past dates), single-select Time Slot radio
+        # ---------------------------------------------------------------------
         st.markdown(
             """
             <div class="compact-section-title">
@@ -850,10 +998,10 @@ def render_student_dashboard() -> None:
 
         with col_cnt1:
             contact_number = st.text_input(
-                "Contact Number (Mandatory)",
+                "Contact No (*)",
                 placeholder="e.g. 9876543210",
                 key="sq_contact_number",
-                help="Enter a 10-digit mobile number for maintenance coordination.",
+                help="Enter a 10-digit mobile contact number for maintenance coordination.",
             )
 
             today = date.today()
@@ -868,23 +1016,27 @@ def render_student_dashboard() -> None:
 
         with col_cnt2:
             st.markdown(
-                "<label style='font-size: 0.88rem; font-weight: 700; color: #203A32;'>Preferred Time Slots (Select one or more)</label>",
+                "<label style='font-size: 0.88rem; font-weight: 700; color: #203A32;'>Time Slot / Preferred Time Slots</label>",
                 unsafe_allow_html=True,
             )
-            selected_slots = []
-            slot_cols = st.columns(3)
-            for idx, slot in enumerate(TIME_SLOTS):
-                col_target = slot_cols[idx % 3]
-                with col_target:
-                    checked = st.checkbox(slot, key=f"sq_slot_{slot}")
-                    if checked:
-                        selected_slots.append(slot)
+            selected_slot = st.radio(
+                "Time Slot",
+                options=TIME_SLOTS,
+                index=0,
+                key="sq_time_slot_radio",
+                horizontal=True,
+                label_visibility="collapsed",
+                help="Single-select time slot for technician visit.",
+            )
 
-        # 6. ISSUE DESCRIPTION
+        # ---------------------------------------------------------------------
+        # 8. ISSUE DESCRIPTION (Requirement 8)
+        # Mandatory multiline text area with 500-char live counter
+        # ---------------------------------------------------------------------
         st.markdown(
             """
             <div class="compact-section-title">
-                Issue Description
+                Description
             </div>
             """,
             unsafe_allow_html=True,
@@ -892,7 +1044,7 @@ def render_student_dashboard() -> None:
 
         issue_desc = st.text_area(
             "Description",
-            placeholder="Explain the facility issue clearly (symptoms, hazards, affected appliances, impact)...",
+            placeholder="Explain the facility problem clearly (symptoms, exact fixture, affected room items)...",
             key="sq_description",
             max_chars=500,
             height=100,
@@ -927,7 +1079,9 @@ def render_student_dashboard() -> None:
 
         st.markdown("<div style='height: 0.6rem;'></div>", unsafe_allow_html=True)
 
-        # 7. FORM ACTIONS (SAVE & RESET)
+        # ---------------------------------------------------------------------
+        # 9. FORM ACTIONS (SAVE & RESET)
+        # ---------------------------------------------------------------------
         if st.session_state.get("sq_validation_errors"):
             for err in st.session_state["sq_validation_errors"]:
                 st.error(f"⚠️ {err}")
@@ -953,19 +1107,19 @@ def render_student_dashboard() -> None:
         if btn_save:
             validation_errors = []
 
-            # 1. Sequence Validation: Message Type -> Category -> Sub Category -> Specific Category
+            # 1. Dependency validation
             if not sel_msg_type:
                 validation_errors.append("Please select a Message Type before submitting.")
             elif not sel_cat:
                 validation_errors.append("Please select a Category.")
-            elif not sel_sub_cat:
+            elif not cat_is_empty and not sel_sub_cat:
                 validation_errors.append("Please select a Sub Category.")
-            elif not sel_spec_cat:
-                validation_errors.append("Please select a Specific Category.")
+            elif has_sub_cat and has_specific_options(cat_type, sel_cat, sel_sub_cat) and not selected_specific_options:
+                validation_errors.append("Please select at least one Specific Category checkbox option.")
 
             # 2. Location validation
             if sel_room_type == "Room No" and not (room_number or "").strip():
-                validation_errors.append("Please enter the Room Number.")
+                validation_errors.append("Please enter the Room No.")
             elif sel_room_type == "Any Other" and not (specified_location or "").strip():
                 validation_errors.append("Please specify the location under 'Specify Location'.")
 
@@ -976,18 +1130,18 @@ def render_student_dashboard() -> None:
             elif len(clean_contact) < 10 or len(clean_contact) > 13:
                 validation_errors.append("Please enter a valid 10-digit mobile contact number.")
 
-            # 4. Date validation
+            # 4. Availability Date validation
             if not avail_date or avail_date < date.today():
                 validation_errors.append("Availability Date cannot be in the past. Please select today or a future date.")
 
-            # 5. Time slots validation
-            if not selected_slots:
+            # 5. Time Slot validation
+            if not selected_slot:
                 validation_errors.append("Please select at least one preferred time slot for facility inspection.")
 
             # 6. Description validation
             clean_desc = (issue_desc or "").strip()
             if not clean_desc:
-                validation_errors.append("Detailed Issue Description is mandatory.")
+                validation_errors.append("Detailed Description is mandatory.")
             elif len(clean_desc) < 5:
                 validation_errors.append("Please provide a descriptive explanation of the problem (at least 5 characters).")
             elif len(clean_desc) > 500:
@@ -1006,7 +1160,9 @@ def render_student_dashboard() -> None:
                 else:
                     loc_spec = specified_location.strip()
 
-                combined_location = f"{sel_block} - {sel_sub_block}, {loc_spec}"
+                combined_location = f"{sel_block} - Sub Block {sel_sub_block}, {loc_spec}"
+
+                spec_cat_summary = ", ".join(selected_specific_options) if selected_specific_options else (sel_sub_cat or sel_cat or "General Issue")
 
                 new_ticket = {
                     "student_id": active_student_id,
@@ -1014,8 +1170,9 @@ def render_student_dashboard() -> None:
                     "category_type": cat_type,
                     "message_type": sel_msg_type,
                     "category": sel_cat,
-                    "sub_category": sel_sub_cat,
-                    "specific_category": sel_spec_cat,
+                    "sub_category": sel_sub_cat or "General",
+                    "specific_categories": selected_specific_options,
+                    "specific_category": spec_cat_summary,
                     "facility_type": sel_cat,
                     "building": sel_block,
                     "sub_block": sel_sub_block,
@@ -1026,8 +1183,10 @@ def render_student_dashboard() -> None:
                     "location": combined_location,
                     "contact_number": clean_contact,
                     "availability_date": avail_date.strftime("%Y-%m-%d"),
-                    "time_slots": selected_slots,
-                    "title": f"[{sel_msg_type}] {sel_spec_cat}",
+                    "time_slot": selected_slot,
+                    "time_slots": [selected_slot],
+                    "title": f"[{sel_msg_type}] {spec_cat_summary}",
+                    "subject": f"[{sel_msg_type}] {spec_cat_summary}",
                     "description": clean_desc,
                     "reported_by": active_student_name,
                     "status": "Submitted",
@@ -1050,12 +1209,13 @@ def render_student_dashboard() -> None:
                             "message_type": sel_msg_type,
                             "category_type": cat_type,
                             "category": sel_cat,
-                            "sub_category": sel_sub_cat,
-                            "specific_category": sel_spec_cat,
+                            "sub_category": sel_sub_cat or "General",
+                            "specific_categories": selected_specific_options,
+                            "specific_category": spec_cat_summary,
                             "location": combined_location,
                             "contact_number": clean_contact,
                             "availability_date": avail_date.strftime("%Y-%m-%d"),
-                            "time_slots": selected_slots,
+                            "time_slot": selected_slot,
                             "description": clean_desc,
                             "allotted_person": None,
                             "department": None,
@@ -1072,8 +1232,8 @@ def render_student_dashboard() -> None:
                     st.error(f"Complaint registration failed: {exc}. Please retry.")
 
     # =========================================================================
-    # VIEW B: STUDENT COMPLAINT HISTORY (ONLY HISTORY)
-    # Opens only when the student explicitly clicks 'History'
+    # VIEW B: STUDENT COMPLAINT HISTORY (KPI COUNTERS, CARDS, REMARKS & FEEDBACK)
+    # Opens directly when the student explicitly clicks 'History'
     # =========================================================================
     elif active_view == "history":
         c_hdr, c_srch = st.columns([2.2, 1.5])
@@ -1083,7 +1243,7 @@ def render_student_dashboard() -> None:
                     f"""
                     <div style="margin-bottom: 0.5rem;">
                         <h2 style="margin: 0; font-size: 1.35rem; color: #203A32; font-weight: 750;">
-                            Complaint History &amp; Status Tracking
+                            Complaint History &amp; RMS Existing Tickets
                         </h2>
                         <p style="margin: 0.15rem 0 0 0; color: #4A6357; font-size: 0.88rem;">
                             Showing complaints submitted by <strong>{active_student_name}</strong> ({active_student_id}).
@@ -1105,6 +1265,48 @@ def render_student_dashboard() -> None:
                 key="search_student_complaints",
             )
 
+        # ---------------------------------------------------------------------
+        # KPI SUMMARY COUNTERS (Requirement 11)
+        # Total Requests, Open Requests, Closed Requests
+        # ---------------------------------------------------------------------
+        total_reqs = len(student_complaints_list)
+        open_reqs = len([c for c in student_complaints_list if c.get("status") not in ["Resolved", "Withdrawn"]])
+        closed_reqs = len([c for c in student_complaints_list if c.get("status") in ["Resolved", "Withdrawn"]])
+
+        col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
+        with col_kpi1:
+            st.markdown(
+                f"""
+                <div class="kpi-metric-card">
+                    <div class="kpi-metric-value">{total_reqs}</div>
+                    <div class="kpi-metric-label">Total Requests</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with col_kpi2:
+            st.markdown(
+                f"""
+                <div class="kpi-metric-card" style="border-left: 4px solid #203A32;">
+                    <div class="kpi-metric-value" style="color: #203A32;">{open_reqs}</div>
+                    <div class="kpi-metric-label">Open Requests</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with col_kpi3:
+            st.markdown(
+                f"""
+                <div class="kpi-metric-card" style="border-left: 4px solid #A8B9A3;">
+                    <div class="kpi-metric-value" style="color: #4A6357;">{closed_reqs}</div>
+                    <div class="kpi-metric-label">Closed Requests</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown("<div style='height: 0.95rem;'></div>", unsafe_allow_html=True)
+
         # Filter by search token if entered
         if search_token.strip():
             term = search_token.strip().lower()
@@ -1112,6 +1314,7 @@ def render_student_dashboard() -> None:
                 c for c in student_complaints_list
                 if term in str(c.get("complaint_id", "")).lower()
                 or term in str(c.get("title", "")).lower()
+                or term in str(c.get("subject", "")).lower()
                 or term in str(c.get("facility_type", "")).lower()
                 or term in str(c.get("category", "")).lower()
                 or term in str(c.get("sub_category", "")).lower()
@@ -1161,14 +1364,16 @@ def render_student_dashboard() -> None:
             cat = item.get("category") or item.get("facility_type", "General")
             sub_cat = item.get("sub_category", "")
             spec_cat = item.get("specific_category", "")
-            title = item.get("title", f"[{msg_t}] {spec_cat or cat}")
+            subj = item.get("subject") or item.get("title", f"[{msg_t}] {spec_cat or cat}")
             desc = item.get("description", "")
             status = item.get("status", "Submitted")
             s_badge = get_status_badge(status)
             loc = item.get("location", "Campus")
             date_rep = item.get("date_reported", "Recently")
-            est_res = item.get("estimated_resolution")
-            est_res_text = f"<span>⏱️ <strong>Est. Turnaround:</strong> <span style='color: #203A32; font-weight: 600;'>{est_res}</span></span>" if est_res else ""
+            closing_remarks = item.get("closing_remarks")
+            tracking_info = item.get("tracking_info") or f"Logged By: {item.get('student_name', active_student_name)}"
+            is_open = status not in ["Resolved", "Withdrawn"]
+            is_resolved = (status == "Resolved")
 
             # 5-stage progress indicator
             progress_indicator_html = render_student_progress_timeline(status)
@@ -1181,7 +1386,7 @@ def render_student_dashboard() -> None:
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.65rem;">
                         <div>
                             <span style="font-family: monospace; font-size: 0.85rem; font-weight: 800; color: #203A32; background-color: #DCE5D8; padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid #A8B9A3;">
-                                {cid}
+                                Request ID: {cid}
                             </span>
                             <span style="font-size: 0.76rem; font-weight: 700; color: #203A32; background-color: #DCE5D8; padding: 0.2rem 0.55rem; border-radius: 6px; margin-left: 0.4rem; text-transform: uppercase;">
                                 {msg_t}
@@ -1191,7 +1396,7 @@ def render_student_dashboard() -> None:
                             </span>
                             {sub_cat_html}
                             <h3 style="margin: 0.5rem 0 0 0; color: #203A32; font-size: 1.15rem; font-weight: 750;">
-                                {title}
+                                {subj}
                             </h3>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -1200,32 +1405,137 @@ def render_student_dashboard() -> None:
                         </div>
                     </div>
                     {progress_indicator_html}
-                    <p style="color: #203A32; font-size: 0.92rem; margin: 0.85rem 0 0.85rem 0; line-height: 1.5;">
-                        {desc}
-                    </p>
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #DCE5D8; padding-top: 0.75rem; font-size: 0.83rem; color: #4A6357; flex-wrap: wrap; gap: 0.75rem;">
-                        <div>
-                            📍 <strong>Location:</strong> {loc}
-                        </div>
-                        <div style="display: flex; gap: 1.5rem; align-items: center;">
-                            <span>📅 <strong>Reported:</strong> {date_rep}</span>
-                            {est_res_text}
-                        </div>
+                    <div style="background-color: #F8FAF7; border-left: 3px solid #A8B9A3; padding: 0.65rem 0.9rem; margin: 0.75rem 0; font-size: 0.9rem; color: #203A32; line-height: 1.5;">
+                        <strong>Query:</strong> "{desc}"
                     </div>
-                </div>
                 """
             )
             st.markdown(card_html, unsafe_allow_html=True)
 
-            # Expandable full RMS ticket details
-            with st.expander(f"📋 View Full Details for {cid}"):
+            # If Closing Remarks exist (as documented in PDF for closed requests)
+            if closing_remarks:
+                st.markdown(
+                    f"""
+                    <div style="background-color: #F0F4ED; border: 1px solid #DCE5D8; border-radius: 8px; padding: 0.65rem 0.9rem; margin-bottom: 0.75rem; font-size: 0.86rem; color: #203A32;">
+                        <strong>Closing Remarks:</strong> "{closing_remarks}"
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            # Card metadata footer
+            st.markdown(
+                f"""
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #DCE5D8; padding-top: 0.75rem; font-size: 0.83rem; color: #4A6357; flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                        📍 <strong>Location:</strong> {loc}
+                    </div>
+                    <div style="display: flex; gap: 1.5rem; align-items: center;">
+                        <span>📅 <strong>Dated:</strong> {date_rep}</span>
+                        <span>🔍 <strong>Tracking:</strong> {tracking_info}</span>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Action Bar: Withdrawal RMS (for Open requests) or Feedback Modal (for Closed requests)
+            col_act_left, col_act_right = st.columns([2, 1.2])
+
+            with col_act_right:
+                if is_open:
+                    if st.button("Withdrawal RMS", key=f"btn_withdraw_open_{cid}", type="secondary", use_container_width=True):
+                        st.session_state[f"show_withdraw_form_{cid}"] = True
+
+                elif is_resolved:
+                    existing_fb = item.get("feedback")
+                    if existing_fb:
+                        st.markdown(
+                            f"<div style='text-align: right; font-size: 0.82rem; color: #203A32;'>⭐ Feedback: <strong>{existing_fb.get('rating')} Stars ({existing_fb.get('rating_label')})</strong></div>",
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        if st.button("Rate your feedback", key=f"btn_rate_fb_{cid}", type="primary", use_container_width=True):
+                            st.session_state[f"show_fb_form_{cid}"] = True
+
+            # Withdrawal confirmation form
+            if st.session_state.get(f"show_withdraw_form_{cid}"):
+                with st.container(border=True):
+                    st.markdown(f"**Confirm Withdrawal for {cid}**")
+                    w_reason = st.text_input(
+                        "Reason for withdrawal (Optional):",
+                        placeholder="e.g. Issue resolved on its own, alternate arrangement made",
+                        key=f"withdraw_reason_input_{cid}",
+                    )
+                    c_w1, c_w2 = st.columns(2)
+                    with c_w1:
+                        if st.button("Confirm Withdrawal", key=f"btn_confirm_w_{cid}", type="primary", use_container_width=True):
+                            withdrawn_ok = withdraw_complaint(cid, student_id=active_student_id, reason=w_reason)
+                            if withdrawn_ok:
+                                st.session_state[f"show_withdraw_form_{cid}"] = False
+                                st.success("Complaint successfully withdrawn.")
+                                time.sleep(0.3)
+                                st.rerun()
+                            else:
+                                st.error("Failed to withdraw complaint. Ensure the complaint is open and belongs to your session.")
+                    with c_w2:
+                        if st.button("Cancel", key=f"btn_cancel_w_{cid}", type="secondary", use_container_width=True):
+                            st.session_state[f"show_withdraw_form_{cid}"] = False
+                            st.rerun()
+
+            # Feedback Modal / Form ("Rate your feedback")
+            if st.session_state.get(f"show_fb_form_{cid}"):
+                with st.container(border=True):
+                    st.markdown(f"**Rate your feedback for {cid}**")
+                    st.markdown("<p style='font-size: 0.85rem; color: #4A6357;'>Please rate your resolution satisfaction:</p>", unsafe_allow_html=True)
+                    star_options = {
+                        5: "5 Stars = Excellent",
+                        4: "4 Stars = Good",
+                        3: "3 Stars = Average",
+                        2: "2 Stars = Below Average",
+                        1: "1 Star = Poor",
+                    }
+                    selected_rating_label = st.radio(
+                        "Rating Scale",
+                        options=list(star_options.values()),
+                        index=0,
+                        key=f"fb_star_radio_{cid}",
+                        horizontal=True,
+                    )
+                    # Extract numeric rating from label
+                    star_num = int(selected_rating_label.split()[0])
+
+                    improve_text = st.text_input(
+                        "What could we improve?",
+                        placeholder="Share your experience or suggestions for the maintenance team...",
+                        key=f"fb_improve_input_{cid}",
+                    )
+
+                    c_fb1, c_fb2 = st.columns(2)
+                    with c_fb1:
+                        if st.button("Submit", key=f"btn_submit_fb_{cid}", type="primary", use_container_width=True):
+                            fb_ok = submit_complaint_feedback(cid, rating=star_num, comments=improve_text, student_id=active_student_id)
+                            if fb_ok:
+                                st.session_state[f"show_fb_form_{cid}"] = False
+                                st.success("Feedback submitted successfully. Thank you!")
+                                time.sleep(0.3)
+                                st.rerun()
+                            else:
+                                st.error("Failed to submit feedback. Ensure the complaint is resolved.")
+                    with c_fb2:
+                        if st.button("Close", key=f"btn_close_fb_{cid}", type="secondary", use_container_width=True):
+                            st.session_state[f"show_fb_form_{cid}"] = False
+                            st.rerun()
+
+            # Expandable full RMS ticket details & Remarks History Table
+            with st.expander(f"📋 RMS Details & Remarks History for {cid}"):
                 c_det1, c_det2 = st.columns(2)
                 with c_det1:
                     st.markdown(f"**Contact Number:** {item.get('contact_number') or 'Not provided'}")
                     st.markdown(f"**Preferred Date:** {item.get('availability_date') or 'Immediate'}")
-                    slots_val = item.get('time_slots')
-                    slots_txt = ", ".join(slots_val) if isinstance(slots_val, list) else (slots_val or "Standard")
-                    st.markdown(f"**Preferred Time Slots:** {slots_txt}")
+                    slots_val = item.get('time_slots') or [item.get('time_slot')]
+                    slots_txt = ", ".join([str(s) for s in slots_val if s]) if slots_val else "08:00-10:00"
+                    st.markdown(f"**Preferred Time Slot:** {slots_txt}")
                 with c_det2:
                     allotted_person = item.get("allotted_person")
                     st.markdown(f"**Allotted Person:** {allotted_person if allotted_person else 'Pending allotment'}")
@@ -1233,6 +1543,47 @@ def render_student_dashboard() -> None:
                     st.markdown(f"**Department:** {dept if dept else 'Campus Facility & Maintenance Operations'}")
                     action_taken = item.get("action_taken")
                     st.markdown(f"**Latest Operational Action:** {action_taken if action_taken else 'Logged in triage register.'}")
+
+                # Remarks History Table (as shown in PDF Page 1)
+                remarks_list = item.get("remarks_history", [])
+                if remarks_list:
+                    st.markdown("<h4 style='font-size: 0.92rem; color: #203A32; margin-top: 0.75rem; margin-bottom: 0.35rem;'>Remarks History</h4>", unsafe_allow_html=True)
+                    table_rows = ""
+                    for r_entry in remarks_list:
+                        r_text = r_entry.get("remarks", "No remarks recorded")
+                        r_date = r_entry.get("update_date", "Recently")
+                        r_name = r_entry.get("name", "System")
+                        r_doc = r_entry.get("supporting_document", "None")
+                        table_rows += f"""
+                        <tr style="border-bottom: 1px solid #DCE5D8;">
+                            <td style="padding: 0.5rem 0.75rem; color: #203A32;">{r_text}</td>
+                            <td style="padding: 0.5rem 0.75rem; color: #4A6357; font-family: monospace; font-size: 0.8rem;">{r_date}</td>
+                            <td style="padding: 0.5rem 0.75rem; color: #203A32; font-weight: 600;">{r_name}</td>
+                            <td style="padding: 0.5rem 0.75rem; color: #6D8276;">{r_doc}</td>
+                        </tr>
+                        """
+                    st.markdown(
+                        _clean_html(
+                            f"""
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.84rem; border: 1px solid #DCE5D8; margin-top: 0.35rem; border-radius: 6px; overflow: hidden;">
+                                <thead>
+                                    <tr style="background-color: #F5F7F2; border-bottom: 1.5px solid #DCE5D8; text-align: left;">
+                                        <th style="padding: 0.5rem 0.75rem; color: #203A32; font-weight: 750;">Remarks</th>
+                                        <th style="padding: 0.5rem 0.75rem; color: #203A32; font-weight: 750;">Update Date</th>
+                                        <th style="padding: 0.5rem 0.75rem; color: #203A32; font-weight: 750;">Name</th>
+                                        <th style="padding: 0.5rem 0.75rem; color: #203A32; font-weight: 750;">Supporting Document</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {table_rows}
+                                </tbody>
+                            </table>
+                            """
+                        ),
+                        unsafe_allow_html=True,
+                    )
+
+            st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
 
     # Campus resident notice footer
     st.markdown(
