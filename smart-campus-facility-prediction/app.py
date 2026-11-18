@@ -100,6 +100,8 @@ def main() -> None:
                 st.session_state["user_role"] = "student"
                 if st.query_params.get("view"):
                     st.session_state["student_active_view"] = st.query_params.get("view")
+                if st.query_params.get("agreed") == "true":
+                    st.session_state["student_agreed"] = True
 
     # Support for test harnesses that assign user_role directly
     if not auth and user_role in ["student", "admin"]:

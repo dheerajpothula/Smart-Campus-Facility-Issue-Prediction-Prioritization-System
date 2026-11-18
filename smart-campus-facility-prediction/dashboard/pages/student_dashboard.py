@@ -181,6 +181,29 @@ def render_student_dashboard() -> None:
             border-radius: 6px !important;
             padding: 0.2rem 0.55rem !important;
         }
+        /* Checkbox label styling and visibility */
+        .stCheckbox label p {
+            color: #203A32 !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            line-height: 1.5 !important;
+        }
+        div[data-testid="stCheckbox"] {
+            padding: 0.35rem 0.5rem !important;
+        }
+        div[data-testid="stCheckbox"] input:checked + div {
+            background-color: #203A32 !important;
+            border-color: #203A32 !important;
+        }
+        button[kind="primary"]:disabled,
+        button[data-testid="stBaseButton-primary"]:disabled {
+            background-color: #E2E8E0 !important;
+            color: #8C9E94 !important;
+            border: 1.5px solid #C8D4C5 !important;
+            cursor: not-allowed !important;
+            box-shadow: none !important;
+            opacity: 0.75 !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -204,11 +227,13 @@ def render_student_dashboard() -> None:
     student_complaints_all = get_student_complaints(active_student_id)
     complaint_count = len(student_complaints_all)
 
-    # Navigation default: Raise a Query is the primary default section
-    if "student_active_view" not in st.session_state or st.session_state["student_active_view"] not in ["raise", "history"]:
-        st.session_state["student_active_view"] = "raise"
+    # Navigation initial state: Neither view is active until student selects an option
+    if "student_active_view" not in st.session_state:
+        st.session_state["student_active_view"] = None
 
-    active_view = st.session_state["student_active_view"]
+    active_view = st.session_state.get("student_active_view")
+    if active_view not in ["raise", "history"]:
+        active_view = None
 
     # =========================================================================
     # 1. HORIZONTAL HEADER
@@ -247,14 +272,20 @@ def render_student_dashboard() -> None:
                 st.session_state["selected_role"] = None
                 st.session_state["auth_user"] = None
                 st.session_state["user_role"] = None
-                st.session_state["student_active_view"] = "raise"
+                st.session_state["student_active_view"] = None
+                st.session_state["student_agreed"] = False
+                st.session_state["chk_agreement_responsible"] = False
+                st.session_state["chk_agreement_truthful"] = False
                 st.rerun()
         with col_btn_logout:
             if st.button("Logout", key="btn_student_hdr_logout", type="secondary", use_container_width=True):
                 st.session_state["selected_role"] = None
                 st.session_state["auth_user"] = None
                 st.session_state["user_role"] = None
-                st.session_state["student_active_view"] = "raise"
+                st.session_state["student_active_view"] = None
+                st.session_state["student_agreed"] = False
+                st.session_state["chk_agreement_responsible"] = False
+                st.session_state["chk_agreement_truthful"] = False
                 st.rerun()
 
         st.markdown(
@@ -299,6 +330,35 @@ def render_student_dashboard() -> None:
             st.rerun()
 
     st.markdown("<div style='height: 0.85rem;'></div>", unsafe_allow_html=True)
+
+    # =========================================================================
+    # VIEW 0: INITIAL SELECTION STATE (NO FORM, NO AGREEMENT DISPLAYED)
+    # =========================================================================
+    if active_view is None:
+        st.markdown(
+            _clean_html(
+                f"""
+                <div class="dashboard-card" style="padding: 2.8rem 2rem; max-width: 860px; margin: 0.8rem auto 1.5rem auto; text-align: center; border-top: 4px solid #203A32; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.05);">
+                    <div style="width: 58px; height: 58px; border-radius: 14px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 1rem auto; box-shadow: 0 2px 6px rgba(32, 58, 50, 0.06);">
+                        🎓
+                    </div>
+                    <h2 style="color: #203A32; font-size: 1.45rem; font-weight: 800; margin-bottom: 0.35rem; letter-spacing: -0.02em;">
+                        Welcome to the Student Facility Portal
+                    </h2>
+                    <p style="color: #4A6357; font-size: 0.94rem; margin: 0 auto 1.4rem auto; max-width: 560px; line-height: 1.55;">
+                        Select <strong>Raise a Query</strong> above to submit a campus maintenance breakdown or service request, or select <strong>History</strong> to review your past complaints and tracking status.
+                    </p>
+                    <div style="display: inline-flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; color: #6D8276; flex-wrap: wrap;">
+                        <span>💬 <strong>Raise a Query:</strong> Report breakdowns &amp; facility requests</span>
+                        <span>&bull;</span>
+                        <span>🕒 <strong>History:</strong> Track status updates &amp; resolution ({complaint_count} registered)</span>
+                    </div>
+                </div>
+                """
+            ),
+            unsafe_allow_html=True,
+        )
+        return
 
     # =========================================================================
     # VIEW A: RAISE A QUERY (ONLY COMPLAINT SUBMISSION FORM & IN-SECTION TICKET)
@@ -430,6 +490,9 @@ def render_student_dashboard() -> None:
                 with c_ret_raise:
                     if st.button("➕ Raise Another Query", key="btn_conf_raise_another", type="primary", use_container_width=True):
                         del st.session_state["submission_confirmation"]
+                        st.session_state["student_agreed"] = False
+                        st.session_state["chk_agreement_responsible"] = False
+                        st.session_state["chk_agreement_truthful"] = False
                         _reset_submission_form_state()
                         st.rerun()
                 with c_ret_hist:
@@ -437,6 +500,76 @@ def render_student_dashboard() -> None:
                         del st.session_state["submission_confirmation"]
                         st.session_state["student_active_view"] = "history"
                         st.rerun()
+            return
+
+        # ---------------------------------------------------------------------
+        # QUERY SUBMISSION AGREEMENT (MANDATORY BEFORE COMPLAINT SUBMISSION)
+        # ---------------------------------------------------------------------
+        if not st.session_state.get("student_agreed", False):
+            st.markdown(
+                _clean_html(
+                    """
+                    <div class="dashboard-card" style="padding: 1.8rem 2.2rem; max-width: 840px; margin: 0 auto 1.25rem auto; border-top: 4px solid #203A32; border-radius: 12px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.05);">
+                        <div style="display: flex; align-items: center; gap: 0.85rem;">
+                            <div style="width: 44px; height: 44px; border-radius: 10px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                                📋
+                            </div>
+                            <div>
+                                <h3 style="color: #203A32; font-size: 1.25rem; font-weight: 800; margin: 0; letter-spacing: -0.02em;">
+                                    Query Submission Agreement
+                                </h3>
+                                <p style="color: #4A6357; font-size: 0.88rem; margin: 0.15rem 0 0 0; font-weight: 500;">
+                                    Please confirm the following declarations before submitting your campus facility query:
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                ),
+                unsafe_allow_html=True,
+            )
+
+            col_ag1, col_ag2, col_ag3 = st.columns([1, 3.2, 1])
+            with col_ag2:
+                with st.container(border=True):
+                    chk_responsible = st.checkbox(
+                        "I am responsible for the content typed in query.",
+                        value=st.session_state.get("chk_agreement_responsible", False),
+                        key="chk_agreement_responsible",
+                        help="Confirm your responsibility for the query description and attachments.",
+                    )
+
+                    st.markdown("<div style='height: 0.65rem;'></div>", unsafe_allow_html=True)
+
+                    chk_truthful = st.checkbox(
+                        "The information given by me regarding the complaint/request is true to the best of my knowledge.",
+                        value=st.session_state.get("chk_agreement_truthful", False),
+                        key="chk_agreement_truthful",
+                        help="Confirm that all reported location and incident details are factual.",
+                    )
+
+                st.markdown("<div style='height: 0.85rem;'></div>", unsafe_allow_html=True)
+
+                both_agreed = bool(chk_responsible and chk_truthful)
+
+                if st.button(
+                    "Agree & Proceed",
+                    key="btn_agree_and_proceed",
+                    type="primary",
+                    disabled=not both_agreed,
+                    use_container_width=True,
+                    help="Accept the agreement statements above to unlock the complaint submission form.",
+                ):
+                    st.session_state["student_agreed"] = True
+                    st.rerun()
+
+                if not both_agreed:
+                    st.markdown(
+                        "<div style='text-align: center; color: #6D8276; font-size: 0.82rem; margin-top: 0.5rem;'>"
+                        "⚠️ Please select both checkboxes above to enable the Agree &amp; Proceed button."
+                        "</div>",
+                        unsafe_allow_html=True,
+                    )
             return
 
         # ---------------------------------------------------------------------

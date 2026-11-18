@@ -59,24 +59,24 @@ class TestStudentDashboardRedesign(unittest.TestCase):
         self.assertIn("History", source)
         self.assertIn("🕒", source)
 
-    def test_student_declaration_removed(self):
-        """Student declaration section, checkboxes, and Agree & Proceed button must be completely removed."""
+    def test_query_agreement_workflow(self):
+        """Query Agreement: two mandatory checkboxes and dynamic Agree & Proceed button."""
         source = inspect.getsource(student_dashboard)
 
-        # Declaration heading and descriptions removed
+        # Old generic declaration heading removed
         self.assertNotIn("Student Declaration", source)
         self.assertNotIn("Please review and accept the official student undertaking", source)
 
-        # Both checkboxes removed
-        self.assertNotIn("I am responsible for the content typed in my query.", source)
-        self.assertNotIn(
+        # Both agreement checkboxes present with exact required wording
+        self.assertIn("I am responsible for the content typed in query.", source)
+        self.assertIn(
             "The information given by me regarding the complaint/request is true to the best of my knowledge.",
             source,
         )
 
-        # Agree & Proceed button removed
-        self.assertNotIn('"Agree & Proceed"', source)
-        self.assertNotIn("btn_agree_and_proceed", source)
+        # Agree & Proceed button present
+        self.assertIn("Agree & Proceed", source)
+        self.assertIn("btn_agree_and_proceed", source)
 
         # Direct card navigation buttons present
         self.assertIn("btn_open_raise_query", source)
