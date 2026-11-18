@@ -162,18 +162,6 @@ def render_admin_login_screen() -> None:
                 else:
                     st.error("Invalid Administrator ID or password. Please verify your credentials and try again.")
 
-        # Tasteful demo credential note for authorized operators
-        st.markdown(
-            """
-            <div style="background-color: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 8px; padding: 0.85rem 1.1rem; margin-top: 1.25rem; font-size: 0.82rem; color: #4A6357;">
-                <div style="font-weight: 700; color: #203A32; margin-bottom: 0.2rem;">🔐 Default Administrator Credentials</div>
-                <div>ID: <code style="background: #F5F7F2; padding: 0.1rem 0.35rem; border-radius: 4px; color: #203A32;">ADM-2026-001</code> or <code style="background: #F5F7F2; padding: 0.1rem 0.35rem; border-radius: 4px; color: #203A32;">admin</code></div>
-                <div>Password: <code style="background: #F5F7F2; padding: 0.1rem 0.35rem; border-radius: 4px; color: #203A32;">Admin@2026</code></div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
     # Footer note
     st.markdown(
         """
