@@ -440,16 +440,44 @@ def add_complaint(new_ticket: dict) -> str:
     if "date_reported" not in new_ticket or not new_ticket["date_reported"]:
         new_ticket["date_reported"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    # Set canonical status (default: Submitted)
+    # Canonical status (default: Submitted)
     new_ticket["status"] = _normalize_status(new_ticket.get("status", "Submitted"))
+
+    # Normalize fields from Stage 1 RMS workflow
+    if "building" not in new_ticket and "block" in new_ticket:
+        new_ticket["building"] = new_ticket["block"]
+    if "facility_type" not in new_ticket and "category" in new_ticket:
+        new_ticket["facility_type"] = new_ticket["category"]
+    if "title" not in new_ticket or not new_ticket["title"]:
+        msg_t = new_ticket.get("message_type", "Query")
+        spec_cat = new_ticket.get("specific_category") or new_ticket.get("sub_category") or new_ticket.get("category", "Issue")
+        new_ticket["title"] = f"[{msg_t}] {spec_cat}"
 
     # Format location string
     bld = new_ticket.get("building", "")
+    sub_bld = new_ticket.get("sub_block", "")
     spec = new_ticket.get("specific_location", "")
-    if bld and spec:
-        new_ticket["location"] = f"{bld} - {spec}"
+    if not spec:
+        if new_ticket.get("room_type") == "Room No" and new_ticket.get("room_number"):
+            spec = f"Room {new_ticket['room_number']}"
+        elif new_ticket.get("specified_location"):
+            spec = new_ticket["specified_location"]
+        new_ticket["specific_location"] = spec
+
+    if sub_bld and spec:
+        loc_detail = f"{sub_bld}, {spec}"
+    else:
+        loc_detail = sub_bld or spec
+
+    if bld and loc_detail:
+        new_ticket["location"] = f"{bld} - {loc_detail}"
     elif not new_ticket.get("location"):
-        new_ticket["location"] = bld or spec or "Campus Grounds"
+        new_ticket["location"] = bld or loc_detail or "Campus Grounds"
+
+    # Reference RMS tracking fields (None by default until real assignment exists)
+    new_ticket.setdefault("allotted_person", None)
+    new_ticket.setdefault("department", None)
+    new_ticket.setdefault("designation", None)
 
     # Ensure student identity fields
     new_ticket.setdefault("student_id", None)
