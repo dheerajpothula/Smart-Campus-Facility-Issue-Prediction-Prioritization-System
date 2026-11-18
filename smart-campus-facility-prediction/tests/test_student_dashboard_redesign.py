@@ -59,25 +59,28 @@ class TestStudentDashboardRedesign(unittest.TestCase):
         self.assertIn("History", source)
         self.assertIn("🕒", source)
 
-    def test_student_declaration_checkboxes_and_button(self):
-        """Student declaration must contain exact two checkboxes and Agree & Proceed button."""
+    def test_student_declaration_removed(self):
+        """Student declaration section, checkboxes, and Agree & Proceed button must be completely removed."""
         source = inspect.getsource(student_dashboard)
 
-        # Checkbox 1 exact text
-        self.assertIn("I am responsible for the content typed in my query.", source)
-        # Checkbox 2 exact text
-        self.assertIn(
+        # Declaration heading and descriptions removed
+        self.assertNotIn("Student Declaration", source)
+        self.assertNotIn("Please review and accept the official student undertaking", source)
+
+        # Both checkboxes removed
+        self.assertNotIn("I am responsible for the content typed in my query.", source)
+        self.assertNotIn(
             "The information given by me regarding the complaint/request is true to the best of my knowledge.",
             source,
         )
 
-        # Agree & Proceed button
-        self.assertIn('"Agree & Proceed"', source)
-        self.assertIn("btn_agree_and_proceed", source)
+        # Agree & Proceed button removed
+        self.assertNotIn('"Agree & Proceed"', source)
+        self.assertNotIn("btn_agree_and_proceed", source)
 
-        # Must enforce disabled state when both are not checked
-        self.assertIn("disabled=not both_checked", source)
-        self.assertIn("both_checked = bool(cb_responsible and cb_truthful)", source)
+        # Direct card navigation buttons present
+        self.assertIn("btn_open_raise_query", source)
+        self.assertIn("btn_open_history", source)
 
     def test_complaint_form_fields_including_photo_upload(self):
         """Form must contain Student Name, ID, Title, Category, Building, Floor/Location, Description, and photo upload."""

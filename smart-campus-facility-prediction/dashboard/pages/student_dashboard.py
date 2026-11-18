@@ -3,10 +3,9 @@ FIPP 2.0 — Student Facility Dashboard.
 Implements the notebook sketch layout:
 1. Clean horizontal header with FIPP logo/title on left, Home option on right.
 2. Main Dashboard with two prominent, equal-sized options: 'Raise a Query' and 'History'.
-3. Student Declaration section with two mandatory checkboxes and dynamically enabled 'Agree & Proceed' button.
-4. Access to Complaint Portal (Raise a Query with 7 fields + optional photo upload, unique token generation CMP-2026-XXX)
+3. Access to Complaint Portal (Raise a Query with 7 fields + optional photo upload, unique token generation CMP-2026-XXX)
    and History page with strict student data isolation.
-5. Modern Sage & Forest Theme:
+4. Modern Sage & Forest Theme:
    - Soft Ivory: #F5F7F2
    - Forest Green: #203A32
    - Sage: #A8B9A3
@@ -56,7 +55,6 @@ def render_student_dashboard() -> None:
     Renders the dedicated Student Facility Interface based on the hand-drawn design:
     - Horizontal Header: FIPP logo & full title on left, Home option on right.
     - Main Dashboard Hub: Two prominent equal-sized cards for 'Raise a Query' and 'History'.
-    - Mandatory Student Declaration with two checkboxes; 'Agree & Proceed' enabled only when both are checked.
     - Portal Views: Raise a Query (with 7 validated fields + optional photo upload) & History (isolated to current student).
     """
     # Hide sidebar when in student mode for a clean, distraction-free widescreen view
@@ -69,11 +67,6 @@ def render_student_dashboard() -> None:
             margin: 0 auto !important;
             padding-top: 1.25rem !important;
             padding-bottom: 3.5rem !important;
-        }
-        .stCheckbox label p {
-            color: #203A32 !important;
-            font-size: 0.95rem !important;
-            font-weight: 500 !important;
         }
         </style>
         """,
@@ -96,16 +89,8 @@ def render_student_dashboard() -> None:
         return
 
     # Initialize Student session state attributes
-    if "student_agreed" not in st.session_state:
-        st.session_state["student_agreed"] = False
-    if "student_selected_option" not in st.session_state:
-        st.session_state["student_selected_option"] = "raise"
     if "student_active_view" not in st.session_state:
         st.session_state["student_active_view"] = None
-    if "chk_declaration_responsible" not in st.session_state:
-        st.session_state["chk_declaration_responsible"] = False
-    if "chk_declaration_truthful" not in st.session_state:
-        st.session_state["chk_declaration_truthful"] = False
 
     # Count existing complaints for this student
     student_complaints_all = get_student_complaints(active_student_id)
@@ -148,7 +133,6 @@ def render_student_dashboard() -> None:
                 st.session_state["selected_role"] = None
                 st.session_state["auth_user"] = None
                 st.session_state["user_role"] = None
-                st.session_state["student_agreed"] = False
                 st.session_state["student_active_view"] = None
                 st.rerun()
         with col_btn_logout:
@@ -156,7 +140,6 @@ def render_student_dashboard() -> None:
                 st.session_state["selected_role"] = None
                 st.session_state["auth_user"] = None
                 st.session_state["user_role"] = None
-                st.session_state["student_agreed"] = False
                 st.session_state["student_active_view"] = None
                 st.rerun()
 
@@ -228,11 +211,9 @@ def render_student_dashboard() -> None:
         return
 
     # =========================================================================
-    # 3. MAIN DASHBOARD HUB & DECLARATION VIEW (Initial state before Proceed)
+    # 3. MAIN DASHBOARD HUB (Two prominent options in the centre)
     # =========================================================================
-    if not st.session_state.get("student_agreed") or not st.session_state.get("student_active_view"):
-        current_sel = st.session_state.get("student_selected_option", "raise")
-
+    if not st.session_state.get("student_active_view"):
         st.markdown(
             _clean_html(
                 """
@@ -252,21 +233,16 @@ def render_student_dashboard() -> None:
         # Two prominent equal-sized options in the centre
         col_card_raise, col_card_hist = st.columns(2, gap="large")
 
-        # Visual highlights based on selected option
-        border_raise = "border: 2px solid #203A32; box-shadow: 0 8px 24px rgba(32, 58, 50, 0.08);" if current_sel == "raise" else "border: 1px solid #DCE5D8;"
-        border_hist = "border: 2px solid #203A32; box-shadow: 0 8px 24px rgba(32, 58, 50, 0.08);" if current_sel == "history" else "border: 1px solid #DCE5D8;"
-
         with col_card_raise:
             st.markdown(
                 _clean_html(
-                    f"""
-                    <div class="dashboard-card" style="padding: 2.5rem 2.2rem 1.8rem 2.2rem; {border_raise} border-top: 4px solid #203A32; border-radius: 16px; background: #FFFFFF; min-height: 230px; display: flex; flex-direction: column; justify-content: space-between; margin-bottom: 0.75rem;">
+                    """
+                    <div class="dashboard-card" style="padding: 2.5rem 2.2rem 1.8rem 2.2rem; border: 1px solid #DCE5D8; border-top: 4px solid #203A32; border-radius: 16px; background: #FFFFFF; min-height: 230px; display: flex; flex-direction: column; justify-content: space-between; margin-bottom: 0.75rem;">
                         <div>
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
                                 <div style="width: 58px; height: 58px; border-radius: 14px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 2px 6px rgba(32, 58, 50, 0.05);">
                                     💬
                                 </div>
-                                {'<span style="font-size: 0.74rem; font-weight: 700; color: #203A32; background: #DCE5D8; padding: 0.2rem 0.55rem; border-radius: 9999px; text-transform: uppercase; border: 1px solid #A8B9A3;">Selected</span>' if current_sel == 'raise' else ''}
                             </div>
                             <h3 style="font-size: 1.4rem; font-weight: 750; color: #203A32; margin: 0 0 0.55rem 0;">
                                 Raise a Query
@@ -280,23 +256,20 @@ def render_student_dashboard() -> None:
                 ),
                 unsafe_allow_html=True,
             )
-            btn_raise_type = "primary" if current_sel == "raise" else "secondary"
-            btn_raise_label = "✓ Selected: Raise a Query" if current_sel == "raise" else "Select: Raise a Query"
-            if st.button(btn_raise_label, key="btn_sel_raise_opt", type=btn_raise_type, use_container_width=True):
-                st.session_state["student_selected_option"] = "raise"
+            if st.button("Raise a Query", key="btn_open_raise_query", type="primary", use_container_width=True):
+                st.session_state["student_active_view"] = "raise"
                 st.rerun()
 
         with col_card_hist:
             st.markdown(
                 _clean_html(
                     f"""
-                    <div class="dashboard-card" style="padding: 2.5rem 2.2rem 1.8rem 2.2rem; {border_hist} border-top: 4px solid #A8B9A3; border-radius: 16px; background: #FFFFFF; min-height: 230px; display: flex; flex-direction: column; justify-content: space-between; margin-bottom: 0.75rem;">
+                    <div class="dashboard-card" style="padding: 2.5rem 2.2rem 1.8rem 2.2rem; border: 1px solid #DCE5D8; border-top: 4px solid #A8B9A3; border-radius: 16px; background: #FFFFFF; min-height: 230px; display: flex; flex-direction: column; justify-content: space-between; margin-bottom: 0.75rem;">
                         <div>
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
                                 <div style="width: 58px; height: 58px; border-radius: 14px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 2rem; box-shadow: 0 2px 6px rgba(32, 58, 50, 0.05);">
                                     🕒
                                 </div>
-                                {'<span style="font-size: 0.74rem; font-weight: 700; color: #203A32; background: #DCE5D8; padding: 0.2rem 0.55rem; border-radius: 9999px; text-transform: uppercase; border: 1px solid #A8B9A3;">Selected</span>' if current_sel == 'history' else ''}
                             </div>
                             <h3 style="font-size: 1.4rem; font-weight: 750; color: #203A32; margin: 0 0 0.55rem 0;">
                                 History
@@ -310,98 +283,9 @@ def render_student_dashboard() -> None:
                 ),
                 unsafe_allow_html=True,
             )
-            btn_hist_type = "primary" if current_sel == "history" else "secondary"
-            btn_hist_label = "✓ Selected: History" if current_sel == "history" else "Select: History"
-            if st.button(btn_hist_label, key="btn_sel_hist_opt", type=btn_hist_type, use_container_width=True):
-                st.session_state["student_selected_option"] = "history"
+            if st.button("View History", key="btn_open_history", type="secondary", use_container_width=True):
+                st.session_state["student_active_view"] = "history"
                 st.rerun()
-
-        # =====================================================================
-        # STUDENT DECLARATION SECTION
-        # - Two mandatory checkboxes (initially unchecked)
-        # - 'Agree & Proceed' button disabled initially; enabled only when both are checked
-        # =====================================================================
-        st.markdown(
-            _clean_html(
-                """
-                <div class="dashboard-card" style="padding: 2.2rem 2.4rem 1.6rem 2.4rem; border-top: 4px solid #203A32; border-radius: 16px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.05); margin-top: 2.25rem; margin-bottom: 1.25rem;">
-                    <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.75rem;">
-                        <div style="width: 42px; height: 42px; border-radius: 12px; background-color: #DCE5D8; border: 1px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.45rem;">
-                            📋
-                        </div>
-                        <div>
-                            <h3 style="margin: 0; font-size: 1.3rem; color: #203A32; font-weight: 750;">
-                                Student Declaration
-                            </h3>
-                            <p style="margin: 0; color: #4A6357; font-size: 0.88rem;">
-                                Please review and accept the official student undertaking before proceeding to the portal.
-                            </p>
-                        </div>
-                    </div>
-                    <div style="height: 1px; background-color: #DCE5D8; margin: 1rem 0 1.25rem 0;"></div>
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
-        )
-
-        _, col_decl_inner, _ = st.columns([0.2, 5.6, 0.2])
-        with col_decl_inner:
-            # Checkbox 1
-            cb_responsible = st.checkbox(
-                "I am responsible for the content typed in my query.",
-                value=st.session_state.get("chk_declaration_responsible", False),
-                key="chk_declaration_responsible",
-                help="Mandatory student confirmation of content accountability.",
-            )
-
-            # Checkbox 2
-            cb_truthful = st.checkbox(
-                "The information given by me regarding the complaint/request is true to the best of my knowledge.",
-                value=st.session_state.get("chk_declaration_truthful", False),
-                key="chk_declaration_truthful",
-                help="Mandatory student affirmation of accurate and factual problem reporting.",
-            )
-
-            both_checked = bool(cb_responsible and cb_truthful)
-
-            st.markdown("<div style='height: 0.85rem;'></div>", unsafe_allow_html=True)
-
-            col_btn_agree, col_btn_help = st.columns([2, 3])
-            with col_btn_agree:
-                # Agree & Proceed button disabled unless both checkboxes are selected
-                btn_proceed = st.button(
-                    "Agree & Proceed",
-                    key="btn_agree_and_proceed",
-                    type="primary",
-                    disabled=not both_checked,
-                    use_container_width=True,
-                )
-
-            with col_btn_help:
-                if not both_checked:
-                    st.markdown(
-                        """<div style='padding-top: 0.55rem; color: #6D8276; font-size: 0.84rem;'>
-                            ⚠️ <em>Please check both declarations above to enable the Agree &amp; Proceed button.</em>
-                        </div>""",
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    target_label = "Raise a Query" if current_sel == "raise" else "Complaint History"
-                    st.markdown(
-                        f"""<div style='padding-top: 0.55rem; color: #203A32; font-size: 0.86rem; font-weight: 600;'>
-                            ✓ Declarations accepted. Ready to proceed to <strong>{target_label}</strong>.
-                        </div>""",
-                        unsafe_allow_html=True,
-                    )
-
-            if btn_proceed:
-                if not both_checked:
-                    st.error("Access Denied: You must check both declaration checkboxes before proceeding.")
-                else:
-                    st.session_state["student_agreed"] = True
-                    st.session_state["student_active_view"] = st.session_state.get("student_selected_option", "raise")
-                    st.rerun()
 
         # Footer note
         st.markdown(
@@ -415,7 +299,7 @@ def render_student_dashboard() -> None:
         return
 
     # =========================================================================
-    # 4. AUTHORIZED STUDENT PORTAL (After Agree & Proceed)
+    # 4. STUDENT PORTAL VIEWS
     # Allows switching between 'Raise a Query' and 'History'
     # =========================================================================
     active_view = st.session_state.get("student_active_view", "raise")
