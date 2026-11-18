@@ -34,15 +34,21 @@ def get_current_student_identity() -> dict:
         return {
             "student_id": auth["id"],
             "student_name": auth.get("name", "Student"),
+            "block": auth.get("block") or auth.get("hostel"),
+            "room_number": auth.get("room_number") or auth.get("room"),
         }
     if st.session_state.get("user_role") == "student" and not auth:
         return {
             "student_id": "STU-TEST-001",
             "student_name": "Test Student",
+            "block": None,
+            "room_number": None,
         }
     return {
         "student_id": None,
         "student_name": None,
+        "block": None,
+        "room_number": None,
     }
 
 

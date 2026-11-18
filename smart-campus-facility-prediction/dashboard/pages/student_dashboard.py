@@ -562,7 +562,7 @@ def render_student_dashboard() -> None:
                                     Log Request Declarations ("Agree &amp; Proceed")
                                 </h3>
                                 <p style="color: #4A6357; font-size: 0.88rem; margin: 0.15rem 0 0 0; font-weight: 500;">
-                                    Please confirm all five mandatory declarations before submitting your campus facility query:
+                                    Please confirm all three mandatory declarations before submitting your campus facility query:
                                 </p>
                             </div>
                         </div>
@@ -575,45 +575,31 @@ def render_student_dashboard() -> None:
             col_ag1, col_ag2, col_ag3 = st.columns([1, 3.8, 1])
             with col_ag2:
                 with st.container(border=True):
-                    chk_decl_1 = st.checkbox(
-                        "1. I have not shared my UMS password with anyone.",
-                        value=st.session_state.get("chk_declaration_1", False),
-                        key="chk_declaration_1",
-                    )
-                    st.markdown("<div style='height: 0.4rem;'></div>", unsafe_allow_html=True)
-
                     chk_responsible = st.checkbox(
-                        "2. I am responsible for the content typed in query.",
+                        "1. I am responsible for the content typed in query.",
                         value=st.session_state.get("chk_agreement_responsible", False),
                         key="chk_agreement_responsible",
                     )
                     st.markdown("<div style='height: 0.4rem;'></div>", unsafe_allow_html=True)
 
-                    chk_decl_3 = st.checkbox(
-                        "3. I understand that necessary disciplinary action can be initiated against me in case of use of derogatory words or false statements against any Student/Faculty/Staff/Higher Authority.",
-                        value=st.session_state.get("chk_declaration_3", False),
-                        key="chk_declaration_3",
+                    chk_disciplinary = st.checkbox(
+                        "2. I understand that necessary disciplinary action can be initiated against me in case of use of derogatory words or false statements against any Student/Faculty/Staff/Higher Authority.",
+                        value=st.session_state.get("chk_declaration_disciplinary", False),
+                        key="chk_declaration_disciplinary",
                     )
                     st.markdown("<div style='height: 0.4rem;'></div>", unsafe_allow_html=True)
 
                     chk_truthful = st.checkbox(
-                        "4. The information given by me regarding the complaint/request is true to the best of my knowledge and if found false/ wrong, necessary disciplinary action can be initiated against me.",
+                        "3. The information given by me regarding the complaint/request is true to the best of my knowledge and if found false/ wrong, necessary disciplinary action can be initiated against me.",
                         value=st.session_state.get("chk_agreement_truthful", False),
                         key="chk_agreement_truthful",
                         help="The information given by me regarding the complaint/request is true to the best of my knowledge.",
-                    )
-                    st.markdown("<div style='height: 0.4rem;'></div>", unsafe_allow_html=True)
-
-                    chk_decl_5 = st.checkbox(
-                        "5. I have read the policy / UMS Notification related to the concerned matter already before submitting the RMS and I am unable to find the answer related to my query.",
-                        value=st.session_state.get("chk_declaration_5", False),
-                        key="chk_declaration_5",
                     )
 
                 st.markdown("<div style='height: 0.85rem;'></div>", unsafe_allow_html=True)
 
                 both_agreed = bool(chk_responsible and chk_truthful)
-                all_declarations_agreed = bool(both_agreed and chk_decl_1 and chk_decl_3 and chk_decl_5)
+                all_declarations_agreed = bool(both_agreed and chk_disciplinary)
 
                 if st.button(
                     "Agree & Proceed",
@@ -621,7 +607,7 @@ def render_student_dashboard() -> None:
                     type="primary",
                     disabled=not both_agreed or not all_declarations_agreed,
                     use_container_width=True,
-                    help="Accept all 5 declarations above to unlock the complaint submission form.",
+                    help="Accept all 3 declarations above to unlock the complaint submission form.",
                 ):
                     st.session_state["student_agreed"] = True
                     st.rerun()
@@ -629,7 +615,7 @@ def render_student_dashboard() -> None:
                 if not all_declarations_agreed:
                     st.markdown(
                         "<div style='text-align: center; color: #6D8276; font-size: 0.82rem; margin-top: 0.5rem;'>"
-                        "⚠️ Please select all 5 checkboxes above to enable the Agree &amp; Proceed button."
+                        "⚠️ Please select all 3 checkboxes above to enable the Agree &amp; Proceed button."
                         "</div>",
                         unsafe_allow_html=True,
                     )
@@ -690,8 +676,8 @@ def render_student_dashboard() -> None:
             unsafe_allow_html=True,
         )
 
-        curr_msg = st.session_state.get("sq_message_type", "Grievance")
-        msg_idx = MESSAGE_TYPES.index(curr_msg) if curr_msg in MESSAGE_TYPES else 0
+        curr_msg = st.session_state.get("sq_message_type")
+        msg_idx = MESSAGE_TYPES.index(curr_msg) if (curr_msg and curr_msg in MESSAGE_TYPES) else None
 
         sel_msg_type = st.radio(
             "Message Type",
@@ -700,7 +686,7 @@ def render_student_dashboard() -> None:
             key="sq_message_type_radio",
             label_visibility="collapsed",
             horizontal=True,
-            help="Select Message Type first to enable Category selection (Default: Grievance).",
+            help="Select Message Type first to enable Category selection.",
         )
         st.session_state["sq_message_type"] = sel_msg_type
 
@@ -734,21 +720,22 @@ def render_student_dashboard() -> None:
                 cat_index = 0
                 cat_disabled = True
             else:
-                cat_options = ["-- Select Category --"] + available_categories
+                cat_options = available_categories
                 cur_cat = st.session_state.get("sq_category")
-                cat_index = cat_options.index(cur_cat) if cur_cat in cat_options else 0
+                cat_index = cat_options.index(cur_cat) if (cur_cat and cur_cat in cat_options) else None
                 cat_disabled = False
 
             sel_cat_val = st.selectbox(
                 "Category",
                 options=cat_options,
                 index=cat_index,
+                placeholder="-- Select Category --",
                 disabled=cat_disabled,
                 key="sq_category_select",
                 help="Category enabled once Message Type is selected.",
             )
 
-            if not cat_disabled and sel_cat_val != "-- Select Category --":
+            if not cat_disabled and sel_cat_val and sel_cat_val not in ["-- Select Message Type first --", "-- Select Category --"]:
                 sel_cat = sel_cat_val
                 st.session_state["sq_category"] = sel_cat
             else:
@@ -783,21 +770,26 @@ def render_student_dashboard() -> None:
                 sub_cat_disabled = True
             else:
                 avail_subs = get_sub_categories(cat_type, sel_cat)
-                sub_cat_options = ["-- Select Sub Category --"] + avail_subs
+                sub_cat_options = avail_subs
                 cur_sub = st.session_state.get("sq_sub_category")
-                sub_cat_index = sub_cat_options.index(cur_sub) if cur_sub in sub_cat_options else 0
+                sub_cat_index = sub_cat_options.index(cur_sub) if (cur_sub and cur_sub in sub_cat_options) else None
                 sub_cat_disabled = False
 
             sel_sub_cat_val = st.selectbox(
                 "Sub Category",
                 options=sub_cat_options,
                 index=sub_cat_index,
+                placeholder="-- Select Sub Category --",
                 disabled=sub_cat_disabled,
                 key="sq_sub_category_select",
                 help="Sub Category enabled once Category is selected.",
             )
 
-            if not sub_cat_disabled and sel_sub_cat_val != "-- Select Sub Category --":
+            if not sub_cat_disabled and sel_sub_cat_val and sel_sub_cat_val not in [
+                "-- Select Category first --",
+                "-- Select Sub Category --",
+                "-- No sub-categories configured in system reference --",
+            ]:
                 sel_sub_cat = sel_sub_cat_val
                 st.session_state["sq_sub_category"] = sel_sub_cat
             else:
@@ -935,51 +927,81 @@ def render_student_dashboard() -> None:
         col_loc1, col_loc2, col_loc3 = st.columns(3)
 
         with col_loc1:
-            sel_block = st.selectbox(
-                "Block",
-                options=CAMPUS_BLOCKS,
-                index=0,  # "BH-5 Boys Hostel-05-35643-Rajneesh Parmar"
-                key="sq_block",
-                help="Hostel or campus facility block assigned to the student.",
-            )
+            real_student_block = trusted_student.get("block")
+            if real_student_block and str(real_student_block).strip():
+                st.markdown(
+                    '<label style="font-size: 0.88rem; font-weight: 700; color: #203A32;">Block</label>',
+                    unsafe_allow_html=True,
+                )
+                sel_block = st.text_input(
+                    "Block",
+                    value=str(real_student_block).strip(),
+                    disabled=True,
+                    key="sq_block",
+                    help="Hostel or campus facility block assigned to the student.",
+                    label_visibility="collapsed",
+                )
+            else:
+                cur_block = st.session_state.get("sq_block")
+                block_idx = CAMPUS_BLOCKS.index(cur_block) if (cur_block and cur_block in CAMPUS_BLOCKS) else None
+
+                sel_block = st.selectbox(
+                    "Block",
+                    options=CAMPUS_BLOCKS,
+                    index=block_idx,
+                    placeholder="-- Select Block --",
+                    key="sq_block",
+                    help="Hostel or campus facility block assigned to the student.",
+                )
 
         with col_loc2:
+            cur_sub_block = st.session_state.get("sq_sub_block")
+            sub_block_idx = CAMPUS_SUB_BLOCKS.index(cur_sub_block) if (cur_sub_block and cur_sub_block in CAMPUS_SUB_BLOCKS) else None
+
             sel_sub_block = st.selectbox(
                 "Sub Block",
                 options=CAMPUS_SUB_BLOCKS,
-                index=0,  # "A"
+                index=sub_block_idx,
+                placeholder="-- Select Sub Block --",
                 key="sq_sub_block",
                 help="Sub Block, wing, or section within the selected block.",
             )
 
         with col_loc3:
+            cur_room_type = st.session_state.get("sq_room_type")
+            room_type_idx = ROOM_TYPES.index(cur_room_type) if (cur_room_type and cur_room_type in ROOM_TYPES) else None
+
             sel_room_type = st.radio(
                 "Room Type",
                 options=ROOM_TYPES,
-                index=0,  # "Room No" (default)
+                index=room_type_idx,
                 key="sq_room_type",
                 horizontal=True,
                 help="Select Room No or Any Other to specify location.",
             )
 
-        # Conditional Room Input
+        # Conditional Room Input based on Room Type selection
         if sel_room_type == "Room No":
             room_number = st.text_input(
                 "Room No",
-                value="A512-Bed B",
-                placeholder="e.g. A512-Bed B",
+                value=st.session_state.get("sq_room_number", ""),
+                placeholder="Enter Room Number (e.g. 101, 204)",
                 key="sq_room_number",
-                help="Auto-populated student room number. You may edit if reporting for another assigned room.",
+                help="Enter your assigned room number.",
             )
             specified_location = ""
-        else:
+        elif sel_room_type == "Any Other":
             specified_location = st.text_input(
                 "Specify Location",
+                value=st.session_state.get("sq_specified_location", ""),
                 placeholder="e.g. Corridor near elevator, Common Washroom, Reading Hall",
                 key="sq_specified_location",
                 help="Specify the exact location outside your room.",
             )
             room_number = ""
+        else:
+            room_number = ""
+            specified_location = ""
 
         # ---------------------------------------------------------------------
         # 7. CONTACT AND AVAILABILITY (Requirement 7)
@@ -1019,10 +1041,13 @@ def render_student_dashboard() -> None:
                 "<label style='font-size: 0.88rem; font-weight: 700; color: #203A32;'>Time Slot / Preferred Time Slots</label>",
                 unsafe_allow_html=True,
             )
+            cur_slot = st.session_state.get("sq_time_slot_radio")
+            slot_idx = TIME_SLOTS.index(cur_slot) if (cur_slot and cur_slot in TIME_SLOTS) else None
+
             selected_slot = st.radio(
                 "Time Slot",
                 options=TIME_SLOTS,
-                index=0,
+                index=slot_idx,
                 key="sq_time_slot_radio",
                 horizontal=True,
                 label_visibility="collapsed",
@@ -1117,8 +1142,16 @@ def render_student_dashboard() -> None:
             elif has_sub_cat and has_specific_options(cat_type, sel_cat, sel_sub_cat) and not selected_specific_options:
                 validation_errors.append("Please select at least one Specific Category checkbox option.")
 
-            # 2. Location validation
-            if sel_room_type == "Room No" and not (room_number or "").strip():
+            # 2. Location validation (Block, Sub Block, Room Type, Room No / Other Location)
+            if not sel_block or sel_block == "-- Select Block --":
+                validation_errors.append("Please select or enter your Hostel / Campus Block.")
+
+            if not sel_sub_block or sel_sub_block == "-- Select Sub Block --":
+                validation_errors.append("Please select the Sub Block / Wing.")
+
+            if not sel_room_type:
+                validation_errors.append("Please select a Room Type (Room No or Any Other).")
+            elif sel_room_type == "Room No" and not (room_number or "").strip():
                 validation_errors.append("Please enter the Room No.")
             elif sel_room_type == "Any Other" and not (specified_location or "").strip():
                 validation_errors.append("Please specify the location under 'Specify Location'.")

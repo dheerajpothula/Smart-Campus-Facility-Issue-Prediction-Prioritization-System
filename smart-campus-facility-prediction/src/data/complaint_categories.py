@@ -371,7 +371,6 @@ HOSTEL_MAINTENANCE_CATEGORIES: List[str] = list(MAINTENANCE_ELECTRICAL_HIERARCHY
 
 # 6. Location Reference Data
 CAMPUS_BLOCKS = [
-    "BH-5 Boys Hostel-05-35643-Rajneesh Parmar",
     "BH-1 Boys Hostel",
     "BH-2 Boys Hostel",
     "GH-1 Girls Hostel",
@@ -418,13 +417,11 @@ TIME_SLOTS = [
     "16:00–18:00",
 ]
 
-# The 5 Mandatory Declarations from LPU RMS PDF Page 2
+# The 3 Mandatory Declarations
 STAGE2_MANDATORY_DECLARATIONS = [
-    "I have not shared my UMS password with anyone.",
     "I am responsible for the content typed in query.",
     "I understand that necessary disciplinary action can be initiated against me in case of use of derogatory words or false statements against any Student/Faculty/Staff/Higher Authority.",
     "The information given by me regarding the complaint/request is true to the best of my knowledge and if found false/ wrong, necessary disciplinary action can be initiated against me.",
-    "I have read the policy / UMS Notification related to the concerned matter already before submitting the RMS and I am unable to find the answer related to my query.",
 ]
 
 # FAQ Confirmation Alert Text from LPU RMS PDF Page 2

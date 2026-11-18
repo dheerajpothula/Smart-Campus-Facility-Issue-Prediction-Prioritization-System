@@ -206,16 +206,19 @@ class TestStage2HostelMaintenance(unittest.TestCase):
         self.assertIn("btn_faq_ok", self.dashboard_source)
         self.assertIn("btn_faq_cancel", self.dashboard_source)
 
-    # 11. Block and Sub Block handling
+    # 11. Block and Sub Block handling (Hardcoded BH-5 removed)
     def test_11_block_and_sub_block_handling(self):
-        self.assertIn("BH-5 Boys Hostel-05-35643-Rajneesh Parmar", CAMPUS_BLOCKS)
+        self.assertNotIn("BH-5 Boys Hostel-05-35643-Rajneesh Parmar", CAMPUS_BLOCKS)
+        self.assertNotIn("BH-5 Boys Hostel-05-35643-Rajneesh Parmar", self.dashboard_source)
+        self.assertIn("Hostel Block A", CAMPUS_BLOCKS)
         self.assertIn("A", CAMPUS_SUB_BLOCKS)
         self.assertIn("sq_block", self.dashboard_source)
         self.assertIn("sq_sub_block", self.dashboard_source)
 
-    # 12. Room No and Any Other behaviour
+    # 12. Room No and Any Other behaviour (Hardcoded A512-Bed B removed)
     def test_12_room_no_and_any_other_behaviour(self):
         self.assertEqual(ROOM_TYPES, ["Room No", "Any Other"])
+        self.assertNotIn("A512-Bed B", self.dashboard_source)
         self.assertIn("sq_room_type", self.dashboard_source)
         self.assertIn("sq_room_number", self.dashboard_source)
         self.assertIn("sq_specified_location", self.dashboard_source)
@@ -231,11 +234,12 @@ class TestStage2HostelMaintenance(unittest.TestCase):
         self.assertIn("sq_availability_date", self.dashboard_source)
         self.assertIn("Availability Date cannot be in the past", self.dashboard_source)
 
-    # 15. Time Slot selection (single-select radio buttons)
+    # 15. Time Slot selection (single-select radio buttons, no default selection)
     def test_15_time_slot_selection(self):
         self.assertEqual(len(TIME_SLOTS), 5)
         self.assertIn("08:00–10:00", TIME_SLOTS)
         self.assertIn("sq_time_slot_radio", self.dashboard_source)
+        self.assertIn("index=slot_idx", self.dashboard_source)
 
     # 16. Description validation
     def test_16_description_validation(self):
@@ -243,7 +247,7 @@ class TestStage2HostelMaintenance(unittest.TestCase):
         self.assertIn("Detailed Description is mandatory", self.dashboard_source)
         self.assertIn("at least 5 characters", self.dashboard_source)
 
-    # 17. Successful complaint submission
+    # 17. Successful complaint submission with manual room number and block
     def test_17_successful_complaint_submission(self):
         new_ticket = {
             "student_id": "STU-STAGE2-001",
@@ -253,10 +257,10 @@ class TestStage2HostelMaintenance(unittest.TestCase):
             "category": "Air Conditioner",
             "sub_category": "Split A.C. not working",
             "specific_categories": ["Air Filter choke", "Service"],
-            "block": "BH-5 Boys Hostel-05-35643-Rajneesh Parmar",
+            "block": "Hostel Block A",
             "sub_block": "A",
             "room_type": "Room No",
-            "room_number": "A512-Bed B",
+            "room_number": "101",
             "contact_number": "9876543210",
             "availability_date": date.today().strftime("%Y-%m-%d"),
             "time_slot": "08:00–10:00",
@@ -349,11 +353,41 @@ class TestStage2HostelMaintenance(unittest.TestCase):
         self.assertIn("priority_tier", df.columns)
         self.assertIn("score_breakdown", df.columns)
 
-    # 25. Complete 5 declarations verified
-    def test_25_complete_5_declarations_verified(self):
-        self.assertEqual(len(STAGE2_MANDATORY_DECLARATIONS), 5)
+    # 25. Complete 3 declarations verified, 2 specified declarations removed
+    def test_25_three_declarations_verified_and_two_removed(self):
+        # 1. Total remaining declarations count is exactly 3
+        self.assertEqual(len(STAGE2_MANDATORY_DECLARATIONS), 3)
+
+        # 2. The two removed declarations are absent
+        self.assertNotIn("I have not shared my UMS password with anyone.", STAGE2_MANDATORY_DECLARATIONS)
+        self.assertNotIn(
+            "I have read the policy / UMS Notification related to the concerned matter already before submitting the RMS and I am unable to find the answer related to my query.",
+            STAGE2_MANDATORY_DECLARATIONS,
+        )
+        self.assertNotIn("UMS password", self.dashboard_source)
+        self.assertNotIn("UMS Notification", self.dashboard_source)
+
+        # 3. All three remaining declarations are present in source
         for decl in STAGE2_MANDATORY_DECLARATIONS:
             self.assertIn(decl[:30], self.dashboard_source)
+
+        # 4. Agreement requires all three declarations
+        self.assertIn("all_declarations_agreed = bool(both_agreed and chk_disciplinary)", self.dashboard_source)
+
+    # 26. Verified no default form selections (Message Type, Sub Block, Room Type, Time Slot, Category, Sub Category)
+    def test_26_no_default_form_selections(self):
+        self.assertIn("index=msg_idx", self.dashboard_source)
+        self.assertIn("index=sub_block_idx", self.dashboard_source)
+        self.assertIn("index=room_type_idx", self.dashboard_source)
+        self.assertIn("index=slot_idx", self.dashboard_source)
+        self.assertIn("index=cat_index", self.dashboard_source)
+        self.assertIn("index=sub_cat_index", self.dashboard_source)
+
+    # 27. Verified hardcoded block and room number absent everywhere
+    def test_27_hardcoded_examples_absent(self):
+        self.assertNotIn("BH-5 Boys Hostel-05-35643-Rajneesh Parmar", CAMPUS_BLOCKS)
+        self.assertNotIn("BH-5 Boys Hostel-05-35643-Rajneesh Parmar", self.dashboard_source)
+        self.assertNotIn("A512-Bed B", self.dashboard_source)
 
 
 if __name__ == "__main__":
