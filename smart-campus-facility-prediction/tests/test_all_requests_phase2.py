@@ -157,13 +157,16 @@ class TestAllRequestsPhase2(unittest.TestCase):
         """5. Verifies clean table columns, neutral indicators ('—') for missing fields, and no emojis."""
         req_src = inspect.getsource(admin_requests)
         self.assertIn("TOKEN", req_src)
-        self.assertIn("ISSUE / TITLE", req_src)
+        self.assertIn("ISSUE", req_src)
         self.assertIn("STUDENT ID", req_src)
         self.assertIn("CATEGORY", req_src)
         self.assertIn("LOCATION", req_src)
         self.assertIn("SUBMITTED", req_src)
         self.assertIn("STATUS", req_src)
         self.assertIn("PRIORITY", req_src)
+
+        # Clear Filters action present
+        self.assertIn("Clear Filters", req_src)
 
         # Neutral indicator "—" used for missing data
         self.assertIn("—", req_src)
@@ -173,14 +176,14 @@ class TestAllRequestsPhase2(unittest.TestCase):
             self.assertNotIn(forbidden, req_src)
 
     def test_06_details_panel_sections_a_through_f(self):
-        """6. Right-Side Complaint Details Panel implements sections A through F."""
+        """6. Right-Side Complaint Details Panel implements all required sections."""
         details_src = inspect.getsource(complaint_details)
-        self.assertIn("A. Complaint Information", details_src)
-        self.assertIn("B. Student Information", details_src)
-        self.assertIn("C. Complaint Status", details_src)
-        self.assertIn("D. Attachments", details_src)
-        self.assertIn("E. Remarks & Status History", details_src)
-        self.assertIn("F. Administrative Actions", details_src)
+        self.assertIn("Complaint Details", details_src)
+        self.assertIn("Student Details", details_src)
+        self.assertIn("Administrative Information", details_src)
+        self.assertIn("Attachments", details_src)
+        self.assertIn("Remarks &amp; History", details_src)
+        self.assertIn("Operational Actions", details_src)
 
         # Missing contact fallback to "—"
         self.assertIn('contact_no = "—"', details_src)

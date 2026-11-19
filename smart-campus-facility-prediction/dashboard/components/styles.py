@@ -571,6 +571,9 @@ GLOBAL_LIGHT_THEME_CSS = """
         color: var(--text-muted);
         letter-spacing: 0.05em;
         text-transform: uppercase;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .fipp-table-row {
         border-bottom: 1px solid #EDF2EB;
@@ -587,6 +590,8 @@ GLOBAL_LIGHT_THEME_CSS = """
         font-weight: 750;
         color: var(--forest-green);
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .fipp-cell-title {
         font-size: 0.84rem;
@@ -607,6 +612,14 @@ GLOBAL_LIGHT_THEME_CSS = """
         font-size: 0.78rem;
         color: var(--text-subtle);
         white-space: nowrap;
+    }
+
+    /* Table row action buttons: compact horizontal padding so "Inspect" / "Viewing" never truncate */
+    div[data-testid="column"]:last-child .stButton > button,
+    div[data-testid="column"]:last-child button {
+        padding: 0.35rem 0.5rem !important;
+        font-size: 0.8rem !important;
+        min-height: unset !important;
     }
 
     /* Hide Streamlit default watermark/menu */

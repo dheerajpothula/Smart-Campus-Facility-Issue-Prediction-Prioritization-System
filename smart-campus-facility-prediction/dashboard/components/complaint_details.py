@@ -97,7 +97,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         f"""
         <div style="margin-bottom: 0.85rem;">
             <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F; margin-bottom: 0.3rem;">
-                A. Complaint Information
+                Complaint Details
             </div>
             <div style="font-size: 1.05rem; color: #203A32; font-weight: 700; margin-bottom: 0.4rem; line-height: 1.35;">
                 {title}
@@ -107,13 +107,14 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
                 {desc}
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.65rem; font-size: 0.82rem; color: #203A32; background: #F8FAF7; border: 1px solid #EDF2EB; border-radius: 6px; padding: 0.6rem 0.75rem;">
+                <div><span style="color: #6D8276;">Token:</span> <strong>{cid}</strong></div>
                 <div><span style="color: #6D8276;">Category:</span> <strong>{cat}</strong></div>
                 <div><span style="color: #6D8276;">Subcategory:</span> {sub_cat}</div>
                 <div><span style="color: #6D8276;">Specific Type:</span> {spec_cat}</div>
                 <div><span style="color: #6D8276;">Building / Block:</span> <strong>{bld}</strong></div>
                 <div><span style="color: #6D8276;">Floor:</span> {floor}</div>
                 <div><span style="color: #6D8276;">Room / Area:</span> <strong>{room_area}</strong></div>
-                <div style="grid-column: span 2;"><span style="color: #6D8276;">Submitted:</span> {dt_rep}</div>
+                <div><span style="color: #6D8276;">Submitted:</span> {dt_rep}</div>
             </div>
         </div>
         """,
@@ -133,7 +134,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         f"""
         <div style="margin-bottom: 0.85rem;">
             <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F; margin-bottom: 0.3rem;">
-                B. Student Information
+                Student Details
             </div>
             <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.6rem 0.75rem; font-size: 0.82rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.65rem;">
                 <div><span style="color: #6D8276;">Student Name:</span> <strong>{stu_name}</strong></div>
@@ -157,7 +158,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         f"""
         <div style="margin-bottom: 0.85rem;">
             <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F; margin-bottom: 0.3rem;">
-                C. Complaint Status &amp; MCPI Priority
+                Administrative Information
             </div>
             <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.6rem 0.75rem; font-size: 0.82rem;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.65rem; margin-bottom: 0.4rem;">
@@ -241,7 +242,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         f"""
         <div style="margin-top: 0.85rem; margin-bottom: 0.3rem;">
             <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F;">
-                E. Remarks & Status History ({len(history_list)})
+                Remarks &amp; History ({len(history_list)})
             </div>
         </div>
         """,
@@ -279,11 +280,11 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
 
     st.markdown("<div style='border-top: 1px solid #DCE5D8; margin: 0.9rem 0 0.65rem 0;'></div>", unsafe_allow_html=True)
 
-    # F. ADMINISTRATIVE ACTIONS FORM
+    # F. OPERATIONAL ACTIONS FORM
     st.markdown(
         """
         <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F; margin-bottom: 0.35rem;">
-            F. Administrative Actions
+            Operational Actions
         </div>
         """,
         unsafe_allow_html=True,

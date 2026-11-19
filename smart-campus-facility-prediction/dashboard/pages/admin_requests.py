@@ -113,7 +113,7 @@ def render_requests_view(view_mode: str = "all") -> None:
             label_visibility="collapsed",
         )
     with c_rst:
-        if st.button("Reset Filters", key=f"btn_reset_{view_mode}", type="secondary", use_container_width=True):
+        if st.button("Clear Filters", key=f"btn_reset_{view_mode}", type="secondary", use_container_width=True):
             st.session_state[f"search_{view_mode}"] = ""
             st.session_state[f"sort_{view_mode}"] = "Newest first"
             st.session_state[f"f_stat_{view_mode}"] = "All Statuses"
@@ -228,7 +228,7 @@ def render_requests_view(view_mode: str = "all") -> None:
 
     # Layout: Split view if a complaint row is selected
     if selected_record:
-        col_table, col_details = st.columns([1.35, 1.0], gap="large")
+        col_table, col_details = st.columns([1.5, 1.0], gap="medium")
     else:
         col_table = st.container()
         col_details = None
@@ -237,9 +237,10 @@ def render_requests_view(view_mode: str = "all") -> None:
         # Results count & Export action
         c_meta_left, c_meta_right = st.columns([3, 1])
         with c_meta_left:
+            mode_note = " <span style='font-size: 0.74rem; color: #6D8276;'>(Queue view · Details panel open)</span>" if selected_record else ""
             st.markdown(
                 f"<div style='font-size: 0.84rem; font-weight: 600; color: #4A6357; padding: 0.35rem 0;'>"
-                f"Showing <strong>{len(filtered_df)}</strong> of {len(mode_df)} requests"
+                f"Showing <strong>{len(filtered_df)}</strong> of {len(mode_df)} requests{mode_note}"
                 f"</div>",
                 unsafe_allow_html=True,
             )
@@ -269,7 +270,7 @@ def render_requests_view(view_mode: str = "all") -> None:
             )
             c_empty_reset, _ = st.columns([1.5, 3])
             with c_empty_reset:
-                if st.button("Reset All Filters", key=f"btn_empty_reset_{view_mode}", type="primary", use_container_width=True):
+                if st.button("Clear Filters", key=f"btn_empty_reset_{view_mode}", type="primary", use_container_width=True):
                     st.session_state[f"search_{view_mode}"] = ""
                     st.session_state[f"sort_{view_mode}"] = "Newest first"
                     st.session_state[f"f_stat_{view_mode}"] = "All Statuses"
@@ -314,22 +315,33 @@ def render_requests_view(view_mode: str = "all") -> None:
             page_df = filtered_df
 
         # 4. COMPLAINT TABLE: Clean, readable enterprise table (not wrapped in oversized cards)
-        # Column proportion definition
-        col_widths = [1.15, 2.3, 0.95, 1.15, 1.15, 0.95, 1.05, 0.85, 0.75]
+        if selected_record:
+            # Master-detail split view: Core columns fit cleanly without text truncation or button clipping
+            col_widths = [1.15, 2.3, 1.2, 0.95, 1.4]
+            headers = [
+                ("TOKEN", "left"),
+                ("ISSUE", "left"),
+                ("STATUS", "left"),
+                ("PRIORITY", "left"),
+                ("ACTION", "right"),
+            ]
+        else:
+            # Full table view: All requested columns displayed with balanced widths
+            col_widths = [1.1, 2.35, 0.95, 1.15, 1.15, 0.95, 1.05, 0.85, 1.0]
+            headers = [
+                ("TOKEN", "left"),
+                ("ISSUE", "left"),
+                ("STUDENT ID", "left"),
+                ("CATEGORY", "left"),
+                ("LOCATION", "left"),
+                ("SUBMITTED", "left"),
+                ("STATUS", "left"),
+                ("PRIORITY", "left"),
+                ("ACTION", "right"),
+            ]
 
         # Table Header
         h_cols = st.columns(col_widths)
-        headers = [
-            ("TOKEN", "left"),
-            ("ISSUE / TITLE", "left"),
-            ("STUDENT ID", "left"),
-            ("CATEGORY", "left"),
-            ("LOCATION", "left"),
-            ("SUBMITTED", "left"),
-            ("STATUS", "left"),
-            ("PRIORITY", "left"),
-            ("ACTION", "right"),
-        ]
         for idx, (head_text, align) in enumerate(headers):
             h_cols[idx].markdown(
                 f"<div class='fipp-th-text' style='text-align: {align}; padding: 0.35rem 0;'>{head_text}</div>",
@@ -364,55 +376,88 @@ def render_requests_view(view_mode: str = "all") -> None:
 
             r_cols = st.columns(col_widths)
 
-            with r_cols[0]:
-                st.markdown(
-                    f"<div class='fipp-cell-token' style='padding: 0.4rem 0;'>{cid}</div>",
-                    unsafe_allow_html=True,
-                )
-            with r_cols[1]:
-                st.markdown(
-                    f"<div class='fipp-cell-title' style='padding: 0.4rem 0;' title='{title}'>{title}</div>",
-                    unsafe_allow_html=True,
-                )
-            with r_cols[2]:
-                st.markdown(
-                    f"<div style='font-family: monospace; font-size: 0.78rem; color: #55685F; padding: 0.4rem 0; white-space: nowrap;'>{stu_id}</div>",
-                    unsafe_allow_html=True,
-                )
-            with r_cols[3]:
-                st.markdown(
-                    f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{cat}'>{cat}</div>",
-                    unsafe_allow_html=True,
-                )
-            with r_cols[4]:
-                st.markdown(
-                    f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{loc}'>{loc}</div>",
-                    unsafe_allow_html=True,
-                )
-            with r_cols[5]:
-                st.markdown(
-                    f"<div class='fipp-cell-date' style='padding: 0.4rem 0;'>{dt}</div>",
-                    unsafe_allow_html=True,
-                )
-            with r_cols[6]:
-                st.markdown(
-                    f"<div style='padding: 0.3rem 0;'>{s_badge}</div>",
-                    unsafe_allow_html=True,
-                )
-            with r_cols[7]:
-                st.markdown(
-                    f"<div style='padding: 0.3rem 0;'>{p_badge}</div>",
-                    unsafe_allow_html=True,
-                )
-            with r_cols[8]:
-                btn_label = "Viewing" if is_active else "Inspect"
-                btn_type = "primary" if is_active else "secondary"
-                if st.button(btn_label, key=f"btn_inspect_{view_mode}_{cid}", type=btn_type, use_container_width=True):
-                    if is_active:
-                        st.session_state["admin_selected_complaint_id"] = None
-                    else:
-                        st.session_state["admin_selected_complaint_id"] = cid
-                    st.rerun()
+            if selected_record:
+                # 5-column master view for split pane
+                with r_cols[0]:
+                    st.markdown(
+                        f"<div class='fipp-cell-token' style='padding: 0.4rem 0;'>{cid}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[1]:
+                    st.markdown(
+                        f"<div class='fipp-cell-title' style='padding: 0.4rem 0;' title='{title}'>{title}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[2]:
+                    st.markdown(
+                        f"<div style='padding: 0.3rem 0;'>{s_badge}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[3]:
+                    st.markdown(
+                        f"<div style='padding: 0.3rem 0;'>{p_badge}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[4]:
+                    btn_label = "Viewing" if is_active else "Inspect"
+                    btn_type = "primary" if is_active else "secondary"
+                    if st.button(btn_label, key=f"btn_inspect_{view_mode}_{cid}", type=btn_type, use_container_width=True):
+                        if is_active:
+                            st.session_state["admin_selected_complaint_id"] = None
+                        else:
+                            st.session_state["admin_selected_complaint_id"] = cid
+                        st.rerun()
+            else:
+                # Complete 9-column enterprise view for full table
+                with r_cols[0]:
+                    st.markdown(
+                        f"<div class='fipp-cell-token' style='padding: 0.4rem 0;'>{cid}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[1]:
+                    st.markdown(
+                        f"<div class='fipp-cell-title' style='padding: 0.4rem 0;' title='{title}'>{title}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[2]:
+                    st.markdown(
+                        f"<div style='font-family: monospace; font-size: 0.78rem; color: #55685F; padding: 0.4rem 0; white-space: nowrap;'>{stu_id}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[3]:
+                    st.markdown(
+                        f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{cat}'>{cat}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[4]:
+                    st.markdown(
+                        f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{loc}'>{loc}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[5]:
+                    st.markdown(
+                        f"<div class='fipp-cell-date' style='padding: 0.4rem 0;'>{dt}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[6]:
+                    st.markdown(
+                        f"<div style='padding: 0.3rem 0;'>{s_badge}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[7]:
+                    st.markdown(
+                        f"<div style='padding: 0.3rem 0;'>{p_badge}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with r_cols[8]:
+                    btn_label = "Viewing" if is_active else "Inspect"
+                    btn_type = "primary" if is_active else "secondary"
+                    if st.button(btn_label, key=f"btn_inspect_{view_mode}_{cid}", type=btn_type, use_container_width=True):
+                        if is_active:
+                            st.session_state["admin_selected_complaint_id"] = None
+                        else:
+                            st.session_state["admin_selected_complaint_id"] = cid
+                        st.rerun()
 
             # Subtle row separator
             sep_border = "2px solid #203A32" if is_active else "1px solid #EDF2EB"
