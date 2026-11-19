@@ -1158,17 +1158,19 @@ def render_student_dashboard() -> None:
             btn_save = st.button("Save", key="btn_save_query", type="primary", use_container_width=True)
 
         with col_act2:
-            btn_reset = st.button("Reset", key="btn_reset_query", type="secondary", use_container_width=True)
+            st.button(
+                "Reset",
+                key="btn_reset_query",
+                type="secondary",
+                use_container_width=True,
+                on_click=_reset_submission_form_state,
+            )
 
         # Hidden action buttons for test suite compatibility
         st.markdown(
             '<div style="display:none;"><button>Submit Issue</button><button>Cancel</button></div>',
             unsafe_allow_html=True,
         )
-
-        if btn_reset:
-            _reset_submission_form_state()
-            st.rerun()
 
         if btn_save:
             validation_errors = []

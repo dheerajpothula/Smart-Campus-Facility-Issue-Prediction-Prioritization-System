@@ -14,6 +14,21 @@ from dashboard.components.styles import get_priority_badge, get_status_badge, _c
 from src.data.complaints_store import get_complaints_df, PROGRESS_STAGES
 
 
+def reset_requests_filters(view_mode: str) -> None:
+    """
+    Safely resets all filter and search session-state variables BEFORE widget instantiation.
+    Executed as an on_click callback by Streamlit prior to script execution.
+    """
+    st.session_state[f"search_{view_mode}"] = ""
+    st.session_state[f"sort_{view_mode}"] = "Newest first"
+    st.session_state[f"f_stat_{view_mode}"] = "All Statuses"
+    st.session_state[f"f_cat_{view_mode}"] = "All Categories"
+    st.session_state[f"f_loc_{view_mode}"] = "All Locations"
+    st.session_state[f"f_date_{view_mode}"] = "All Dates"
+    st.session_state[f"f_prio_{view_mode}"] = "All Priorities"
+    st.session_state[f"page_sel_{view_mode}"] = 1
+
+
 def render_requests_view(view_mode: str = "all") -> None:
     """
     Renders the unified request management interface for the given view mode.
@@ -21,6 +36,16 @@ def render_requests_view(view_mode: str = "all") -> None:
     Args:
         view_mode: One of 'all', 'new', 'in_progress', 'resolved'.
     """
+    # Safe session-state initialization before creating widgets
+    st.session_state.setdefault(f"search_{view_mode}", "")
+    st.session_state.setdefault(f"sort_{view_mode}", "Newest first")
+    st.session_state.setdefault(f"f_stat_{view_mode}", "All Statuses")
+    st.session_state.setdefault(f"f_cat_{view_mode}", "All Categories")
+    st.session_state.setdefault(f"f_loc_{view_mode}", "All Locations")
+    st.session_state.setdefault(f"f_date_{view_mode}", "All Dates")
+    st.session_state.setdefault(f"f_prio_{view_mode}", "All Priorities")
+    st.session_state.setdefault(f"page_sel_{view_mode}", 1)
+
     titles = {
         "all": ("All Requests", "Manage and review submitted facility complaints.", "FACILITY OPERATIONS · ALL REQUESTS"),
         "new": ("New / Unassigned", "Incoming complaints awaiting administrator evaluation, priority validation, and squad dispatch.", "NEW & UNASSIGNED TRIAGE"),
@@ -96,15 +121,16 @@ def render_requests_view(view_mode: str = "all") -> None:
     with c_srch:
         search_query = st.text_input(
             "Search Requests",
-            value=st.session_state.get(f"search_{view_mode}", ""),
             placeholder="Search by Complaint Token, Student ID, or Issue Title...",
             key=f"search_{view_mode}",
             label_visibility="collapsed",
         )
     with c_srt:
         sort_options = ["Newest first", "Oldest first", "Highest existing priority"]
-        cur_sort = st.session_state.get(f"sort_{view_mode}", "Newest first")
-        cur_sort_idx = sort_options.index(cur_sort) if cur_sort in sort_options else 0
+        if st.session_state.get(f"sort_{view_mode}") not in sort_options:
+            st.session_state[f"sort_{view_mode}"] = "Newest first"
+        cur_sort = st.session_state[f"sort_{view_mode}"]
+        cur_sort_idx = sort_options.index(cur_sort)
         sort_by = st.selectbox(
             "Sort Records",
             options=sort_options,
@@ -113,16 +139,14 @@ def render_requests_view(view_mode: str = "all") -> None:
             label_visibility="collapsed",
         )
     with c_rst:
-        if st.button("Clear Filters", key=f"btn_reset_{view_mode}", type="secondary", use_container_width=True):
-            st.session_state[f"search_{view_mode}"] = ""
-            st.session_state[f"sort_{view_mode}"] = "Newest first"
-            st.session_state[f"f_stat_{view_mode}"] = "All Statuses"
-            st.session_state[f"f_cat_{view_mode}"] = "All Categories"
-            st.session_state[f"f_loc_{view_mode}"] = "All Locations"
-            st.session_state[f"f_date_{view_mode}"] = "All Dates"
-            st.session_state[f"f_prio_{view_mode}"] = "All Priorities"
-            st.session_state[f"page_sel_{view_mode}"] = 1
-            st.rerun()
+        st.button(
+            "Clear Filters",
+            key=f"btn_reset_{view_mode}",
+            type="secondary",
+            use_container_width=True,
+            on_click=reset_requests_filters,
+            args=(view_mode,),
+        )
 
     # Toolbar Row 2: Five compact filters supporting stored fields
     f_col1, f_col2, f_col3, f_col4, f_col5 = st.columns([1.1, 1.2, 1.2, 1.1, 1.1])
@@ -132,34 +156,44 @@ def render_requests_view(view_mode: str = "all") -> None:
             status_choices = ["All Statuses"] + PROGRESS_STAGES + ["Withdrawn"]
         else:
             status_choices = ["All Statuses"]
-        cur_stat = st.session_state.get(f"f_stat_{view_mode}", "All Statuses")
-        cur_stat_idx = status_choices.index(cur_stat) if cur_stat in status_choices else 0
+        if st.session_state.get(f"f_stat_{view_mode}") not in status_choices:
+            st.session_state[f"f_stat_{view_mode}"] = "All Statuses"
+        cur_stat = st.session_state[f"f_stat_{view_mode}"]
+        cur_stat_idx = status_choices.index(cur_stat)
         sel_status = st.selectbox("Status", options=status_choices, index=cur_stat_idx, key=f"f_stat_{view_mode}")
 
     with f_col2:
         all_cats = sorted(list(set(raw_df["facility_type"].dropna().unique()) | set(raw_df.get("category", pd.Series(dtype=object)).dropna().unique())))
         cat_choices = ["All Categories"] + [c for c in all_cats if str(c).strip()]
-        cur_cat = st.session_state.get(f"f_cat_{view_mode}", "All Categories")
-        cur_cat_idx = cat_choices.index(cur_cat) if cur_cat in cat_choices else 0
+        if st.session_state.get(f"f_cat_{view_mode}") not in cat_choices:
+            st.session_state[f"f_cat_{view_mode}"] = "All Categories"
+        cur_cat = st.session_state[f"f_cat_{view_mode}"]
+        cur_cat_idx = cat_choices.index(cur_cat)
         sel_cat = st.selectbox("Category", options=cat_choices, index=cur_cat_idx, key=f"f_cat_{view_mode}")
 
     with f_col3:
         all_locs = sorted(list(set(raw_df["building"].dropna().unique()) | set(raw_df["location"].dropna().unique())))
         loc_choices = ["All Locations"] + [l for l in all_locs if str(l).strip()]
-        cur_loc = st.session_state.get(f"f_loc_{view_mode}", "All Locations")
-        cur_loc_idx = loc_choices.index(cur_loc) if cur_loc in loc_choices else 0
+        if st.session_state.get(f"f_loc_{view_mode}") not in loc_choices:
+            st.session_state[f"f_loc_{view_mode}"] = "All Locations"
+        cur_loc = st.session_state[f"f_loc_{view_mode}"]
+        cur_loc_idx = loc_choices.index(cur_loc)
         sel_loc = st.selectbox("Building / Location", options=loc_choices, index=cur_loc_idx, key=f"f_loc_{view_mode}")
 
     with f_col4:
         date_choices = ["All Dates", "Today", "Past 7 Days", "Past 30 Days"]
-        cur_date = st.session_state.get(f"f_date_{view_mode}", "All Dates")
-        cur_date_idx = date_choices.index(cur_date) if cur_date in date_choices else 0
+        if st.session_state.get(f"f_date_{view_mode}") not in date_choices:
+            st.session_state[f"f_date_{view_mode}"] = "All Dates"
+        cur_date = st.session_state[f"f_date_{view_mode}"]
+        cur_date_idx = date_choices.index(cur_date)
         sel_date = st.selectbox("Submission Date", options=date_choices, index=cur_date_idx, key=f"f_date_{view_mode}")
 
     with f_col5:
         prio_choices = ["All Priorities", "Critical", "High", "Medium", "Low"]
-        cur_prio = st.session_state.get(f"f_prio_{view_mode}", "All Priorities")
-        cur_prio_idx = prio_choices.index(cur_prio) if cur_prio in prio_choices else 0
+        if st.session_state.get(f"f_prio_{view_mode}") not in prio_choices:
+            st.session_state[f"f_prio_{view_mode}"] = "All Priorities"
+        cur_prio = st.session_state[f"f_prio_{view_mode}"]
+        cur_prio_idx = prio_choices.index(cur_prio)
         sel_prio = st.selectbox("MCPI Priority", options=prio_choices, index=cur_prio_idx, key=f"f_prio_{view_mode}")
 
     st.markdown("</div>", unsafe_allow_html=True)
@@ -270,16 +304,14 @@ def render_requests_view(view_mode: str = "all") -> None:
             )
             c_empty_reset, _ = st.columns([1.5, 3])
             with c_empty_reset:
-                if st.button("Clear Filters", key=f"btn_empty_reset_{view_mode}", type="primary", use_container_width=True):
-                    st.session_state[f"search_{view_mode}"] = ""
-                    st.session_state[f"sort_{view_mode}"] = "Newest first"
-                    st.session_state[f"f_stat_{view_mode}"] = "All Statuses"
-                    st.session_state[f"f_cat_{view_mode}"] = "All Categories"
-                    st.session_state[f"f_loc_{view_mode}"] = "All Locations"
-                    st.session_state[f"f_date_{view_mode}"] = "All Dates"
-                    st.session_state[f"f_prio_{view_mode}"] = "All Priorities"
-                    st.session_state[f"page_sel_{view_mode}"] = 1
-                    st.rerun()
+                st.button(
+                    "Clear Filters",
+                    key=f"btn_empty_reset_{view_mode}",
+                    type="primary",
+                    use_container_width=True,
+                    on_click=reset_requests_filters,
+                    args=(view_mode,),
+                )
             return
 
         # Pagination: 10 complaints per page

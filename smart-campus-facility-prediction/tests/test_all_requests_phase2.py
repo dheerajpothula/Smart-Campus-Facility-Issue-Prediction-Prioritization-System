@@ -298,6 +298,83 @@ class TestAllRequestsPhase2(unittest.TestCase):
             self.assertNotIn("⚡", badge)
             self.assertNotIn("📌", badge)
 
+    def test_11_reset_requests_filters_callback(self):
+        """11. reset_requests_filters callback resets all filter, search, sort, and pagination keys."""
+        import streamlit as st
+
+        for view_mode in ["all", "new", "in_progress", "resolved"]:
+            st.session_state[f"search_{view_mode}"] = "leaking faucet"
+            st.session_state[f"sort_{view_mode}"] = "Oldest first"
+            st.session_state[f"f_stat_{view_mode}"] = "In Progress"
+            st.session_state[f"f_cat_{view_mode}"] = "Plumbing"
+            st.session_state[f"f_loc_{view_mode}"] = "BH-1"
+            st.session_state[f"f_date_{view_mode}"] = "Today"
+            st.session_state[f"f_prio_{view_mode}"] = "High"
+            st.session_state[f"page_sel_{view_mode}"] = 4
+
+            admin_requests.reset_requests_filters(view_mode)
+
+            self.assertEqual(st.session_state[f"search_{view_mode}"], "")
+            self.assertEqual(st.session_state[f"sort_{view_mode}"], "Newest first")
+            self.assertEqual(st.session_state[f"f_stat_{view_mode}"], "All Statuses")
+            self.assertEqual(st.session_state[f"f_cat_{view_mode}"], "All Categories")
+            self.assertEqual(st.session_state[f"f_loc_{view_mode}"], "All Locations")
+            self.assertEqual(st.session_state[f"f_date_{view_mode}"], "All Dates")
+            self.assertEqual(st.session_state[f"f_prio_{view_mode}"], "All Priorities")
+            self.assertEqual(st.session_state[f"page_sel_{view_mode}"], 1)
+
+    def test_12_apptest_clear_filters_lifecycle_no_instantiated_error(self):
+        """12. Streamlit AppTest verifies Clear Filters triggers without StreamlitWidgetAlreadyInstantiatedError."""
+        from streamlit.testing.v1 import AppTest
+
+        # Test All Requests view
+        at_all = AppTest.from_file(str(PROJECT_ROOT / "app.py"))
+        at_all.session_state["auth_user"] = {
+            "admin_id": "ADM-2026-001",
+            "name": "Facility Operations Lead",
+            "role": "admin",
+            "title": "Facility Operations Lead",
+        }
+        at_all.session_state["user_role"] = "admin"
+        at_all.session_state["admin_active_page"] = "All Requests"
+        at_all.run()
+        self.assertEqual(len(at_all.exception), 0)
+
+        # Set search query and trigger rerun
+        at_all.text_input(key="search_all").input("test query")
+        at_all.run()
+        self.assertEqual(len(at_all.exception), 0)
+        self.assertEqual(at_all.session_state.get("search_all"), "test query")
+
+        # Click Clear Filters button via on_click callback
+        at_all.button(key="btn_reset_all").click()
+        at_all.run()
+        self.assertEqual(len(at_all.exception), 0, f"Exceptions after Clear Filters: {[e.value for e in at_all.exception]}")
+        self.assertEqual(at_all.session_state.get("search_all"), "")
+
+        # Test New / Unassigned view
+        at_new = AppTest.from_file(str(PROJECT_ROOT / "app.py"))
+        at_new.session_state["auth_user"] = {
+            "admin_id": "ADM-2026-002",
+            "name": "Campus Infrastructure Admin",
+            "role": "admin",
+            "title": "Campus Infrastructure Admin",
+        }
+        at_new.session_state["user_role"] = "admin"
+        at_new.session_state["admin_active_page"] = "New / Unassigned"
+        at_new.run()
+        self.assertEqual(len(at_new.exception), 0)
+
+        at_new.text_input(key="search_new").input("HVAC issue")
+        at_new.run()
+        self.assertEqual(len(at_new.exception), 0)
+        self.assertEqual(at_new.session_state.get("search_new"), "HVAC issue")
+
+        at_new.button(key="btn_reset_new").click()
+        at_new.run()
+        self.assertEqual(len(at_new.exception), 0, f"Exceptions after Clear Filters: {[e.value for e in at_new.exception]}")
+        self.assertEqual(at_new.session_state.get("search_new"), "")
+
 
 if __name__ == "__main__":
     unittest.main()
