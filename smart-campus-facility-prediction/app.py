@@ -40,7 +40,7 @@ def configure_page() -> None:
     """Sets standard Streamlit wide page configuration and injects Modern Sage & Forest theme."""
     st.set_page_config(
         page_title="FIPP — Facility Issue Prediction & Prioritisation",
-        page_icon=":shield:",
+        page_icon="🏫",
         layout="wide",
         initial_sidebar_state="expanded",
     )
@@ -51,7 +51,7 @@ def render_admin_content(selected_page: str) -> None:
     """Dispatches admin sub-page based on navigation selection with strict server-side authorization."""
     auth = st.session_state.get("auth_user")
     if not auth or auth.get("role") != "admin":
-        st.error("Access Denied: Administrator authorization required to view maintenance operations.")
+        st.error("⛔ Access Denied: Administrator authorization required to view maintenance operations.")
         if st.button("Return to Gateway", key="btn_auth_guard_return", type="primary"):
             st.session_state["auth_user"] = None
             st.session_state["selected_role"] = None

@@ -139,21 +139,15 @@ class TestAuditResetAndDefaults(unittest.TestCase):
             app_src = f.read()
         self.assertNotIn('s_name = st.query_params.get("name", "Alex Chen")', app_src)
 
-    def test_04_no_cheap_emojis_in_student_or_role_selection_ui(self):
-        """Verifies no cheap emojis are displayed in role selection, login, or student buttons."""
-        # Buttons in student dashboard must not start with emojis
-        self.assertIn('"Raise a Query"', self.dashboard_source)
-        self.assertIn('"Raise Another Query"', self.dashboard_source)
-        self.assertNotIn('"💬 Raise a Query"', self.dashboard_source)
-        self.assertNotIn('"➕ Raise Another Query"', self.dashboard_source)
-        self.assertNotIn('"➕ Raise a Query"', self.dashboard_source)
+    def test_04_visual_assets_restored_outside_control_centre(self):
+        """Verifies visual assets outside Control Centre navigation are restored to original appearance."""
+        # Restored button icons in student dashboard
+        self.assertIn('"💬 Raise a Query"', self.dashboard_source)
+        self.assertIn('"➕ Raise Another Query"', self.dashboard_source)
 
-        # Admin reports must not contain stopwatch emoji
-        self.assertNotIn("⏱️", self.reports_source)
-
-        # Role selection must use Lucide outline icons
-        self.assertIn('render_lucide_icon("wrench"', self.role_source)
-        self.assertIn('render_lucide_icon("graduation-cap"', self.role_source)
+        # Restored role card icons in role selection
+        self.assertIn("🛠️", self.role_source)
+        self.assertIn("🎓", self.role_source)
 
     def test_05_student_data_isolation(self):
         """Verifies student history displays only complaints submitted by that student."""

@@ -12,7 +12,6 @@ import pandas as pd
 from dashboard.components.admin_header import render_admin_header
 from dashboard.components.complaint_details import render_complaint_details_panel
 from dashboard.components.styles import get_priority_badge, get_status_badge, _clean_html
-from dashboard.components.icons import render_lucide_icon
 from src.data.complaints_store import get_complaints_df, get_control_centre_kpis
 
 
@@ -34,11 +33,6 @@ def render_page() -> None:
     # =========================================================================
     col1, col2, col3, col4 = st.columns(4)
 
-    icon_total = render_lucide_icon("clipboard-list", size=20, color="#4A6357")
-    icon_new = render_lucide_icon("inbox", size=20, color="#92400E")
-    icon_prog = render_lucide_icon("wrench", size=20, color="#1E40AF")
-    icon_res = render_lucide_icon("check-circle", size=20, color="#065F46")
-
     with col1:
         st.markdown(
             f"""
@@ -54,7 +48,7 @@ def render_page() -> None:
                     <span style="font-size: 0.76rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.06em; color: #4A6357;">
                         Total Requests
                     </span>
-                    <span>{icon_total}</span>
+                    <span style="font-size: 1.25rem;">📋</span>
                 </div>
                 <div style="font-size: 2.2rem; font-weight: 800; color: #203A32; margin: 0.2rem 0; line-height: 1.1;">
                     {kpis["total"]}
@@ -85,7 +79,7 @@ def render_page() -> None:
                     <span style="font-size: 0.76rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.06em; color: #92400E;">
                         New / Unassigned
                     </span>
-                    <span>{icon_new}</span>
+                    <span style="font-size: 1.25rem;">🆕</span>
                 </div>
                 <div style="font-size: 2.2rem; font-weight: 800; color: #D97706; margin: 0.2rem 0; line-height: 1.1;">
                     {kpis["new"]}
@@ -116,7 +110,7 @@ def render_page() -> None:
                     <span style="font-size: 0.76rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.06em; color: #1E40AF;">
                         In Progress
                     </span>
-                    <span>{icon_prog}</span>
+                    <span style="font-size: 1.25rem;">⏳</span>
                 </div>
                 <div style="font-size: 2.2rem; font-weight: 800; color: #2563EB; margin: 0.2rem 0; line-height: 1.1;">
                     {kpis["in_progress"]}
@@ -147,7 +141,7 @@ def render_page() -> None:
                     <span style="font-size: 0.76rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.06em; color: #065F46;">
                         Resolved
                     </span>
-                    <span>{icon_res}</span>
+                    <span style="font-size: 1.25rem;">✅</span>
                 </div>
                 <div style="font-size: 2.2rem; font-weight: 800; color: #059669; margin: 0.2rem 0; line-height: 1.1;">
                     {kpis["resolved"]}
@@ -243,7 +237,7 @@ def render_page() -> None:
                                     {title}
                                 </h4>
                                 <div style="font-size: 0.78rem; color: #6D8276;">
-                                    {loc} &bull; {dt}
+                                    📍 {loc} &bull; 📅 {dt}
                                 </div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 0.4rem;">
@@ -259,7 +253,7 @@ def render_page() -> None:
 
             c_btn1, _ = st.columns([1.2, 3])
             with c_btn1:
-                btn_label = "Viewing Details" if is_active else "Inspect Ticket →"
+                btn_label = "Viewing Details 🔍" if is_active else "Inspect Ticket →"
                 if st.button(btn_label, key=f"btn_overview_inspect_{cid}", type="primary" if is_active else "secondary", use_container_width=True):
                     st.session_state["admin_selected_complaint_id"] = cid
                     st.rerun()

@@ -1,0 +1,428 @@
+<USER_REQUEST>
+# FIPP Stage 2 — Complete Hostel Maintenance & Electrical Complaint System
+
+## Project objective
+
+Implement the complete Hostel Maintenance / Electrical complaint workflow in the existing FIPP Student Portal using the attached reference document:
+
+`LPU_RMS_Hostel_Maintenance_Data-v2.pdf`
+
+This document contains the verified LPU RMS workflow, form fields, and the complete available hierarchy of 19 Maintenance / Electrical complaint categories.
+
+**IMPORTANT: Read and inspect all 6 pages of the PDF before implementation. Do not skip any page.**
+
+The PDF is the authoritative source for:
+- Category names
+- Subcategory names
+- Specific complaint options
+- Field labels
+- Available input types
+- Declarations
+- Location information
+- Contact and availability information
+- History and ticket details
+
+Do not invent, rename, simplify, or replace the documented complaint options.
+
+---
+
+## 1. Preserve the existing FIPP project
+
+Before making changes:
+
+1. Inspect the complete existing project structure.
+2. Inspect the currently working Stage 1 Student Portal.
+3. Identify the existing complaint submission, storage, token generation, authentication, and History implementations.
+4. Understand how the current cascading dropdowns work.
+5. Extend the existing implementation instead of creating a separate application.
+
+Strict restrictions:
+
+- Continue using Streamlit.
+- Preserve the existing backend and database/storage.
+- Preserve the existing complaint token generator.
+- Preserve MCPI priority scoring, prediction models, SHAP functionality, APIs, and data processing.
+- Preserve Admin authentication and authorization.
+- Preserve student-level complaint data isolation.
+- Do not create duplicate complaint storage.
+- Do not modify the completed landing page.
+- Do not break the currently working Stage 1 workflow.
+
+Do not perform an unnecessary architecture migration or backend rewrite.
+
+## 2. Student Portal navigation and agreement
+
+Keep the existing navigation:
+
+- Raise a Query
+- History
+
+When the student selects History, open History directly without requiring agreement.
+
+When the student selects Raise a Query, show the five declarations from the PDF:
+
+1. I have not shared my UMS password with anyone.
+2. I am responsible for the content typed in query.
+3. I understand that necessary disciplinary action can be initiated against me in case of use of derogatory words or false statements against any Student/Faculty/Staff/Higher Authority.
+4. The information given by me regarding the complaint/request is true to the best of my knowledge and if found false/ wrong, necessary disciplinary action can be initiated against me.
+5. I have read the policy / UMS Notification related to the concerned matter already before submitting the RMS and I am unable to find the answer related to my query.
+
+All five declarations must be checked before enabling Agree & Proceed.
+
+Keep this agreement exclusive to Raise a Query. Do not block History access.
+
+## 3. Category Type selection
+
+After agreement acceptance, allow the student to select:
+
+- Academic and Administrative Issues
+- Maintenance / Electrical Complaints
+
+Use the Category Type selection to control which complaint classification data is displayed.
+
+For this Stage 2 implementation, concentrate on the complete Hostel Maintenance / Electrical Complaints workflow.
+
+Do not mix the Hostel complaint categories into Academic and Administrative Issues.
+
+## 4. Message Type dependency
+
+Provide the following radio options:
+
+- Grievance (default)
+- Assistance
+- Enquiry
+- Feedback
+- Positive Feedback
+
+Enforce this exact dependency:
+
+Message Type → Category → Sub Category → Specific Category
+
+Rules:
+
+- Category remains disabled until Message Type is selected.
+- Sub Category remains disabled until Category is selected.
+- Specific Category remains disabled until Sub Category is selected.
+- Reset all dependent selections when a parent selection changes.
+- Do not allow students to skip a selection.
+- Specific Category must use dynamic checkboxes, not a dropdown.
+- Allow multiple specific complaint selections only where the reference checkbox interface supports them.
+
+## 5. Implement all 19 verified Hostel categories
+
+Read the complete category hierarchy from pages 2–6 of the supplied PDF.
+
+Implement all 19 categories in the exact order and with the exact names:
+
+1. Air Conditioner
+2. Carpentry
+3. Desert Cooler/Air Cooler (Electrical)
+4. Desert Cooler/Air Cooler (Plumbing)
+5. Electricity
+6. Energy Meter
+7. Gas Welder
+8. Lift
+9. Marking
+10. Mason
+11. Plumbing
+12. School of AI and Emerging Technologies
+13. Sewerage
+14. Tailor
+15. Water Cooler/Drinking water(Cooling Issue)
+16. Water Cooler/Drinking water(Electrical Issue)
+17. Water Cooler/Drinking water(Plumbing Issue)
+18. Water Purifier / RO System
+19. Welding
+
+### Exact hierarchy requirements
+
+For every category:
+
+- Implement its corresponding Sub Category options from the PDF.
+- Implement the corresponding Specific Category checkbox options from the PDF.
+- Preserve the exact text, spelling, capitalization, punctuation, and order.
+- Maintain the correct parent-child relationship.
+- Never place an option under the wrong category.
+- Do not combine similar options from different categories.
+- Do not omit any listed option.
+
+Pay particular attention to categories containing several subcategories, especially:
+
+- Carpentry
+- Electricity
+- Lift
+- Mason
+- Plumbing
+- Sewerage
+- Welding
+
+### Important missing-data rule
+
+The PDF explicitly contains some subcategories that were listed in the portal but not opened during the recording.
+
+It also contains categories where no subcategories were configured.
+
+For these cases:
+
+- Implement only the information actually available in the PDF.
+- Do not invent specific complaint checkboxes.
+- Do not generate generic options to fill empty categories.
+- Display an appropriate empty or unavailable state when a category has no configured subcategories.
+- Keep the data structure ready for future additions.
+
+The document's actual hierarchy must be extracted and implemented, not reconstructed from assumptions.
+
+## 6. Location Details
+
+Implement these exact fields:
+
+### Block
+- Auto-populate using the authenticated student's actual hostel/block information when available.
+- Do not hardcode the example block from the PDF.
+- Do not allow students to change a restricted location field unless the existing project requirements permit it.
+
+### Sub Block
+- Dropdown selection.
+- Populate using actual available location data.
+- The PDF demonstrates option A, but do not assume every student belongs to Sub Block A.
+
+### Room Type
+
+Radio buttons:
+
+- Room No (default)
+- Any Other
+
+### Room No
+- Display the actual room information when available.
+- The PDF shows an example of A512-Bed B.
+- Never use this example as a default for all students.
+
+### Any Other
+- When selected, provide an appropriate location input field.
+- Make it possible to report issues outside a student's room.
+
+## 7. Contact and Availability
+
+Implement:
+
+**Contact No**
+- Mandatory input.
+- Validate the contact number.
+- Use the authenticated student's existing contact information when available, while allowing correction where appropriate.
+
+**Availability Date**
+- Date picker.
+- Validate the selected date.
+- Prevent invalid or past availability dates.
+
+**Time Slot**
+
+Use radio buttons with the exact options:
+
+- 08:00-10:00
+- 10:00-12:00
+- 12:00-14:00
+- 14:00-16:00
+- 16:00-18:00
+
+Important: The reference shows radio buttons, not multiple-selection checkboxes. Keep the selection consistent with the reference.
+
+## 8. Description
+
+Provide a mandatory multiline Description field.
+
+- Allow the student to explain the problem.
+- Preserve the existing Stage 1 description validation where applicable.
+- Display a clear character counter if the existing implementation supports it.
+- Prevent empty submissions.
+
+## 9. Category-specific FAQ confirmation
+
+The PDF documents this alert:
+
+"Please Agree if you have read the FAQs. Click OK to confirm or Cancel to open FAQs again."
+
+Implement this confirmation when the student selects a Sub Category, as documented.
+
+Expected behaviour:
+
+- OK confirms that the student has read the relevant FAQ and allows the workflow to continue.
+- Cancel should allow the student to review the relevant FAQ again.
+- Do not silently skip the confirmation.
+- Do not display a fake FAQ or invent policy content.
+- If the actual FAQ content is unavailable, provide a clear unavailable state rather than fabricated information.
+
+## 10. Complaint submission and ticket generation
+
+When the student submits the completed complaint:
+
+- Validate all mandatory fields.
+- Save the complaint using existing FIPP storage.
+- Generate the complaint token through the existing token generator.
+- Do not introduce a second token-generation mechanism.
+- Persist the complete complaint classification, including selected specific complaint options.
+- Persist location, contact, availability, time slot, and description.
+- Associate the complaint with the authenticated student.
+
+Display successful confirmation inside Raise a Query.
+
+Show available ticket information, including:
+
+- Complaint Token
+- Subject
+- Message Type
+- Category
+- Sub Category
+- Specific Category selections
+- Description
+- Location
+- Submission Date
+- Current Status
+
+Show assigned person, department, designation, and estimated resolution only if real data is available.
+
+Never fabricate assignments or promise a resolution date.
+
+## 11. Student History
+
+Extend the existing History section to display the actual saved complaint records.
+
+Use the PDF's RMS History as a functional reference.
+
+Where supported by existing FIPP data, display:
+
+- Total Requests
+- Open Requests
+- Closed Requests
+- Request ID / Complaint Token
+- Date
+- Subcategory
+- Subject
+- Query
+- Current Status
+- Remarks / Closing Remarks
+- Update Date
+- Updated By
+- Supporting Document
+
+For an open complaint, display available tracking information and remarks history.
+
+Provide a complaint details view.
+
+If withdrawal is supported by existing FIPP authorization and processing rules, provide a Withdrawal action for eligible open complaints. Do not introduce an unsafe or unrestricted withdrawal mechanism.
+
+### Feedback
+
+The PDF shows a feedback interface for closed requests:
+
+- Five-star rating:
+  - 1 Star = Poor
+  - 2 Stars = Below Average
+  - 3 Stars = Average
+  - 4 Stars = Good
+  - 5 Stars = Excellent
+- Text input: What could we improve?
+- Submit button
+
+Implement feedback only if it can be stored against the correct complaint and authenticated student.
+
+Do not display fake feedback or ratings.
+
+## 12. User Interface and design
+
+Preserve the existing Modern Sage & Forest design:
+
+- Soft Ivory: #F5F7F2
+- Forest Green: #203A32
+- Sage: #A8B9A3
+- Pale Sage: #DCE5D8
+- White: #FFFFFF
+
+Requirements:
+
+- Maintain the existing Raise a Query / History navigation.
+- Keep the form compact and professional.
+- Use clear section headings without step numbering.
+- Keep dependent dropdowns visually distinguishable.
+- Make disabled controls visibly disabled.
+- Make selected radio buttons and checkboxes clearly visible.
+- Avoid unnecessarily large information boxes.
+- Maintain consistent spacing and alignment.
+- Ensure the form works on normal desktop and laptop screens.
+
+Do not redesign the landing page.
+
+## 13. Data structure and maintainability
+
+Store the verified category hierarchy in a centralized, configurable data structure rather than scattering category names across UI code.
+
+A suitable logical structure is:
+
+Category
+  → Sub Category
+      → Specific Category Options
+
+Ensure that:
+
+- Category data can be updated without redesigning the interface.
+- Each complaint stores the selected hierarchy.
+- Existing historical complaints remain readable.
+- Future hostel categories can be added without rewriting the form.
+- Empty categories are represented honestly.
+- The source document remains the reference for the initial dataset.
+
+Do not duplicate the category hierarchy in multiple places.
+
+## 14. Testing requirements
+
+Create and run tests for:
+
+1. All 19 categories are available in the correct order.
+2. Every documented subcategory exists under its correct category.
+3. Every documented specific option exists under its correct subcategory.
+4. No undocumented options are invented.
+5. Message Type dependency.
+6. Category-to-Sub Category dependency.
+7. Sub Category-to-Specific Category dependency.
+8. Parent selection resets downstream selections.
+9. Specific Category checkbox behaviour.
+10. FAQ confirmation behaviour.
+11. Block and Sub Block handling.
+12. Room No and Any Other behaviour.
+13. Contact number validation.
+14. Availability Date validation.
+15. Time Slot selection.
+16. Description validation.
+17. Successful complaint submission.
+18. Existing token generation.
+19. Persistent complaint storage.
+20. Student-only History access.
+21. Complaint details and remarks history.
+22. Admin status updates appearing in student History.
+23. Existing Stage 1 functionality.
+24. Existing Admin functionality.
+25. Existing complete project test suite.
+
+Run the actual Streamlit application and verify the complete workflow in the browser.
+
+## 15. Final implementation report
+
+After implementation, provide:
+
+- Files created or modified.
+- Confirmation that all 19 categories were implemented.
+- Number of subcategories implemented.
+- Number of specific complaint options implemented.
+- Any entries intentionally left unconfigured because the PDF does not provide enough information.
+- Test results.
+- Any remaining limitations.
+- Confirmation that Stage 1 and existing Admin functionality still work.
+
+Do not claim that the task is complete based only on code generation or passing unit tests. Verify the actual application.
+
+**Final instruction: Accuracy of the supplied LPU RMS PDF is more important than adding extra features. Implement the documented workflow faithfully, preserve the existing FIPP architecture, and do not invent missing data.**
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-11-18T23:12:12+05:30.
+</ADDITIONAL_METADATA>

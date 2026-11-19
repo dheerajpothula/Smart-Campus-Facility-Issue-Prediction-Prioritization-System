@@ -7,7 +7,6 @@ Renders the unified administrative header across all Control Centre views:
 - High contrast, responsive Modern Sage & Forest styling with zero vertical/horizontal clipping.
 """
 import streamlit as st
-from dashboard.components.icons import render_lucide_icon
 
 
 def render_admin_header(
@@ -26,7 +25,6 @@ def render_admin_header(
     auth = st.session_state.get("auth_user") or {}
     admin_id = auth.get("id", "ADM-2026-001")
     admin_title = auth.get("title") or auth.get("role_title", "Facility Operations Lead")
-    shield_icon_svg = render_lucide_icon("shield", size=20, color="#203A32", stroke_width=2.0)
 
     st.markdown(
         f"""
@@ -98,9 +96,10 @@ def render_admin_header(
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    font-size: 1.25rem;
                     flex-shrink: 0;
                 ">
-                    {shield_icon_svg}
+                    🛡️
                 </div>
                 <div>
                     <div style="font-size: 0.86rem; font-weight: 700; color: #203A32; line-height: 1.3;">

@@ -167,13 +167,9 @@ class TestUICorrectionsAndRefinement(unittest.TestCase):
         self.assertIn("border-left: 4px solid #A8B9A3", sidebar_src)
         self.assertIn("white-space: nowrap", sidebar_src)
 
-        # Icon mapping in CSS
-        self.assertIn("layout-dashboard", sidebar_src)
-        self.assertIn("clipboard-list", sidebar_src)
-        self.assertIn("inbox", sidebar_src)
-        self.assertIn("wrench", sidebar_src)
-        self.assertIn("check-circle", sidebar_src)
-        self.assertIn("chart-no-axes-combined", sidebar_src)
+        # Clean text labels without replacing with decorative picture/icon injections
+        self.assertNotIn("layout-dashboard", sidebar_src)
+        self.assertNotIn("chart-no-axes-combined", sidebar_src)
 
     def test_7_header_clipping_prevention_styles(self):
         """Validates that styles prevent header clipping and layout collision."""
@@ -192,26 +188,31 @@ class TestUICorrectionsAndRefinement(unittest.TestCase):
         self.assertIn("section.main", styles_src)
         self.assertIn("overflow-x: hidden", styles_src)
 
-    def test_8_no_cheap_emojis_in_admin_portal_pages(self):
-        """Validates that Overview, Admin Requests, Reports, and Complaint Details are free of cheap emojis."""
+    def test_8_control_centre_navigation_has_no_emojis_and_visual_assets_restored(self):
+        """Validates that Control Centre navigation strictly removes the 6 emojis, while visual assets outside it are restored."""
+        # 1. Navigation options strictly exclude the 6 specified emoji icons
+        forbidden_nav_emojis = ["📊", "📋", "🆕", "⏳", "✅", "📈"]
+        for opt in ADMIN_NAVIGATION_OPTIONS:
+            for emoji_char in forbidden_nav_emojis:
+                self.assertNotIn(
+                    emoji_char,
+                    opt,
+                    f"Forbidden emoji '{emoji_char}' found in Control Centre navigation option '{opt}'",
+                )
+
+        # 2. Visual assets outside Control Centre navigation are restored
         overview_src = inspect.getsource(overview)
-        requests_src = inspect.getsource(admin_requests)
         reports_src = inspect.getsource(admin_reports)
         header_src = inspect.getsource(admin_header)
 
-        for src, name in [
-            (overview_src, "Overview"),
-            (requests_src, "Admin Requests"),
-            (reports_src, "Admin Reports"),
-            (header_src, "Admin Header"),
-        ]:
-            # Forbidden emojis
-            for forbidden_emoji in ["📊", "📋", "🆕", "⏳", "✅", "📈", "🛡️"]:
-                self.assertNotIn(
-                    forbidden_emoji,
-                    src,
-                    f"Forbidden cheap emoji '{forbidden_emoji}' found in {name} source.",
-                )
+        # Restored icons in Admin Header, Overview KPIs, and Reports
+        self.assertIn("🛡️", header_src)
+        self.assertIn("📋", overview_src)
+        self.assertIn("🆕", overview_src)
+        self.assertIn("⏳", overview_src)
+        self.assertIn("✅", overview_src)
+        self.assertIn("📋", reports_src)
+        self.assertIn("📈", reports_src)
 
     def test_9_admin_sidebar_hover_state_subtle_forest_green(self):
         """Validates that admin sidebar navigation uses subtle forest green #24453A hover state,

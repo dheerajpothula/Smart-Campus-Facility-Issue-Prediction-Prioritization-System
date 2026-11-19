@@ -36,7 +36,6 @@ from dashboard.components.styles import (
     render_student_progress_timeline,
     _clean_html,
 )
-from dashboard.components.icons import render_lucide_icon
 from src.data.complaints_store import (
     get_complaints_df,
     get_student_complaints,
@@ -311,15 +310,13 @@ def render_student_dashboard() -> None:
     # =========================================================================
     col_hdr_left, col_hdr_right = st.columns([2.8, 1.7], gap="medium")
 
-    building_hdr_svg = render_lucide_icon("building", size=24, color="#203A32", stroke_width=2.0)
-
     with col_hdr_left:
         st.markdown(
             _clean_html(
-                f"""
+                """
                 <div style="display: flex; align-items: center; gap: 0.95rem; padding: 0.25rem 0; min-height: auto; height: auto; overflow: visible;">
-                    <div style="width: 44px; height: 44px; min-width: 44px; border-radius: 12px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(32, 58, 50, 0.05); flex-shrink: 0;">
-                        {building_hdr_svg}
+                    <div style="width: 44px; height: 44px; min-width: 44px; border-radius: 12px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.65rem; box-shadow: 0 2px 6px rgba(32, 58, 50, 0.05); flex-shrink: 0;">
+                        🏫
                     </div>
                     <div>
                         <div style="font-size: 1.35rem; font-weight: 800; color: #203A32; letter-spacing: -0.025em; line-height: 1.25;">
@@ -376,7 +373,7 @@ def render_student_dashboard() -> None:
         is_raise = (active_view == "raise")
         btn_raise_type = "primary" if is_raise else "secondary"
         if st.button(
-            "Raise a Query",
+            "💬 Raise a Query",
             key="btn_open_raise_query",
             type=btn_raise_type,
             use_container_width=True,
@@ -389,7 +386,7 @@ def render_student_dashboard() -> None:
         is_hist = (active_view == "history")
         btn_hist_type = "primary" if is_hist else "secondary"
         if st.button(
-            f"History ({complaint_count})",
+            f"🕒 History ({complaint_count})",
             key="btn_open_history",
             type=btn_hist_type,
             use_container_width=True,
@@ -404,13 +401,12 @@ def render_student_dashboard() -> None:
     # VIEW 0: INITIAL SELECTION STATE (NO FORM, NO AGREEMENT DISPLAYED)
     # =========================================================================
     if active_view is None:
-        welcome_icon_svg = render_lucide_icon("graduation-cap", size=30, color="#203A32")
         st.markdown(
             _clean_html(
                 f"""
                 <div class="dashboard-card" style="padding: 2.8rem 2rem; max-width: 860px; margin: 0.8rem auto 1.5rem auto; text-align: center; border-top: 4px solid #203A32; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.05);">
-                    <div style="width: 58px; height: 58px; border-radius: 14px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto; box-shadow: 0 2px 6px rgba(32, 58, 50, 0.06);">
-                        {welcome_icon_svg}
+                    <div style="width: 58px; height: 58px; border-radius: 14px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 1rem auto; box-shadow: 0 2px 6px rgba(32, 58, 50, 0.06);">
+                        🎓
                     </div>
                     <h2 style="color: #203A32; font-size: 1.45rem; font-weight: 800; margin-bottom: 0.35rem; letter-spacing: -0.02em;">
                         Welcome to the Student Facility Portal
@@ -419,9 +415,9 @@ def render_student_dashboard() -> None:
                         Select <strong>Raise a Query</strong> above to submit a campus maintenance breakdown or service request, or select <strong>History</strong> to review your past complaints and tracking status.
                     </p>
                     <div style="display: inline-flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; color: #6D8276; flex-wrap: wrap;">
-                        <span><strong>Raise a Query:</strong> Report breakdowns &amp; facility requests</span>
+                        <span>💬 <strong>Raise a Query:</strong> Report breakdowns &amp; facility requests</span>
                         <span>&bull;</span>
-                        <span><strong>History:</strong> Track status updates &amp; remarks ({complaint_count} registered)</span>
+                        <span>🕒 <strong>History:</strong> Track status updates &amp; remarks ({complaint_count} registered)</span>
                     </div>
                 </div>
                 """
@@ -511,11 +507,11 @@ def render_student_dashboard() -> None:
                                 </tr>
                                 <tr style="background-color: #F5F7F2; border-bottom: 1px solid #DCE5D8;">
                                     <td style="padding: 0.6rem 0.95rem; color: #4A6357; font-weight: 600;">Location Details:</td>
-                                    <td style="padding: 0.6rem 0.95rem; color: #203A32;">{c_loc}</td>
+                                    <td style="padding: 0.6rem 0.95rem; color: #203A32;">📍 {c_loc}</td>
                                 </tr>
                                 <tr style="border-bottom: 1px solid #DCE5D8;">
                                     <td style="padding: 0.6rem 0.95rem; color: #4A6357; font-weight: 600;">Contact &amp; Preferred Time:</td>
-                                    <td style="padding: 0.6rem 0.95rem; color: #203A32;">{c_contact} &bull; {c_date} (Slot: {c_slot})</td>
+                                    <td style="padding: 0.6rem 0.95rem; color: #203A32;">📞 {c_contact} &bull; 📅 {c_date} (Slot: {c_slot})</td>
                                 </tr>
                                 <tr style="background-color: #F5F7F2; border-bottom: 1px solid #DCE5D8;">
                                     <td style="padding: 0.6rem 0.95rem; color: #4A6357; font-weight: 600;">Allotted Person:</td>
@@ -558,7 +554,7 @@ def render_student_dashboard() -> None:
             with col_c2:
                 c_ret_raise, c_ret_hist = st.columns(2)
                 with c_ret_raise:
-                    if st.button("Raise Another Query", key="btn_conf_raise_another", type="primary", use_container_width=True):
+                    if st.button("➕ Raise Another Query", key="btn_conf_raise_another", type="primary", use_container_width=True):
                         del st.session_state["submission_confirmation"]
                         st.session_state["student_agreed"] = False
                         for i in range(1, 6):
@@ -576,18 +572,17 @@ def render_student_dashboard() -> None:
         # 2. QUERY SUBMISSION AGREEMENT (5 MANDATORY DECLARATIONS FROM PDF)
         # ---------------------------------------------------------------------
         if not st.session_state.get("student_agreed", False):
-            decl_icon_svg = render_lucide_icon("clipboard-list", size=22, color="#203A32")
             st.markdown(
                 _clean_html(
-                    f"""
+                    """
                     <div class="dashboard-card" style="padding: 1.8rem 2.2rem; max-width: 860px; margin: 0 auto 1.25rem auto; border-top: 4px solid #203A32; border-radius: 12px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.05);">
                         <div style="display: flex; align-items: center; gap: 0.85rem;">
-                            <div style="width: 44px; height: 44px; border-radius: 10px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center;">
-                                {decl_icon_svg}
+                            <div style="width: 44px; height: 44px; border-radius: 10px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                                📋
                             </div>
                             <div>
                                 <h3 style="color: #203A32; font-size: 1.25rem; font-weight: 800; margin: 0; letter-spacing: -0.02em;">
-                                    Log Request Declarations ("Agree &amp; Proceed")
+                                    📋 Log Request Declarations ("Agree &amp; Proceed")
                                 </h3>
                                 <p style="color: #4A6357; font-size: 0.88rem; margin: 0.15rem 0 0 0; font-weight: 500;">
                                     Please confirm all three mandatory declarations before submitting your campus facility query:
@@ -1411,13 +1406,12 @@ def render_student_dashboard() -> None:
                 msg_title = "No complaints submitted yet."
                 msg_desc = "You have not registered any facility queries yet. Click below to raise your first issue."
 
-            empty_icon_svg = render_lucide_icon("clipboard-list", size=26, color="#203A32")
             st.markdown(
                 _clean_html(
                     f"""
                     <div class="dashboard-card" style="text-align: center; padding: 2.75rem 2rem; margin: 1.25rem 0; border: 1px solid #DCE5D8; border-radius: 14px; background: #FFFFFF;">
-                        <div style="width: 54px; height: 54px; border-radius: 14px; background-color: #DCE5D8; border: 1px solid #A8B9A3; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;">
-                            {empty_icon_svg}
+                        <div style="width: 54px; height: 54px; line-height: 54px; border-radius: 14px; background-color: #DCE5D8; border: 1px solid #A8B9A3; font-size: 1.8rem; margin: 0 auto 1rem auto;">
+                            📋
                         </div>
                         <h3 style="color: #203A32; font-size: 1.25rem; font-weight: 750; margin-bottom: 0.4rem;">
                             {msg_title}
@@ -1434,7 +1428,7 @@ def render_student_dashboard() -> None:
             if not search_token.strip():
                 col_empty_btn, _ = st.columns([1.5, 4])
                 with col_empty_btn:
-                    if st.button("Raise a Query", key="btn_empty_raise_query", type="primary", use_container_width=True):
+                    if st.button("➕ Raise a Query", key="btn_empty_raise_query", type="primary", use_container_width=True):
                         st.session_state["student_active_view"] = "raise"
                         st.rerun()
             return
@@ -1510,11 +1504,11 @@ def render_student_dashboard() -> None:
                 f"""
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #DCE5D8; padding-top: 0.75rem; font-size: 0.83rem; color: #4A6357; flex-wrap: wrap; gap: 0.75rem;">
                     <div>
-                        <strong>Location:</strong> {loc}
+                        📍 <strong>Location:</strong> {loc}
                     </div>
                     <div style="display: flex; gap: 1.5rem; align-items: center;">
-                        <span><strong>Dated:</strong> {date_rep}</span>
-                        <span><strong>Tracking:</strong> {tracking_info}</span>
+                        <span>📅 <strong>Dated:</strong> {date_rep}</span>
+                        <span>🔍 <strong>Tracking:</strong> {tracking_info}</span>
                     </div>
                 </div>
                 """,
@@ -1533,7 +1527,7 @@ def render_student_dashboard() -> None:
                     existing_fb = item.get("feedback")
                     if existing_fb:
                         st.markdown(
-                            f"<div style='text-align: right; font-size: 0.82rem; color: #203A32;'>Feedback: <strong>{existing_fb.get('rating')} Stars ({existing_fb.get('rating_label')})</strong></div>",
+                            f"<div style='text-align: right; font-size: 0.82rem; color: #203A32;'>⭐ Feedback: <strong>{existing_fb.get('rating')} Stars ({existing_fb.get('rating_label')})</strong></div>",
                             unsafe_allow_html=True,
                         )
                     else:
@@ -1610,7 +1604,7 @@ def render_student_dashboard() -> None:
                             st.rerun()
 
             # Expandable full RMS ticket details & Remarks History Table
-            with st.expander(f"RMS Details & Remarks History for {cid}"):
+            with st.expander(f"📋 RMS Details & Remarks History for {cid}"):
                 c_det1, c_det2 = st.columns(2)
                 with c_det1:
                     st.markdown(f"**Contact Number:** {item.get('contact_number') or 'Not provided'}")
@@ -1672,7 +1666,7 @@ def render_student_dashboard() -> None:
         _clean_html(
             """
             <div style="background-color: #FFFFFF; border: 1px dashed #A8B9A3; border-radius: 10px; padding: 0.85rem 1.15rem; margin-top: 2rem; text-align: center; font-size: 0.83rem; color: #4A6357;">
-                Need immediate assistance for an emergency? Contact your hostel warden or campus security desk.
+                💡 Need immediate assistance for an emergency? Contact your hostel warden or campus security desk.
                 Campus facility updates and maintenance dispatches are tracked directly in this portal.
             </div>
             """
