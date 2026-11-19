@@ -76,21 +76,43 @@ GLOBAL_LIGHT_THEME_CSS = """
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
     }
 
-    /* Main view container padding - Full-width wide desktop SaaS layout */
+    /* Streamlit top header bar: ensure transparent and zero-obstruction so custom portal headers are never clipped */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        height: 1.5rem !important;
+        min-height: 0 !important;
+        pointer-events: none !important;
+    }
+    header[data-testid="stHeader"] * {
+        pointer-events: auto !important;
+    }
+
+    /* Main view container padding - Full-width wide desktop SaaS layout with clearance preventing header clipping */
     .block-container {
-        padding-top: 1.25rem !important;
-        padding-bottom: 3rem !important;
+        padding-top: 1.85rem !important;
+        padding-bottom: 3.5rem !important;
         padding-left: 2.25rem !important;
         padding-right: 2.25rem !important;
         max-width: 100% !important;
+        width: 100% !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Prevent horizontal overflow or main workspace colliding under sidebar */
+    section.main {
+        overflow-x: hidden !important;
         width: 100% !important;
     }
 
     /* Left-Side Navigation Sidebar Styling for Admin */
     [data-testid="stSidebar"] {
-        background-color: #FFFFFF !important;
-        border-right: 1px solid var(--border-soft) !important;
-        box-shadow: 2px 0 10px rgba(32, 58, 50, 0.03) !important;
+        background-color: #172D28 !important;
+        border-right: 1px solid rgba(220, 229, 216, 0.18) !important;
+        min-width: 290px !important;
+        width: 290px !important;
+        z-index: 100 !important;
+        box-shadow: 2px 0 10px rgba(23, 45, 40, 0.15) !important;
     }
     [data-testid="stSidebar"] .block-container {
         padding: 1.25rem 1rem !important;

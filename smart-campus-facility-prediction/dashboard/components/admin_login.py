@@ -6,6 +6,7 @@ Palette: Soft Ivory (#F5F7F2), Forest Green (#203A32), Sage (#A8B9A3), Pale Sage
 """
 import streamlit as st
 from src.auth.admin_auth import authenticate_admin
+from dashboard.components.icons import render_lucide_icon
 
 
 def render_admin_login_screen() -> None:
@@ -35,8 +36,10 @@ def render_admin_login_screen() -> None:
     )
 
     # Project Branding Header
+    building_icon_svg = render_lucide_icon("building", size=30, color="#203A32")
+    wrench_icon_svg = render_lucide_icon("wrench", size=24, color="#203A32")
     st.markdown(
-        """
+        f"""
         <div style="text-align: center; max-width: 780px; margin: 0 auto 2rem auto;">
             <div style="
                 display: inline-flex;
@@ -47,11 +50,10 @@ def render_admin_login_screen() -> None:
                 border: 1px solid #A8B9A3;
                 align-items: center;
                 justify-content: center;
-                font-size: 1.85rem;
                 margin-bottom: 0.75rem;
                 box-shadow: 0 4px 6px -1px rgba(32, 58, 50, 0.05);
             ">
-                🏫
+                {building_icon_svg}
             </div>
             <h1 style="font-size: 1.85rem; color: #203A32; margin-bottom: 0.25rem; font-weight: 800; letter-spacing: -0.025em;">
                 FIPP — Facility Issue Prediction &amp; Prioritisation
@@ -69,7 +71,7 @@ def render_admin_login_screen() -> None:
 
     with col_form:
         st.markdown(
-            """
+            f"""
             <div class="dashboard-card" style="padding: 2.2rem 2.2rem 1.6rem 2.2rem; margin-bottom: 1.25rem; border-top: 4px solid #203A32; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.06);">
                 <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.5rem;">
                     <div style="
@@ -82,9 +84,8 @@ def render_admin_login_screen() -> None:
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        font-size: 1.6rem;
                     ">
-                        🛠️
+                        {wrench_icon_svg}
                     </div>
                     <div>
                         <h2 style="margin: 0; font-size: 1.4rem; color: #203A32; font-weight: 700;">

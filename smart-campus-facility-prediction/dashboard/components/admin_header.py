@@ -3,10 +3,11 @@ Facility Operations Control Centre — Top Header Component.
 Renders the unified administrative header across all Control Centre views:
 - System Identification: FIPP ADMINISTRATION • Control Centre
 - Page Title and Operational Subtitle
-- Authenticated Administrator Identity & Role Badge (e.g. ADM-2026-001 • Facility Operations Lead)
-- Quick Logout / Session Action
+- Authenticated Administrator Identity & Role Badge (e.g. Administrator • ADM-2026-001 • Facility Operations Lead)
+- High contrast, responsive Modern Sage & Forest styling with zero vertical/horizontal clipping.
 """
 import streamlit as st
+from dashboard.components.icons import render_lucide_icon
 
 
 def render_admin_header(
@@ -23,9 +24,9 @@ def render_admin_header(
         kicker: Uppercase eyebrow identifying the Control Centre scope.
     """
     auth = st.session_state.get("auth_user") or {}
-    admin_name = auth.get("name", "Administrator")
     admin_id = auth.get("id", "ADM-2026-001")
     admin_title = auth.get("title") or auth.get("role_title", "Facility Operations Lead")
+    shield_icon_svg = render_lucide_icon("shield", size=20, color="#203A32", stroke_width=2.0)
 
     st.markdown(
         f"""
@@ -34,7 +35,7 @@ def render_admin_header(
             border: 1px solid #DCE5D8;
             border-left: 5px solid #203A32;
             border-radius: 12px;
-            padding: 1.25rem 1.6rem;
+            padding: 1.15rem 1.6rem;
             margin-bottom: 1.5rem;
             box-shadow: 0 2px 8px rgba(32, 58, 50, 0.04);
             display: flex;
@@ -42,8 +43,11 @@ def render_admin_header(
             align-items: center;
             flex-wrap: wrap;
             gap: 1rem;
+            min-height: auto;
+            height: auto;
+            overflow: visible;
         ">
-            <div>
+            <div style="flex: 1 1 340px; min-width: 260px;">
                 <div style="
                     font-size: 0.72rem;
                     font-weight: 800;
@@ -51,6 +55,7 @@ def render_admin_header(
                     text-transform: uppercase;
                     color: #4A6357;
                     margin-bottom: 0.25rem;
+                    line-height: 1.3;
                 ">
                     FIPP ADMINISTRATION &bull; {kicker}
                 </div>
@@ -60,7 +65,7 @@ def render_admin_header(
                     font-weight: 800;
                     color: #203A32;
                     letter-spacing: -0.02em;
-                    line-height: 1.2;
+                    line-height: 1.25;
                 ">
                     {page_title}
                 </h1>
@@ -81,25 +86,27 @@ def render_admin_header(
                 display: flex;
                 align-items: center;
                 gap: 0.85rem;
+                flex-shrink: 0;
             ">
                 <div style="
                     width: 38px;
                     height: 38px;
+                    min-width: 38px;
                     border-radius: 8px;
                     background-color: #DCE5D8;
                     border: 1px solid #A8B9A3;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 1.25rem;
+                    flex-shrink: 0;
                 ">
-                    🛡️
+                    {shield_icon_svg}
                 </div>
                 <div>
-                    <div style="font-size: 0.86rem; font-weight: 700; color: #203A32;">
-                        {admin_name}
+                    <div style="font-size: 0.86rem; font-weight: 700; color: #203A32; line-height: 1.3;">
+                        Administrator
                     </div>
-                    <div style="font-size: 0.76rem; color: #4A6357; font-weight: 500;">
+                    <div style="font-size: 0.76rem; color: #4A6357; font-weight: 500; line-height: 1.3;">
                         {admin_title} &bull; <code style="font-size: 0.72rem; color: #203A32; background: #DCE5D8; padding: 0.1rem 0.35rem; border-radius: 4px;">{admin_id}</code>
                     </div>
                 </div>

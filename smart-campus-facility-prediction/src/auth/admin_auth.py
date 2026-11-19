@@ -19,21 +19,21 @@ _HASH_ITERATIONS = 100_000
 _ADMIN_CREDENTIALS_STORE: Dict[str, Dict[str, Any]] = {
     "ADM-2026-001": {
         "id": "ADM-2026-001",
-        "name": "Dr. Robert Davies",
+        "name": "Administrator",
         "title": "Facility Operations Lead",
         "password_hash": "e70edb936a5ebea8ae511e3f3c31ba85e568ae1e0d15d6d561f460f05d1acf5a",
         "is_active": True,
     },
     "ADM-2026-002": {
         "id": "ADM-2026-002",
-        "name": "Sarah Jenkins",
+        "name": "Administrator",
         "title": "Campus Infrastructure Admin",
         "password_hash": "14ed4b75d80509c8f2b55d8ed7c44be15638c5d9bf185bb22f7cc2ac54f2fa39",
         "is_active": True,
     },
     "ADM-2026-003": {
         "id": "ADM-2026-003",
-        "name": "David Miller",
+        "name": "Administrator",
         "title": "Maintenance Dispatcher",
         "password_hash": "a25ad46752736c276c34fed62c7c7b9350aa67b9c763f3ba91d67aee012abfd7",
         "is_active": True,

@@ -86,7 +86,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
     # Close button
     c_close_col, _ = st.columns([1, 2])
     with c_close_col:
-        if st.button("✕ Close Panel", key=f"btn_close_panel_{cid}", type="secondary", use_container_width=True):
+        if st.button("Close Panel", key=f"btn_close_panel_{cid}", type="secondary", use_container_width=True):
             st.session_state["admin_selected_complaint_id"] = None
             st.rerun()
 
@@ -99,7 +99,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         f"""
         <div style="background: #F5F7F2; border: 1px solid #DCE5D8; border-radius: 8px; padding: 0.85rem 1rem; margin: 0.9rem 0;">
             <div style="font-size: 0.74rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #203A32; margin-bottom: 0.4rem;">
-                👤 Student / Reporter Information
+                Student / Reporter Information
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; font-size: 0.84rem;">
                 <div><span style="color: #6D8276;">Name:</span> <strong>{stu_name}</strong></div>
@@ -129,7 +129,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         f"""
         <div style="margin-bottom: 0.85rem;">
             <div style="font-size: 0.74rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #203A32; margin-bottom: 0.35rem;">
-                📋 Complaint Details
+                Complaint Details
             </div>
             <h4 style="margin: 0 0 0.45rem 0; font-size: 1.05rem; color: #203A32; font-weight: 700;">{title}</h4>
             <div style="font-size: 0.83rem; color: #4A6357; line-height: 1.5; margin-bottom: 0.6rem; background: #FFFFFF; border: 1px solid #DCE5D8; border-left: 3px solid #A8B9A3; border-radius: 6px; padding: 0.65rem 0.85rem;">
@@ -143,7 +143,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
                 <div><span style="color: #6D8276;">Building / Block:</span> <strong>{bld}</strong></div>
                 <div><span style="color: #6D8276;">Location:</span> {loc}</div>
                 <div><span style="color: #6D8276;">Submission Date:</span> {dt_rep}</div>
-                <div><span style="color: #6D8276;">Attachment:</span> 📎 {supp_doc}</div>
+                <div><span style="color: #6D8276;">Attachment:</span> {supp_doc}</div>
             </div>
         </div>
         """,
@@ -162,7 +162,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         <div style="background: #F0F4ED; border: 1px solid #DCE5D8; border-radius: 8px; padding: 0.85rem 1rem; margin: 0.9rem 0;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
                 <span style="font-size: 0.74rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #203A32;">
-                    ⚡ MCPI Priority &amp; Heuristics
+                    MCPI Priority &amp; Heuristics
                 </span>
                 <span style="font-size: 0.78rem; font-weight: 700; color: #203A32;">
                     Score: {priority_score} / 100
@@ -188,7 +188,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         f"""
         <div style="margin-bottom: 0.85rem;">
             <div style="font-size: 0.74rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #203A32; margin-bottom: 0.35rem;">
-                ⚙️ Administrative Status
+                Administrative Status
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; font-size: 0.82rem; color: #203A32; margin-bottom: 0.5rem;">
                 <div><span style="color: #6D8276;">Current Status:</span> <strong>{curr_status}</strong></div>
@@ -206,7 +206,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
     # 5. STATUS HISTORY
     history_list = complaint_record.get("remarks_history") or []
     if history_list:
-        with st.expander(f"📜 Status & Remarks History ({len(history_list)})", expanded=False):
+        with st.expander(f"Status & Remarks History ({len(history_list)})", expanded=False):
             for h in history_list:
                 h_date = h.get("update_date", "")
                 h_name = h.get("name", "System")
@@ -225,7 +225,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
 
     # 6. ADMINISTRATIVE ACTIONS FORM
     st.markdown(
-        "<div style='font-size: 0.88rem; font-weight: 750; color: #203A32; margin-bottom: 0.4rem;'>🛠️ Operational Actions</div>",
+        "<div style='font-size: 0.88rem; font-weight: 750; color: #203A32; margin-bottom: 0.4rem;'>Operational Actions</div>",
         unsafe_allow_html=True,
     )
 
@@ -241,7 +241,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
             placeholder="e.g. Issue recurred, repairs incomplete...",
             key=f"input_reopen_reason_{cid}",
         )
-        if st.button("🔄 Reopen Complaint", key=f"btn_reopen_{cid}", type="primary", use_container_width=True):
+        if st.button("Reopen Complaint", key=f"btn_reopen_{cid}", type="primary", use_container_width=True):
             if not reopen_reason.strip():
                 st.error("Please provide a justification to reopen this complaint.")
             else:
@@ -290,9 +290,9 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
 
     is_resolving = (new_status == "Resolved")
     if is_resolving:
-        st.warning("⚠️ Marking as **Resolved** requires clear resolution remarks explaining the work completed.")
+        st.warning("Marking as **Resolved** requires clear resolution remarks explaining the work completed.")
 
-    if st.button("💾 Save Operational Update", key=f"btn_save_panel_{cid}", type="primary", use_container_width=True):
+    if st.button("Save Operational Update", key=f"btn_save_panel_{cid}", type="primary", use_container_width=True):
         if is_resolving and not admin_remarks.strip():
             st.error("Resolution remarks are mandatory when marking a ticket as Resolved.")
         else:

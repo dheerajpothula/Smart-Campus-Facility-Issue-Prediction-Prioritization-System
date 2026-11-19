@@ -10,6 +10,7 @@ Modern Sage & Forest Theme:
 - White: #FFFFFF
 """
 import streamlit as st
+from dashboard.components.icons import render_lucide_icon
 
 
 def render_login_screen(role: str) -> None:
@@ -25,7 +26,7 @@ def render_login_screen(role: str) -> None:
     role_title = f"{role_display} Login"
 
     name_label = "Administrator Name" if is_admin else "Student Name"
-    name_placeholder = "e.g. Dr. Robert Davies" if is_admin else "e.g. Alex Chen"
+    name_placeholder = "e.g. Administrator" if is_admin else "e.g. Alex Chen"
 
     id_label = "Administrator ID" if is_admin else "Student ID"
     id_placeholder = "e.g. ADM-2026-001" if is_admin else "e.g. STU-2026-101"
@@ -46,8 +47,9 @@ def render_login_screen(role: str) -> None:
     )
 
     # Project Branding Header
+    building_icon_svg = render_lucide_icon("building", size=30, color="#203A32")
     st.markdown(
-        """
+        f"""
         <div style="text-align: center; max-width: 780px; margin: 0 auto 1.8rem auto;">
             <div style="
                 display: inline-flex;
@@ -58,11 +60,10 @@ def render_login_screen(role: str) -> None:
                 border: 1px solid #A8B9A3;
                 align-items: center;
                 justify-content: center;
-                font-size: 1.85rem;
                 margin-bottom: 0.75rem;
                 box-shadow: 0 4px 6px -1px rgba(32, 58, 50, 0.05);
             ">
-                🏫
+                {building_icon_svg}
             </div>
             <h1 style="font-size: 1.85rem; color: #203A32; margin-bottom: 0.25rem; font-weight: 800; letter-spacing: -0.025em;">
                 FIPP — Facility Issue Prediction &amp; Prioritization

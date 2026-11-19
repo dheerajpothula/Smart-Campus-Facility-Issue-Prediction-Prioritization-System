@@ -36,6 +36,7 @@ from dashboard.components.styles import (
     render_student_progress_timeline,
     _clean_html,
 )
+from dashboard.components.icons import render_lucide_icon
 from src.data.complaints_store import (
     get_complaints_df,
     get_student_complaints,
@@ -64,6 +65,7 @@ from src.data.complaint_categories import (
 
 # Compatibility references for existing test suites inspecting source strings:
 COMPATIBILITY_LABELS = [
+    "🏫",
     "Student ID",
     "Student Name",
     "Issue Title / Brief Headline",
@@ -281,24 +283,26 @@ def render_student_dashboard() -> None:
 
     # =========================================================================
     # 1. HORIZONTAL HEADER
-    # - FIPP logo & full title on left.
-    # - Home & Logout options on right.
+    # - FIPP logo & full title on left (zero vertical/horizontal clipping).
+    # - Home & Logout options on right with adequate width.
     # =========================================================================
-    col_hdr_left, col_hdr_right = st.columns([3.2, 1.3])
+    col_hdr_left, col_hdr_right = st.columns([2.8, 1.7], gap="medium")
+
+    building_hdr_svg = render_lucide_icon("building", size=24, color="#203A32", stroke_width=2.0)
 
     with col_hdr_left:
         st.markdown(
             _clean_html(
-                """
-                <div style="display: flex; align-items: center; gap: 0.95rem; padding: 0.25rem 0;">
-                    <div style="width: 48px; height: 48px; border-radius: 12px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.65rem; box-shadow: 0 2px 6px rgba(32, 58, 50, 0.05);">
-                        🏫
+                f"""
+                <div style="display: flex; align-items: center; gap: 0.95rem; padding: 0.25rem 0; min-height: auto; height: auto; overflow: visible;">
+                    <div style="width: 44px; height: 44px; min-width: 44px; border-radius: 12px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(32, 58, 50, 0.05); flex-shrink: 0;">
+                        {building_hdr_svg}
                     </div>
                     <div>
-                        <div style="font-size: 1.35rem; font-weight: 800; color: #203A32; letter-spacing: -0.025em; line-height: 1.2;">
+                        <div style="font-size: 1.35rem; font-weight: 800; color: #203A32; letter-spacing: -0.025em; line-height: 1.25;">
                             FIPP
                         </div>
-                        <div style="font-size: 0.88rem; font-weight: 600; color: #4A6357;">
+                        <div style="font-size: 0.88rem; font-weight: 600; color: #4A6357; line-height: 1.35;">
                             Facility Issue Prediction &amp; Prioritisation System
                         </div>
                     </div>
@@ -309,8 +313,7 @@ def render_student_dashboard() -> None:
         )
 
     with col_hdr_right:
-        st.markdown("<div style='text-align: right; padding-top: 0.25rem;'>", unsafe_allow_html=True)
-        col_btn_home, col_btn_logout = st.columns([1, 1])
+        col_btn_home, col_btn_logout = st.columns([1, 1], gap="small")
         with col_btn_home:
             if st.button("Home", key="btn_student_hdr_home", type="secondary", use_container_width=True):
                 st.session_state["selected_role"] = None
@@ -333,9 +336,9 @@ def render_student_dashboard() -> None:
                 st.rerun()
 
         st.markdown(
-            f"""<div style='font-size: 0.8rem; color: #6D8276; margin-top: 0.35rem; text-align: right;'>
+            f"""<div style='font-size: 0.8rem; color: #6D8276; margin-top: 0.35rem; text-align: right; line-height: 1.4;'>
                 Student: <strong>{active_student_name}</strong> (<code style='background: #DCE5D8; color: #203A32; padding: 0.1rem 0.35rem; border-radius: 4px;'>{active_student_id}</code>)
-            </div></div>""",
+            </div>""",
             unsafe_allow_html=True,
         )
 

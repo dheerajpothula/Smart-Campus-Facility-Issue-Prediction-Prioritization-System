@@ -16,6 +16,7 @@ from datetime import datetime
 
 from dashboard.components.admin_header import render_admin_header
 from dashboard.components.styles import render_kpi, _clean_html
+from dashboard.components.icons import render_lucide_icon
 from src.data.complaints_store import get_complaints_df
 
 
@@ -42,15 +43,15 @@ def render_reports_page() -> None:
 
     k1, k2, k3, k4, k5 = st.columns(5)
     with k1:
-        render_kpi("Total Volume", total_tickets, caption="Lifetime records", icon="📋")
+        render_kpi("Total Volume", total_tickets, caption="Lifetime records", icon=render_lucide_icon("clipboard-list", size=20, color="#203A32"))
     with k2:
-        render_kpi("Resolved Tickets", resolved_tickets, caption="Closed maintenance", icon="✅")
+        render_kpi("Resolved Tickets", resolved_tickets, caption="Closed maintenance", icon=render_lucide_icon("check-circle", size=20, color="#203A32"))
     with k3:
-        render_kpi("Active Backlog", in_prog_tickets, caption="Ongoing repairs", icon="⏳")
+        render_kpi("Active Backlog", in_prog_tickets, caption="Ongoing repairs", icon=render_lucide_icon("wrench", size=20, color="#203A32"))
     with k4:
-        render_kpi("High/Critical Priority", high_prio_tickets, caption="P1 & P2 hazards", icon="🚨")
+        render_kpi("High/Critical Priority", high_prio_tickets, caption="P1 & P2 hazards", icon=render_lucide_icon("alert-triangle", size=20, color="#203A32"))
     with k5:
-        render_kpi("Resolution Rate", resolution_rate, caption="Completed ratio", icon="📈")
+        render_kpi("Resolution Rate", resolution_rate, caption="Completed ratio", icon=render_lucide_icon("chart-no-axes-combined", size=20, color="#203A32"))
 
     st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
 
@@ -59,7 +60,7 @@ def render_reports_page() -> None:
         """
         <div class="dashboard-card" style="margin-bottom: 0.75rem;">
             <h3 style="margin-top: 0; font-size: 1.1rem; color: #203A32; font-weight: 750;">
-                📅 Incident Ingestion Trends by Date
+                Incident Ingestion Trends by Date
             </h3>
             <p style="color: #4A6357; font-size: 0.84rem; margin-bottom: 0.8rem;">
                 Empirical count of facility complaints registered across campus by submission date.
@@ -99,7 +100,7 @@ def render_reports_page() -> None:
             """
             <div class="dashboard-card" style="margin-bottom: 0.75rem;">
                 <h3 style="margin-top: 0; font-size: 1.05rem; color: #203A32; font-weight: 750;">
-                    🏢 Complaints by Facility Subsystem
+                    Complaints by Facility Subsystem
                 </h3>
                 <p style="color: #4A6357; font-size: 0.82rem; margin-bottom: 0.6rem;">
                     Distribution across campus engineering departments.
@@ -120,7 +121,7 @@ def render_reports_page() -> None:
             """
             <div class="dashboard-card" style="margin-bottom: 0.75rem;">
                 <h3 style="margin-top: 0; font-size: 1.05rem; color: #203A32; font-weight: 750;">
-                    🔄 Maintenance Status Distribution
+                    Maintenance Status Distribution
                 </h3>
                 <p style="color: #4A6357; font-size: 0.82rem; margin-bottom: 0.6rem;">
                     Proportion of tickets across lifecycle stages.
@@ -145,7 +146,7 @@ def render_reports_page() -> None:
             """
             <div class="dashboard-card" style="margin-bottom: 0.75rem;">
                 <h3 style="margin-top: 0; font-size: 1.05rem; color: #203A32; font-weight: 750;">
-                    📍 Building &amp; Location Density
+                    Building &amp; Location Density
                 </h3>
                 <p style="color: #4A6357; font-size: 0.82rem; margin-bottom: 0.6rem;">
                     Registered complaints clustered by campus facility buildings.
@@ -166,7 +167,7 @@ def render_reports_page() -> None:
             """
             <div class="dashboard-card" style="margin-bottom: 0.75rem;">
                 <h3 style="margin-top: 0; font-size: 1.05rem; color: #203A32; font-weight: 750;">
-                    🚨 MCPI Priority Distribution
+                    MCPI Priority Distribution
                 </h3>
                 <p style="color: #4A6357; font-size: 0.82rem; margin-bottom: 0.6rem;">
                     Risk triage breakdown computed via multi-criteria facility scoring.

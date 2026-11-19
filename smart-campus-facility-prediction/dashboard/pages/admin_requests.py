@@ -51,7 +51,7 @@ def render_requests_view(view_mode: str = "all") -> None:
         mode_df = raw_df.copy()
 
     # Search & Interactive Filter Bar
-    with st.expander("🔍 Search, Filters & Sorting Options", expanded=True):
+    with st.expander("Search, Filters & Sorting Options", expanded=True):
         c_search, c_sort = st.columns([2.5, 1.5])
         with c_search:
             search_query = st.text_input(
@@ -157,7 +157,7 @@ def render_requests_view(view_mode: str = "all") -> None:
             )
         with c_meta_right:
             st.download_button(
-                "📥 Export CSV",
+                "Export CSV",
                 data=filtered_df.to_csv(index=False),
                 file_name=f"fipp_{view_mode}_requests.csv",
                 mime="text/csv",
@@ -209,10 +209,10 @@ def render_requests_view(view_mode: str = "all") -> None:
             card_border = "border: 2px solid #203A32; background: #FAFBF9;" if is_active else "border: 1px solid #DCE5D8; background: #FFFFFF;"
 
             if stu_id:
-                reporter_html = f'<span style="background-color: #DCE5D8; color: #203A32; border: 1px solid #A8B9A3; padding: 0.12rem 0.45rem; border-radius: 4px; font-size: 0.74rem; font-weight: 600;">🎓 {stu_name or "Student"} ({stu_id})</span>'
+                reporter_html = f'<span style="background-color: #DCE5D8; color: #203A32; border: 1px solid #A8B9A3; padding: 0.12rem 0.45rem; border-radius: 4px; font-size: 0.74rem; font-weight: 600;">Student: {stu_name or "Student"} ({stu_id})</span>'
             else:
                 rep_by = row.get("reported_by", "Staff")
-                reporter_html = f'<span style="background-color: #F0F4ED; color: #203A32; border: 1px solid #DCE5D8; padding: 0.12rem 0.45rem; border-radius: 4px; font-size: 0.74rem; font-weight: 600;">👤 {rep_by}</span>'
+                reporter_html = f'<span style="background-color: #F0F4ED; color: #203A32; border: 1px solid #DCE5D8; padding: 0.12rem 0.45rem; border-radius: 4px; font-size: 0.74rem; font-weight: 600;">{rep_by}</span>'
 
             staff_html = f"<span style='color: #4A6357; font-size: 0.76rem;'>&bull; Assigned: <strong>{allotted}</strong></span>" if allotted else ""
 
@@ -242,7 +242,7 @@ def render_requests_view(view_mode: str = "all") -> None:
                                     {title}
                                 </h4>
                                 <div style="font-size: 0.79rem; color: #6D8276; margin-top: 0.25rem;">
-                                    📍 <strong>{loc}</strong> &bull; 📅 {dt} &bull; Priority Score: <strong>{score}</strong>
+                                    <strong>{loc}</strong> &bull; {dt} &bull; Priority Score: <strong>{score}</strong>
                                 </div>
                             </div>
                             <div style="display: flex; align-items: center; gap: 0.4rem;">
@@ -259,7 +259,7 @@ def render_requests_view(view_mode: str = "all") -> None:
             # Inspect Button for Row
             btn_col, _ = st.columns([1.2, 3])
             with btn_col:
-                btn_text = "Viewing Details 🔍" if is_active else "Inspect Ticket →"
+                btn_text = "Viewing Details" if is_active else "Inspect Ticket →"
                 if st.button(btn_text, key=f"btn_inspect_{view_mode}_{cid}", type="primary" if is_active else "secondary", use_container_width=True):
                     st.session_state["admin_selected_complaint_id"] = cid
                     st.rerun()

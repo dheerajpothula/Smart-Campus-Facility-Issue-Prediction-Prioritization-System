@@ -166,7 +166,7 @@ class TestAdminAuthAndHowItWorks(unittest.TestCase):
         self.assertFalse(verify_admin_session(empty_session))
 
         # Legitimate admin session
-        admin_session = {"role": "admin", "id": "ADM-2026-001", "name": "Dr. Robert Davies"}
+        admin_session = {"role": "admin", "id": "ADM-2026-001", "name": "Administrator"}
         self.assertTrue(verify_admin_session(admin_session))
 
     def test_admin_login_screen_components(self):
