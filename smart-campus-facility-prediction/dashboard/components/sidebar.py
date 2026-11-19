@@ -5,6 +5,7 @@ demo data controls, and logout button on the left sidebar of the dashboard.
 Palette: Soft Ivory (#F5F7F2), Forest Green (#203A32), Deep Forest (#172D28),
 Sage (#A8B9A3), Pale Sage (#DCE5D8), White (#FFFFFF).
 Uses Lucide outline vector icons for navigation and branding; zero emoji symbols.
+Subtle, slightly lighter forest-green hover state (#24453A) with no white boxes.
 """
 import streamlit as st
 from src.data.complaints_store import get_complaints_df, clear_all_complaints, reset_to_default_dataset
@@ -89,11 +90,28 @@ def render_admin_sidebar(
         [data-testid="stSidebar"] hr {{
             border-color: rgba(220, 229, 216, 0.2) !important;
         }}
-        /* Hide native circular radio dot for clean navigation list */
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label > div:first-child {{
+
+        /* Sidebar Radio Container */
+        [data-testid="stSidebar"] [data-testid="stRadio"] {{
+            background-color: transparent !important;
+        }}
+        [data-testid="stSidebar"] [data-testid="stRadio"] [data-testid="stWidgetLabel"] {{
             display: none !important;
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label {{
+
+        /* Hide native circular radio dot for clean navigation list */
+        [data-testid="stSidebar"] [data-testid="stRadioOption"] > div > div:first-child,
+        [data-testid="stSidebar"] [data-testid="stRadioOption"] [data-testid="stMarkdownContainer"] ~ div,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label > div > div:first-child,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label > div:first-child {{
+            display: none !important;
+        }}
+
+        /* Navigation Item Base Layout */
+        [data-testid="stSidebar"] [data-testid="stRadioOption"],
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label,
+        [data-testid="stSidebar"] .stRadio [role="radiogroup"] label,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {{
             display: flex !important;
             align-items: center !important;
             gap: 0.75rem !important;
@@ -102,8 +120,22 @@ def render_admin_sidebar(
             border-radius: 8px !important;
             white-space: nowrap !important;
             cursor: pointer !important;
+            background-color: transparent !important;
+            border: 1px solid transparent !important;
             transition: all 0.15s ease-in-out !important;
+            box-sizing: border-box !important;
         }}
+
+        /* Ensure inner containers and paragraphs stay transparent */
+        [data-testid="stSidebar"] [data-testid="stRadioOption"] div,
+        [data-testid="stSidebar"] [data-testid="stRadioOption"] span,
+        [data-testid="stSidebar"] [data-testid="stRadioOption"] p {{
+            background-color: transparent !important;
+        }}
+
+        /* Inactive Navigation Item Typography */
+        [data-testid="stSidebar"] [data-testid="stRadioOption"] p,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label p,
         [data-testid="stSidebar"] .stRadio label p {{
             color: #DCE5D8 !important;
             font-size: 0.92rem !important;
@@ -112,7 +144,11 @@ def render_admin_sidebar(
             white-space: nowrap !important;
             line-height: 1.2 !important;
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label::before {{
+
+        /* Navigation Vector Icons Base */
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label::before {{
             content: "";
             display: inline-block !important;
             width: 18px !important;
@@ -125,79 +161,174 @@ def render_admin_sidebar(
             transition: opacity 0.15s ease-in-out;
             flex-shrink: 0 !important;
         }}
+
         /* 1. Overview: layout-dashboard */
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(1)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(1) [data-testid="stRadioOption"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(1) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(1) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(1)::before {{
             background-image: url('{uri_overview}');
         }}
         /* 2. All Requests: clipboard-list */
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(2)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(2) [data-testid="stRadioOption"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(2) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(2) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(2)::before {{
             background-image: url('{uri_requests}');
         }}
         /* 3. New / Unassigned: inbox */
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(3)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(3) [data-testid="stRadioOption"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(3) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(3) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(3)::before {{
             background-image: url('{uri_unassigned}');
         }}
         /* 4. In Progress: wrench */
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(4)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(4) [data-testid="stRadioOption"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(4) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(4) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(4)::before {{
             background-image: url('{uri_inprogress}');
         }}
         /* 5. Resolved: check-circle */
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(5)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(5) [data-testid="stRadioOption"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(5) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(5) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(5)::before {{
             background-image: url('{uri_resolved}');
         }}
         /* 6. Reports: chart-no-axes-combined */
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(6)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(6) [data-testid="stRadioOption"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(6) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(6) label::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(6)::before {{
             background-image: url('{uri_reports}');
         }}
-        /* Hover State */
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover {{
-            background-color: rgba(32, 58, 50, 0.75) !important;
+
+        /* =========================================================================
+           HOVER STATE: Subtle, slightly lighter forest-green (#24453A)
+           Eliminates any pure-white or pale background; keeps text crisp white (#FFFFFF).
+           ========================================================================= */
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:not([data-selected="true"]):not(:has(input:checked)):hover,
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:not([data-selected="true"]):not(:has(input:checked))[data-hovered="true"],
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label:not([data-selected="true"]):not(:has(input:checked)):hover,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:not([data-checked="true"]):not(:has(input:checked)):hover {{
+            background-color: #24453A !important;
+            border-color: rgba(168, 185, 163, 0.25) !important;
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover p {{
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:not([data-selected="true"]):not(:has(input:checked)):hover p,
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:not([data-selected="true"]):not(:has(input:checked))[data-hovered="true"] p,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label:not([data-selected="true"]):not(:has(input:checked)):hover p,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:not([data-checked="true"]):not(:has(input:checked)):hover p {{
             color: #FFFFFF !important;
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:not([data-selected="true"]):not(:has(input:checked)):hover::before,
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:not([data-selected="true"]):not(:has(input:checked))[data-hovered="true"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label:not([data-selected="true"]):not(:has(input:checked)):hover::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:not([data-checked="true"]):not(:has(input:checked)):hover::before {{
             opacity: 1 !important;
         }}
-        /* Active State */
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label[data-checked="true"],
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) {{
+
+        /* =========================================================================
+           ACTIVE / SELECTED STATE: Distinct Forest Green (#203A32) with Sage Accent
+           Hovering over another item NEVER overrides this active styling.
+           ========================================================================= */
+        [data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"],
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:has(input:checked),
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label[data-selected="true"],
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label:has(input:checked),
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-checked="true"],
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked) {{
             background-color: #203A32 !important;
             border-left: 4px solid #A8B9A3 !important;
             padding-left: 0.7rem !important;
+            border-top: 1px solid transparent !important;
+            border-right: 1px solid transparent !important;
+            border-bottom: 1px solid transparent !important;
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label[data-checked="true"] p,
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) p {{
+        [data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"] p,
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:has(input:checked) p,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label[data-selected="true"] p,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label:has(input:checked) p,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-checked="true"] p,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked) p {{
             color: #FFFFFF !important;
             font-weight: 750 !important;
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label[data-checked="true"]::before,
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:has(input:checked)::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label[data-selected="true"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-checked="true"]::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked)::before {{
             opacity: 1 !important;
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(1)[data-checked="true"]::before,
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(1):has(input:checked)::before {{
+
+        /* Active item hover: maintain distinct active background and left border */
+        [data-testid="stSidebar"] [data-testid="stRadioOption"][data-selected="true"]:hover,
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:has(input:checked):hover,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label[data-selected="true"]:hover,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label:has(input:checked):hover,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-checked="true"]:hover,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:has(input:checked):hover {{
+            background-color: #203A32 !important;
+            border-left: 4px solid #A8B9A3 !important;
+        }}
+
+        /* Active Icon Overlays for Each Option */
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(1) [data-testid="stRadioOption"][data-selected="true"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(1) [data-testid="stRadioOption"]:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(1) label:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(1):has(input:checked)::before {{
             background-image: url('{uri_overview_act}');
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(2)[data-checked="true"]::before,
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(2):has(input:checked)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(2) [data-testid="stRadioOption"][data-selected="true"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(2) [data-testid="stRadioOption"]:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(2) label:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(2):has(input:checked)::before {{
             background-image: url('{uri_requests_act}');
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(3)[data-checked="true"]::before,
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(3):has(input:checked)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(3) [data-testid="stRadioOption"][data-selected="true"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(3) [data-testid="stRadioOption"]:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(3) label:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(3):has(input:checked)::before {{
             background-image: url('{uri_unassigned_act}');
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(4)[data-checked="true"]::before,
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(4):has(input:checked)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(4) [data-testid="stRadioOption"][data-selected="true"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(4) [data-testid="stRadioOption"]:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(4) label:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(4):has(input:checked)::before {{
             background-image: url('{uri_inprogress_act}');
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(5)[data-checked="true"]::before,
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(5):has(input:checked)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(5) [data-testid="stRadioOption"][data-selected="true"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(5) [data-testid="stRadioOption"]:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(5) label:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(5):has(input:checked)::before {{
             background-image: url('{uri_resolved_act}');
         }}
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(6)[data-checked="true"]::before,
-        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:nth-of-type(6):has(input:checked)::before {{
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(6) [data-testid="stRadioOption"][data-selected="true"]::before,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] > div:nth-child(6) [data-testid="stRadioOption"]:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > div:nth-of-type(6) label:has(input:checked)::before,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:nth-of-type(6):has(input:checked)::before {{
             background-image: url('{uri_reports_act}');
+        }}
+
+        /* =========================================================================
+           KEYBOARD FOCUS STATE: Accessible, subtle focus outline without white box
+           ========================================================================= */
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:focus-visible,
+        [data-testid="stSidebar"] [data-testid="stRadioOption"][data-focus-visible="true"],
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label:focus-visible,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:focus-visible {{
+            background-color: #24453A !important;
+            outline: 2px solid #A8B9A3 !important;
+            outline-offset: -2px !important;
+        }}
+        [data-testid="stSidebar"] [data-testid="stRadioOption"]:focus-visible p,
+        [data-testid="stSidebar"] [data-testid="stRadioOption"][data-focus-visible="true"] p,
+        [data-testid="stSidebar"] [data-testid="stRadioGroup"] label:focus-visible p,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:focus-visible p {{
+            color: #FFFFFF !important;
         }}
         </style>
         """,

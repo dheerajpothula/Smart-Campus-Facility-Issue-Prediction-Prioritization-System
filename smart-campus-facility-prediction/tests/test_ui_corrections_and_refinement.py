@@ -213,6 +213,46 @@ class TestUICorrectionsAndRefinement(unittest.TestCase):
                     f"Forbidden cheap emoji '{forbidden_emoji}' found in {name} source.",
                 )
 
+    def test_9_admin_sidebar_hover_state_subtle_forest_green(self):
+        """Validates that admin sidebar navigation uses subtle forest green #24453A hover state,
+        prevents pure-white hover backgrounds, preserves active #203A32 state, and scopes global radio hovers."""
+        sidebar_src = inspect.getsource(render_admin_sidebar)
+        styles_src = styles.GLOBAL_LIGHT_THEME_CSS
+
+        # Hover state background must be subtle forest green #24453A
+        self.assertIn("#24453A", sidebar_src)
+        self.assertTrue(
+            "background-color: #24453A !important" in sidebar_src
+            or "background: #24453A !important" in sidebar_src,
+            "Hover background #24453A not set in sidebar CSS",
+        )
+        self.assertIn("color: #FFFFFF !important", sidebar_src)
+
+        # Hover state must NOT use pure-white background
+        self.assertNotIn("background: #FFFFFF !important", sidebar_src)
+        self.assertNotIn("background-color: #FFFFFF !important", sidebar_src)
+        self.assertNotIn("background: #ffffff !important", sidebar_src)
+        self.assertNotIn("background-color: #ffffff !important", sidebar_src)
+        self.assertNotIn("background: white !important", sidebar_src)
+        self.assertNotIn("background-color: white !important", sidebar_src)
+
+        # Active state preservation: #203A32 and #A8B9A3 left border
+        self.assertTrue(
+            "background-color: #203A32 !important" in sidebar_src
+            or "background: #203A32 !important" in sidebar_src,
+            "Active background #203A32 not set in sidebar CSS",
+        )
+        self.assertIn("border-left: 4px solid #A8B9A3 !important", sidebar_src)
+        self.assertIn(':not([data-selected="true"]):not(:has(input:checked)):hover', sidebar_src)
+
+        # Keyboard focus-visible state
+        self.assertIn(":focus-visible", sidebar_src)
+        self.assertIn("outline: 2px solid #A8B9A3", sidebar_src)
+
+        # Styles.py global radio hover must be scoped to .main so it does not override sidebar
+        self.assertIn('.main [data-testid="stRadio"] label:hover', styles_src)
+        self.assertNotIn('\n[data-testid="stRadio"] label:hover', styles_src)
+
 
 if __name__ == "__main__":
     unittest.main()

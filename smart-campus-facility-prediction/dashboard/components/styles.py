@@ -513,8 +513,9 @@ GLOBAL_LIGHT_THEME_CSS = """
         border-bottom: 2px solid var(--forest-green) !important;
     }
 
-    /* Radio navigation on sidebar */
-    [data-testid="stRadio"] label {
+    /* Main area radio styling (scoped to main workspace; excludes dark sidebar) */
+    .main [data-testid="stRadio"] label,
+    [data-testid="stAppViewContainer"] > .main [data-testid="stRadio"] label {
         font-size: 0.92rem !important;
         color: var(--text-primary) !important;
         cursor: pointer !important;
@@ -522,10 +523,12 @@ GLOBAL_LIGHT_THEME_CSS = """
         border-radius: 6px !important;
         transition: all 0.15s ease !important;
     }
-    [data-testid="stRadio"] label:hover {
+    .main [data-testid="stRadio"] label:hover,
+    [data-testid="stAppViewContainer"] > .main [data-testid="stRadio"] label:hover {
         background-color: var(--pale-sage) !important;
     }
-    [data-testid="stRadio"] input:checked + div {
+    .main [data-testid="stRadio"] input:checked + div,
+    [data-testid="stAppViewContainer"] > .main [data-testid="stRadio"] input:checked + div {
         border-color: var(--forest-green) !important;
         background-color: var(--forest-green) !important;
     }
