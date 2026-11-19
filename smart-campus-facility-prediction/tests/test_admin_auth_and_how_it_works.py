@@ -12,6 +12,7 @@ Validates:
 5. Administrator Login screen structure: ID, password, show/hide toggle, back navigation.
 """
 import inspect
+import os
 import sys
 import unittest
 from pathlib import Path
@@ -51,47 +52,107 @@ class TestAdminAuthAndHowItWorks(unittest.TestCase):
 
     def test_password_hashing_security(self):
         """Validates that password hashes are non-trivial PBKDF2-HMAC-SHA256 strings and not plaintext."""
+        # Exactly 3 authorized administrator accounts
+        self.assertEqual(len(_ADMIN_CREDENTIALS_STORE), 3)
+        self.assertNotIn("admin", _ADMIN_CREDENTIALS_STORE)
+        self.assertIn("ADM-2026-001", _ADMIN_CREDENTIALS_STORE)
+        self.assertIn("ADM-2026-002", _ADMIN_CREDENTIALS_STORE)
+        self.assertIn("ADM-2026-003", _ADMIN_CREDENTIALS_STORE)
+
         for admin_id, rec in _ADMIN_CREDENTIALS_STORE.items():
             self.assertIn("password_hash", rec)
             p_hash = rec["password_hash"]
             # 64-char hex string
             self.assertEqual(len(p_hash), 64)
-            # Not plaintext password
-            self.assertNotEqual(p_hash, "Admin@2026")
+            # Not plaintext passwords
+            self.assertNotIn("Admin@", p_hash)
             self.assertNotIn("Admin@2026", p_hash)
 
-        # Hash reproducibility
-        computed = hash_password("Admin@2026")
-        self.assertEqual(len(computed), 64)
-        self.assertEqual(computed, _ADMIN_CREDENTIALS_STORE["admin"]["password_hash"])
+        # Hash reproducibility and individual correctness
+        self.assertEqual(hash_password("Admin@001"), _ADMIN_CREDENTIALS_STORE["ADM-2026-001"]["password_hash"])
+        self.assertEqual(hash_password("Admin@002"), _ADMIN_CREDENTIALS_STORE["ADM-2026-002"]["password_hash"])
+        self.assertEqual(hash_password("Admin@003"), _ADMIN_CREDENTIALS_STORE["ADM-2026-003"]["password_hash"])
 
     def test_admin_authentication_valid_credentials(self):
-        """Validates that legitimate administrator logins succeed."""
-        auth_user1 = authenticate_admin("ADM-2026-001", "Admin@2026")
+        """Validates that legitimate administrator logins succeed with assigned credentials and titles."""
+        # 1. ADM-2026-001 | Admin@001 | Facility Operations Lead
+        auth_user1 = authenticate_admin("ADM-2026-001", "Admin@001")
         self.assertIsNotNone(auth_user1)
         self.assertEqual(auth_user1["role"], "admin")
         self.assertEqual(auth_user1["id"], "ADM-2026-001")
-        self.assertEqual(auth_user1["name"], "Dr. Robert Davies")
+        self.assertEqual(auth_user1["title"], "Facility Operations Lead")
+        self.assertEqual(auth_user1["role_title"], "Facility Operations Lead")
 
-        auth_user2 = authenticate_admin("admin", "Admin@2026")
+        # 2. ADM-2026-002 | Admin@002 | Campus Infrastructure Admin
+        auth_user2 = authenticate_admin("ADM-2026-002", "Admin@002")
         self.assertIsNotNone(auth_user2)
         self.assertEqual(auth_user2["role"], "admin")
-        self.assertEqual(auth_user2["id"], "admin")
+        self.assertEqual(auth_user2["id"], "ADM-2026-002")
+        self.assertEqual(auth_user2["title"], "Campus Infrastructure Admin")
+        self.assertEqual(auth_user2["role_title"], "Campus Infrastructure Admin")
+
+        # 3. ADM-2026-003 | Admin@003 | Maintenance Dispatcher
+        auth_user3 = authenticate_admin("ADM-2026-003", "Admin@003")
+        self.assertIsNotNone(auth_user3)
+        self.assertEqual(auth_user3["role"], "admin")
+        self.assertEqual(auth_user3["id"], "ADM-2026-003")
+        self.assertEqual(auth_user3["title"], "Maintenance Dispatcher")
+        self.assertEqual(auth_user3["role_title"], "Maintenance Dispatcher")
 
     def test_admin_authentication_invalid_credentials_rejected(self):
-        """Validates that incorrect passwords or unknown IDs are rejected."""
-        # Wrong password
-        self.assertIsNone(authenticate_admin("admin", "WrongPassword!"))
-        self.assertIsNone(authenticate_admin("ADM-2026-001", "123456"))
+        """Validates that incorrect passwords, cross-passwords, old 'admin', and unknown IDs are rejected."""
+        # Old generic 'admin' login removed completely
+        self.assertIsNone(authenticate_admin("admin", "Admin@2026"))
+        self.assertIsNone(authenticate_admin("admin", "Admin@001"))
+        self.assertIsNone(authenticate_admin("admin", "admin"))
 
-        # Unknown ID
-        self.assertIsNone(authenticate_admin("hacker", "Admin@2026"))
-        self.assertIsNone(authenticate_admin("STU-2026-001", "Admin@2026"))
+        # Old password 'Admin@2026' rejected for all accounts
+        self.assertIsNone(authenticate_admin("ADM-2026-001", "Admin@2026"))
+        self.assertIsNone(authenticate_admin("ADM-2026-002", "Admin@2026"))
+        self.assertIsNone(authenticate_admin("ADM-2026-003", "Admin@2026"))
+
+        # Cross-passwords rejected (account A password with account B ID)
+        self.assertIsNone(authenticate_admin("ADM-2026-001", "Admin@002"))
+        self.assertIsNone(authenticate_admin("ADM-2026-001", "Admin@003"))
+        self.assertIsNone(authenticate_admin("ADM-2026-002", "Admin@001"))
+        self.assertIsNone(authenticate_admin("ADM-2026-002", "Admin@003"))
+        self.assertIsNone(authenticate_admin("ADM-2026-003", "Admin@001"))
+        self.assertIsNone(authenticate_admin("ADM-2026-003", "Admin@002"))
+
+        # Wrong passwords
+        self.assertIsNone(authenticate_admin("ADM-2026-001", "WrongPassword!"))
+        self.assertIsNone(authenticate_admin("ADM-2026-002", "123456"))
+        self.assertIsNone(authenticate_admin("ADM-2026-003", "password"))
+
+        # Unknown IDs
+        self.assertIsNone(authenticate_admin("hacker", "Admin@001"))
+        self.assertIsNone(authenticate_admin("STU-2026-001", "Admin@001"))
 
         # Empty / whitespace
-        self.assertIsNone(authenticate_admin("", "Admin@2026"))
-        self.assertIsNone(authenticate_admin("admin", ""))
+        self.assertIsNone(authenticate_admin("", "Admin@001"))
+        self.assertIsNone(authenticate_admin("ADM-2026-001", ""))
         self.assertIsNone(authenticate_admin("   ", "   "))
+
+    def test_fipp_admin_password_env_does_not_override_credentials(self):
+        """Validates that FIPP_ADMIN_PASSWORD environment variable does not override individual credentials."""
+        original_env = os.environ.get("FIPP_ADMIN_PASSWORD")
+        try:
+            os.environ["FIPP_ADMIN_PASSWORD"] = "OverridingMasterPass123"
+
+            # Attempting to use the environment override as password must fail
+            self.assertIsNone(authenticate_admin("ADM-2026-001", "OverridingMasterPass123"))
+            self.assertIsNone(authenticate_admin("ADM-2026-002", "OverridingMasterPass123"))
+            self.assertIsNone(authenticate_admin("ADM-2026-003", "OverridingMasterPass123"))
+
+            # Individual credentials must continue to work strictly
+            self.assertIsNotNone(authenticate_admin("ADM-2026-001", "Admin@001"))
+            self.assertIsNotNone(authenticate_admin("ADM-2026-002", "Admin@002"))
+            self.assertIsNotNone(authenticate_admin("ADM-2026-003", "Admin@003"))
+        finally:
+            if original_env is not None:
+                os.environ["FIPP_ADMIN_PASSWORD"] = original_env
+            else:
+                os.environ.pop("FIPP_ADMIN_PASSWORD", None)
 
     def test_student_cannot_access_admin_operations(self):
         """Validates that Student sessions cannot pass the Administrator session verification guard."""

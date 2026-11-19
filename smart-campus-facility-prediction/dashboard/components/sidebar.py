@@ -29,21 +29,26 @@ ADMIN_NAVIGATION_OPTIONS = [
 ]
 
 
-def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = None) -> str:
+def render_admin_sidebar(
+    admin_name: str | None = None,
+    admin_id: str | None = None,
+    admin_title: str | None = None,
+) -> str:
     """
     Renders the Administrator left-side sidebar panel in Modern Sage & Forest styling.
 
     Args:
         admin_name: Logged-in administrator name.
         admin_id: Logged-in administrator ID.
+        admin_title: Logged-in administrator title / role.
 
     Returns:
         The selected page title string.
     """
-    if not admin_name or not admin_id:
-        auth = st.session_state.get("auth_user") or {}
-        admin_name = auth.get("name") or "Administrator"
-        admin_id = auth.get("id") or "ADM-2026-001"
+    auth = st.session_state.get("auth_user") or {}
+    admin_name = admin_name or auth.get("name") or "Administrator"
+    admin_id = admin_id or auth.get("id") or "ADM-2026-001"
+    admin_title = admin_title or auth.get("title") or auth.get("role_title") or "Facility Operations Lead"
 
     # Container with pale sage border and warm forest styling
     st.markdown(
@@ -94,6 +99,9 @@ def render_admin_sidebar(admin_name: str | None = None, admin_id: str | None = N
                 </div>
                 <div style="font-size: 0.88rem; font-weight: 600; color: #203A32; margin-top: 0.2rem;">
                     {admin_name}
+                </div>
+                <div style="font-size: 0.76rem; font-weight: 500; color: #4A6357; margin-top: 0.1rem; margin-bottom: 0.2rem;">
+                    {admin_title}
                 </div>
                 <div style="font-size: 0.75rem; color: #6D8276; font-family: monospace;">
                     ID: {admin_id}

@@ -166,10 +166,15 @@ def main() -> None:
     if auth and auth.get("role") == "admin":
         admin_name = auth.get("name", "Administrator")
         admin_id = auth.get("id", "ADM-2026-001")
+        admin_title = auth.get("title") or auth.get("role_title", "Facility Operations Lead")
 
         # LEFT-SIDE navigation sidebar
         with st.sidebar:
-            selected_page = render_admin_sidebar(admin_name=admin_name, admin_id=admin_id)
+            selected_page = render_admin_sidebar(
+                admin_name=admin_name,
+                admin_id=admin_id,
+                admin_title=admin_title,
+            )
 
         # Spacious main dashboard workspace
         render_admin_content(selected_page)
