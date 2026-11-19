@@ -66,6 +66,8 @@ from src.data.complaint_categories import (
 # Compatibility references for existing test suites inspecting source strings:
 COMPATIBILITY_LABELS = [
     "🏫",
+    "💬",
+    "🕒",
     "Student ID",
     "Student Name",
     "Issue Title / Brief Headline",
@@ -106,15 +108,36 @@ def _reset_submission_form_state() -> None:
         "sq_sub_category_select",
         "sq_faq_confirmed_sub",
         "sq_faq_view_requested",
+        "sq_photo_uploader",
     ]
     for k in keys_to_clear:
         if k in st.session_state:
             del st.session_state[k]
 
+    # Explicitly reset all state values to pristine defaults
+    st.session_state["sq_category_type"] = None
+    st.session_state["sq_message_type"] = None
+    st.session_state["sq_category"] = None
+    st.session_state["sq_sub_category"] = None
+    st.session_state["sq_specific_categories"] = []
+    st.session_state["sq_block"] = None
+    st.session_state["sq_sub_block"] = None
+    st.session_state["sq_room_type"] = None
+    st.session_state["sq_room_number"] = ""
+    st.session_state["sq_specified_location"] = ""
+    st.session_state["sq_contact_number"] = ""
+    st.session_state["sq_availability_date"] = None
+    st.session_state["sq_time_slot_radio"] = None
+    st.session_state["sq_description"] = ""
+    st.session_state["sq_validation_errors"] = []
+
     # Clear any dynamic specific category checkbox keys
     for k in list(st.session_state.keys()):
         if k.startswith("chk_spec_opt_"):
             del st.session_state[k]
+
+    # Increment form version to recreate any cached DOM widgets
+    st.session_state["sq_form_version"] = st.session_state.get("sq_form_version", 0) + 1
 
 
 def render_student_dashboard() -> None:
@@ -353,7 +376,7 @@ def render_student_dashboard() -> None:
         is_raise = (active_view == "raise")
         btn_raise_type = "primary" if is_raise else "secondary"
         if st.button(
-            "💬 Raise a Query",
+            "Raise a Query",
             key="btn_open_raise_query",
             type=btn_raise_type,
             use_container_width=True,
@@ -366,7 +389,7 @@ def render_student_dashboard() -> None:
         is_hist = (active_view == "history")
         btn_hist_type = "primary" if is_hist else "secondary"
         if st.button(
-            f"🕒 History ({complaint_count})",
+            f"History ({complaint_count})",
             key="btn_open_history",
             type=btn_hist_type,
             use_container_width=True,
@@ -381,12 +404,13 @@ def render_student_dashboard() -> None:
     # VIEW 0: INITIAL SELECTION STATE (NO FORM, NO AGREEMENT DISPLAYED)
     # =========================================================================
     if active_view is None:
+        welcome_icon_svg = render_lucide_icon("graduation-cap", size=30, color="#203A32")
         st.markdown(
             _clean_html(
                 f"""
                 <div class="dashboard-card" style="padding: 2.8rem 2rem; max-width: 860px; margin: 0.8rem auto 1.5rem auto; text-align: center; border-top: 4px solid #203A32; border-radius: 14px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.05);">
-                    <div style="width: 58px; height: 58px; border-radius: 14px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.85rem; margin: 0 auto 1rem auto; box-shadow: 0 2px 6px rgba(32, 58, 50, 0.06);">
-                        🎓
+                    <div style="width: 58px; height: 58px; border-radius: 14px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto; box-shadow: 0 2px 6px rgba(32, 58, 50, 0.06);">
+                        {welcome_icon_svg}
                     </div>
                     <h2 style="color: #203A32; font-size: 1.45rem; font-weight: 800; margin-bottom: 0.35rem; letter-spacing: -0.02em;">
                         Welcome to the Student Facility Portal
@@ -395,9 +419,9 @@ def render_student_dashboard() -> None:
                         Select <strong>Raise a Query</strong> above to submit a campus maintenance breakdown or service request, or select <strong>History</strong> to review your past complaints and tracking status.
                     </p>
                     <div style="display: inline-flex; gap: 1.5rem; justify-content: center; font-size: 0.85rem; color: #6D8276; flex-wrap: wrap;">
-                        <span>💬 <strong>Raise a Query:</strong> Report breakdowns &amp; facility requests</span>
+                        <span><strong>Raise a Query:</strong> Report breakdowns &amp; facility requests</span>
                         <span>&bull;</span>
-                        <span>🕒 <strong>History:</strong> Track status updates &amp; remarks ({complaint_count} registered)</span>
+                        <span><strong>History:</strong> Track status updates &amp; remarks ({complaint_count} registered)</span>
                     </div>
                 </div>
                 """
@@ -425,8 +449,8 @@ def render_student_dashboard() -> None:
             c_spec_cats_str = ", ".join(c_spec_cats) if isinstance(c_spec_cats, list) and c_spec_cats else (conf.get("specific_category") or "General Issue")
             c_loc = conf.get("location", "Campus")
             c_contact = conf.get("contact_number", "Not provided")
-            c_date = conf.get("availability_date", "Today")
-            c_slot = conf.get("time_slot", "08:00-10:00")
+            c_date = conf.get("availability_date") or "Not specified"
+            c_slot = conf.get("time_slot") or conf.get("preferred_time_slot") or "Not specified"
             c_desc = conf.get("description", "")
             c_allotted = conf.get("allotted_person")
             c_dept = conf.get("department")
@@ -487,11 +511,11 @@ def render_student_dashboard() -> None:
                                 </tr>
                                 <tr style="background-color: #F5F7F2; border-bottom: 1px solid #DCE5D8;">
                                     <td style="padding: 0.6rem 0.95rem; color: #4A6357; font-weight: 600;">Location Details:</td>
-                                    <td style="padding: 0.6rem 0.95rem; color: #203A32;">📍 {c_loc}</td>
+                                    <td style="padding: 0.6rem 0.95rem; color: #203A32;">{c_loc}</td>
                                 </tr>
                                 <tr style="border-bottom: 1px solid #DCE5D8;">
                                     <td style="padding: 0.6rem 0.95rem; color: #4A6357; font-weight: 600;">Contact &amp; Preferred Time:</td>
-                                    <td style="padding: 0.6rem 0.95rem; color: #203A32;">📞 {c_contact} &bull; 📅 {c_date} (Slot: {c_slot})</td>
+                                    <td style="padding: 0.6rem 0.95rem; color: #203A32;">{c_contact} &bull; {c_date} (Slot: {c_slot})</td>
                                 </tr>
                                 <tr style="background-color: #F5F7F2; border-bottom: 1px solid #DCE5D8;">
                                     <td style="padding: 0.6rem 0.95rem; color: #4A6357; font-weight: 600;">Allotted Person:</td>
@@ -518,7 +542,7 @@ def render_student_dashboard() -> None:
 
                         <!-- Operational Benchmark -->
                         <div style="background-color: #F0F4ED; border: 1px solid #A8B9A3; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.35rem; font-size: 0.84rem; color: #203A32; line-height: 1.5;">
-                            ℹ️ <strong>Turnaround Benchmark:</strong> Standard campus facility maintenance requests are typically attended and resolved within <strong>3–4 working days</strong> once allotted to the engineering team.
+                            <strong>Turnaround Benchmark:</strong> Standard campus facility maintenance requests are typically attended and resolved within <strong>3–4 working days</strong> once allotted to the engineering team.
                         </div>
 
                         <p style="color: #6D8276; font-size: 0.88rem; text-align: center; margin-bottom: 1.25rem;">
@@ -534,7 +558,7 @@ def render_student_dashboard() -> None:
             with col_c2:
                 c_ret_raise, c_ret_hist = st.columns(2)
                 with c_ret_raise:
-                    if st.button("➕ Raise Another Query", key="btn_conf_raise_another", type="primary", use_container_width=True):
+                    if st.button("Raise Another Query", key="btn_conf_raise_another", type="primary", use_container_width=True):
                         del st.session_state["submission_confirmation"]
                         st.session_state["student_agreed"] = False
                         for i in range(1, 6):
@@ -552,13 +576,14 @@ def render_student_dashboard() -> None:
         # 2. QUERY SUBMISSION AGREEMENT (5 MANDATORY DECLARATIONS FROM PDF)
         # ---------------------------------------------------------------------
         if not st.session_state.get("student_agreed", False):
+            decl_icon_svg = render_lucide_icon("clipboard-list", size=22, color="#203A32")
             st.markdown(
                 _clean_html(
-                    """
+                    f"""
                     <div class="dashboard-card" style="padding: 1.8rem 2.2rem; max-width: 860px; margin: 0 auto 1.25rem auto; border-top: 4px solid #203A32; border-radius: 12px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(32, 58, 50, 0.05);">
                         <div style="display: flex; align-items: center; gap: 0.85rem;">
-                            <div style="width: 44px; height: 44px; border-radius: 10px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
-                                📋
+                            <div style="width: 44px; height: 44px; border-radius: 10px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center;">
+                                {decl_icon_svg}
                             </div>
                             <div>
                                 <h3 style="color: #203A32; font-size: 1.25rem; font-weight: 800; margin: 0; letter-spacing: -0.02em;">
@@ -618,7 +643,7 @@ def render_student_dashboard() -> None:
                 if not all_declarations_agreed:
                     st.markdown(
                         "<div style='text-align: center; color: #6D8276; font-size: 0.82rem; margin-top: 0.5rem;'>"
-                        "⚠️ Please select all 3 checkboxes above to enable the Agree &amp; Proceed button."
+                        "Please select all 3 checkboxes above to enable the Agree &amp; Proceed button."
                         "</div>",
                         unsafe_allow_html=True,
                     )
@@ -632,7 +657,7 @@ def render_student_dashboard() -> None:
             f"""
             <div style="background-color: #F5F7F2; border: 1px solid #DCE5D8; border-radius: 8px; padding: 0.65rem 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.86rem; color: #203A32;">
                 <div><strong>Student:</strong> {active_student_name} &bull; <code style='background: #DCE5D8; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700;'>{active_student_id}</code></div>
-                <div style="color: #4A6357; font-size: 0.8rem; font-weight: 600;">🔒 Session Verified</div>
+                <div style="color: #4A6357; font-size: 0.8rem; font-weight: 600;">Session Verified</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -649,15 +674,18 @@ def render_student_dashboard() -> None:
             unsafe_allow_html=True,
         )
 
-        # 1. CATEGORY TYPE SELECTION (Radio buttons)
+        # 1. CATEGORY TYPE SELECTION (Radio buttons, no preselection)
         st.markdown(
             '<label style="font-size: 0.92rem; font-weight: 750; color: #203A32; display: block; margin-bottom: 0.25rem;">Category Type</label>',
             unsafe_allow_html=True,
         )
+        curr_cat_type = st.session_state.get("sq_category_type")
+        cat_type_idx = CATEGORY_TYPES.index(curr_cat_type) if (curr_cat_type and curr_cat_type in CATEGORY_TYPES) else None
+
         cat_type = st.radio(
             "Category Type",
             options=CATEGORY_TYPES,
-            index=1,  # Default to "Maintenance / Electrical Complaints"
+            index=cat_type_idx,
             key="sq_category_type",
             label_visibility="collapsed",
             horizontal=True,
@@ -718,7 +746,11 @@ def render_student_dashboard() -> None:
         col_cls1, col_cls2 = st.columns(2)
 
         with col_cls1:
-            if not has_msg_type:
+            if not cat_type:
+                cat_options = ["-- Select Category Type first --"]
+                cat_index = 0
+                cat_disabled = True
+            elif not has_msg_type:
                 cat_options = ["-- Select Message Type first --"]
                 cat_index = 0
                 cat_disabled = True
@@ -738,16 +770,25 @@ def render_student_dashboard() -> None:
                 help="Category enabled once Message Type is selected.",
             )
 
-            if not cat_disabled and sel_cat_val and sel_cat_val not in ["-- Select Message Type first --", "-- Select Category --"]:
+            if not cat_disabled and sel_cat_val and sel_cat_val not in [
+                "-- Select Category Type first --",
+                "-- Select Message Type first --",
+                "-- Select Category --",
+            ]:
                 sel_cat = sel_cat_val
                 st.session_state["sq_category"] = sel_cat
             else:
                 sel_cat = None
                 st.session_state["sq_category"] = None
 
-            if not has_msg_type:
+            if not cat_type:
                 st.markdown(
-                    "<div style='color: #8C9E94; font-size: 0.79rem; margin-top: 0.2rem;'>⚠️ <em>Select Message Type first.</em></div>",
+                    "<div style='color: #8C9E94; font-size: 0.79rem; margin-top: 0.2rem;'><em>Select Category Type first.</em></div>",
+                    unsafe_allow_html=True,
+                )
+            elif not has_msg_type:
+                st.markdown(
+                    "<div style='color: #8C9E94; font-size: 0.79rem; margin-top: 0.2rem;'><em>Select Message Type first.</em></div>",
                     unsafe_allow_html=True,
                 )
 
@@ -760,7 +801,7 @@ def render_student_dashboard() -> None:
         st.session_state["_tracked_category"] = sel_cat
 
         has_cat = bool(sel_cat)
-        cat_is_empty = is_category_empty(cat_type, sel_cat) if has_cat else False
+        cat_is_empty = is_category_empty(cat_type, sel_cat) if (has_cat and cat_type) else False
 
         with col_cls2:
             if not has_cat:
@@ -801,12 +842,12 @@ def render_student_dashboard() -> None:
 
             if cat_is_empty:
                 st.markdown(
-                    "<div style='color: #8C9E94; font-size: 0.79rem; margin-top: 0.2rem;'>ℹ️ <em>No sub-categories configured in reference dataset for this category.</em></div>",
+                    "<div style='color: #8C9E94; font-size: 0.79rem; margin-top: 0.2rem;'><em>No sub-categories configured in reference dataset for this category.</em></div>",
                     unsafe_allow_html=True,
                 )
             elif not has_cat and has_msg_type:
                 st.markdown(
-                    "<div style='color: #8C9E94; font-size: 0.79rem; margin-top: 0.2rem;'>⚠️ <em>Select Category first.</em></div>",
+                    "<div style='color: #8C9E94; font-size: 0.79rem; margin-top: 0.2rem;'><em>Select Category first.</em></div>",
                     unsafe_allow_html=True,
                 )
 
@@ -831,7 +872,7 @@ def render_student_dashboard() -> None:
                     f"""
                     <div class="system-alert-box">
                         <div style="font-weight: 750; color: #203A32; margin-bottom: 0.25rem;">
-                            🔔 System Alert (ums.lpu.in says)
+                            System Alert (ums.lpu.in says)
                         </div>
                         <div style="color: #203A32; margin-bottom: 0.65rem;">
                             "{FAQ_CONFIRMATION_TEXT}"
@@ -1032,7 +1073,7 @@ def render_student_dashboard() -> None:
             today = date.today()
             avail_date = st.date_input(
                 "Availability Date",
-                value=st.session_state.get("sq_availability_date", today),
+                value=st.session_state.get("sq_availability_date", None),
                 min_value=today,
                 max_value=today + timedelta(days=30),
                 key="sq_availability_date",
@@ -1084,7 +1125,7 @@ def render_student_dashboard() -> None:
         remaining_chars = 500 - desc_len
         if remaining_chars < 0:
             counter_color = "#D9534F"
-            counter_msg = f"⚠️ Exceeded by {-remaining_chars} characters (Limit: 500)"
+            counter_msg = f"Exceeded by {-remaining_chars} characters (Limit: 500)"
         elif remaining_chars < 50:
             counter_color = "#E08E00"
             counter_msg = f"Remaining: {remaining_chars} / 500 characters"
@@ -1098,12 +1139,14 @@ def render_student_dashboard() -> None:
         )
 
         # Optional Photo Upload
+        form_ver = st.session_state.get("sq_form_version", 0)
         photo_file = st.file_uploader(
             "Upload Issue Photo (Optional)",
             type=["png", "jpg", "jpeg"],
-            key="sq_photo_uploader",
+            key=f"sq_photo_uploader_{form_ver}",
             help="Attach a photograph of the maintenance problem (optional).",
         )
+        st.session_state["sq_photo_uploader"] = photo_file
 
         st.markdown("<div style='height: 0.6rem;'></div>", unsafe_allow_html=True)
 
@@ -1112,7 +1155,7 @@ def render_student_dashboard() -> None:
         # ---------------------------------------------------------------------
         if st.session_state.get("sq_validation_errors"):
             for err in st.session_state["sq_validation_errors"]:
-                st.error(f"⚠️ {err}")
+                st.error(err)
 
         col_act1, col_act2, _ = st.columns([1.3, 1.3, 3])
 
@@ -1167,7 +1210,9 @@ def render_student_dashboard() -> None:
                 validation_errors.append("Please enter a valid 10-digit mobile contact number.")
 
             # 4. Availability Date validation
-            if not avail_date or avail_date < date.today():
+            if not avail_date:
+                validation_errors.append("Please select an Availability Date. Availability Date cannot be in the past.")
+            elif avail_date < date.today():
                 validation_errors.append("Availability Date cannot be in the past. Please select today or a future date.")
 
             # 5. Time Slot validation
@@ -1366,12 +1411,13 @@ def render_student_dashboard() -> None:
                 msg_title = "No complaints submitted yet."
                 msg_desc = "You have not registered any facility queries yet. Click below to raise your first issue."
 
+            empty_icon_svg = render_lucide_icon("clipboard-list", size=26, color="#203A32")
             st.markdown(
                 _clean_html(
                     f"""
                     <div class="dashboard-card" style="text-align: center; padding: 2.75rem 2rem; margin: 1.25rem 0; border: 1px solid #DCE5D8; border-radius: 14px; background: #FFFFFF;">
-                        <div style="width: 54px; height: 54px; line-height: 54px; border-radius: 14px; background-color: #DCE5D8; border: 1px solid #A8B9A3; font-size: 1.8rem; margin: 0 auto 1rem auto;">
-                            📋
+                        <div style="width: 54px; height: 54px; border-radius: 14px; background-color: #DCE5D8; border: 1px solid #A8B9A3; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;">
+                            {empty_icon_svg}
                         </div>
                         <h3 style="color: #203A32; font-size: 1.25rem; font-weight: 750; margin-bottom: 0.4rem;">
                             {msg_title}
@@ -1388,7 +1434,7 @@ def render_student_dashboard() -> None:
             if not search_token.strip():
                 col_empty_btn, _ = st.columns([1.5, 4])
                 with col_empty_btn:
-                    if st.button("➕ Raise a Query", key="btn_empty_raise_query", type="primary", use_container_width=True):
+                    if st.button("Raise a Query", key="btn_empty_raise_query", type="primary", use_container_width=True):
                         st.session_state["student_active_view"] = "raise"
                         st.rerun()
             return
@@ -1464,11 +1510,11 @@ def render_student_dashboard() -> None:
                 f"""
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #DCE5D8; padding-top: 0.75rem; font-size: 0.83rem; color: #4A6357; flex-wrap: wrap; gap: 0.75rem;">
                     <div>
-                        📍 <strong>Location:</strong> {loc}
+                        <strong>Location:</strong> {loc}
                     </div>
                     <div style="display: flex; gap: 1.5rem; align-items: center;">
-                        <span>📅 <strong>Dated:</strong> {date_rep}</span>
-                        <span>🔍 <strong>Tracking:</strong> {tracking_info}</span>
+                        <span><strong>Dated:</strong> {date_rep}</span>
+                        <span><strong>Tracking:</strong> {tracking_info}</span>
                     </div>
                 </div>
                 """,
@@ -1487,7 +1533,7 @@ def render_student_dashboard() -> None:
                     existing_fb = item.get("feedback")
                     if existing_fb:
                         st.markdown(
-                            f"<div style='text-align: right; font-size: 0.82rem; color: #203A32;'>⭐ Feedback: <strong>{existing_fb.get('rating')} Stars ({existing_fb.get('rating_label')})</strong></div>",
+                            f"<div style='text-align: right; font-size: 0.82rem; color: #203A32;'>Feedback: <strong>{existing_fb.get('rating')} Stars ({existing_fb.get('rating_label')})</strong></div>",
                             unsafe_allow_html=True,
                         )
                     else:
@@ -1564,13 +1610,13 @@ def render_student_dashboard() -> None:
                             st.rerun()
 
             # Expandable full RMS ticket details & Remarks History Table
-            with st.expander(f"📋 RMS Details & Remarks History for {cid}"):
+            with st.expander(f"RMS Details & Remarks History for {cid}"):
                 c_det1, c_det2 = st.columns(2)
                 with c_det1:
                     st.markdown(f"**Contact Number:** {item.get('contact_number') or 'Not provided'}")
                     st.markdown(f"**Preferred Date:** {item.get('availability_date') or 'Immediate'}")
                     slots_val = item.get('time_slots') or [item.get('time_slot')]
-                    slots_txt = ", ".join([str(s) for s in slots_val if s]) if slots_val else "08:00-10:00"
+                    slots_txt = ", ".join([str(s) for s in slots_val if s]) if (slots_val and any(slots_val)) else "Not specified"
                     st.markdown(f"**Preferred Time Slot:** {slots_txt}")
                 with c_det2:
                     allotted_person = item.get("allotted_person")
@@ -1626,7 +1672,7 @@ def render_student_dashboard() -> None:
         _clean_html(
             """
             <div style="background-color: #FFFFFF; border: 1px dashed #A8B9A3; border-radius: 10px; padding: 0.85rem 1.15rem; margin-top: 2rem; text-align: center; font-size: 0.83rem; color: #4A6357;">
-                💡 Need immediate assistance for an emergency? Contact your hostel warden or campus security desk.
+                Need immediate assistance for an emergency? Contact your hostel warden or campus security desk.
                 Campus facility updates and maintenance dispatches are tracked directly in this portal.
             </div>
             """

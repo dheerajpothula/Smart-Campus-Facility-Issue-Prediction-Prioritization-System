@@ -22,14 +22,14 @@ def render_login_screen(role: str) -> None:
     """
     is_admin = (role == "admin")
     role_display = "Administrator" if is_admin else "Student"
-    role_icon = "🛠️" if is_admin else "🎓"
+    role_icon_svg = render_lucide_icon("wrench", size=24, color="#203A32") if is_admin else render_lucide_icon("graduation-cap", size=24, color="#203A32")
     role_title = f"{role_display} Login"
 
     name_label = "Administrator Name" if is_admin else "Student Name"
-    name_placeholder = "e.g. Administrator" if is_admin else "e.g. Alex Chen"
+    name_placeholder = "Enter Administrator Name" if is_admin else "Enter Student Name"
 
     id_label = "Administrator ID" if is_admin else "Student ID"
-    id_placeholder = "e.g. ADM-2026-001" if is_admin else "e.g. STU-2026-101"
+    id_placeholder = "e.g. ADM-2026-001" if is_admin else "e.g. STU-2026-001"
 
     # Hide sidebar when on login screen
     st.markdown(
@@ -94,9 +94,8 @@ def render_login_screen(role: str) -> None:
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        font-size: 1.6rem;
                     ">
-                        {role_icon}
+                        {role_icon_svg}
                     </div>
                     <div>
                         <h2 style="margin: 0; font-size: 1.45rem; color: #203A32; font-weight: 700;">

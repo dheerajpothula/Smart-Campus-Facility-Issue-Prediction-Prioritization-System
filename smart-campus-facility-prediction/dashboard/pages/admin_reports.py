@@ -190,7 +190,7 @@ def render_reports_page() -> None:
         """
         <div class="dashboard-card" style="margin-bottom: 0.75rem;">
             <h3 style="margin-top: 0; font-size: 1.05rem; color: #203A32; font-weight: 750;">
-                ⏱️ Resolution Turnaround Analysis
+                Resolution Turnaround Analysis
             </h3>
             <p style="color: #4A6357; font-size: 0.82rem; margin-bottom: 0.6rem;">
                 Empirical audit of closed requests showing reported dates, resolution remarks, and dispatch tracking.

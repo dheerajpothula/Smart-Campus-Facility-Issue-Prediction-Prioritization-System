@@ -122,8 +122,8 @@ def main() -> None:
                 if st.query_params.get("selected"):
                     st.session_state["admin_selected_complaint_id"] = st.query_params.get("selected")
             elif param_role == "student" and st.query_params.get("auth") == "true":
-                s_name = st.query_params.get("name", "Alex Chen")
-                s_id = st.query_params.get("id", "STU-2026-101")
+                s_name = st.query_params.get("name", "Student")
+                s_id = st.query_params.get("id", "STU-2026-001")
                 auth = {"role": "student", "name": s_name, "id": s_id}
                 st.session_state["auth_user"] = auth
                 st.session_state["user_role"] = "student"

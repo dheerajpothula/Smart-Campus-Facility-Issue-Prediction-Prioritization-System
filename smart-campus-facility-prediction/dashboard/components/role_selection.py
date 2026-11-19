@@ -7,6 +7,7 @@ import base64
 from pathlib import Path
 import streamlit as st
 from dashboard.components.styles import _clean_html
+from dashboard.components.icons import render_lucide_icon
 
 # Candidate paths for the campus panoramic hero banner asset
 ASSET_PATHS = [
@@ -84,6 +85,10 @@ def render_role_selection_screen() -> None:
     else:
         hero_bg_css = """background: linear-gradient(135deg, #203A32 0%, #162822 100%);"""
 
+    brand_icon_svg = render_lucide_icon("building", size=26, color="#FFFFFF")
+    admin_icon_svg = render_lucide_icon("wrench", size=28, color="#203A32")
+    student_icon_svg = render_lucide_icon("graduation-cap", size=28, color="#203A32")
+
     # Top Brand Bar & Hero with Clean Text Overlay
     st.markdown(
         _clean_html(
@@ -91,8 +96,8 @@ def render_role_selection_screen() -> None:
             <div style="width: 100%; border-bottom: 1px solid rgba(220, 229, 216, 0.18); {hero_bg_css} padding: 4.25rem 4rem 4.5rem 4rem; box-shadow: 0 8px 24px rgba(32, 58, 50, 0.12);">
             <div style="max-width: 1240px; margin: 0 auto;">
             <div style="display: flex; align-items: center; gap: 0.9rem; margin-bottom: 2.25rem;">
-            <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(220, 229, 216, 0.22); border: 1.5px solid rgba(220, 229, 216, 0.45); display: flex; align-items: center; justify-content: center; font-size: 1.85rem; color: #FFFFFF; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-            🏫
+            <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(220, 229, 216, 0.22); border: 1.5px solid rgba(220, 229, 216, 0.45); display: flex; align-items: center; justify-content: center; color: #FFFFFF; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            {brand_icon_svg}
             </div>
             <div>
             <span style="font-size: 1.45rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em;">FIPP</span>
@@ -144,8 +149,8 @@ def render_role_selection_screen() -> None:
                 <!-- Legacy descriptor for compatibility: Manage system operations, monitor facility issues, and prioritize maintenance tasks. -->
                 <div class="dashboard-card" style="padding: 2.75rem 2.5rem 2.25rem 2.5rem; border-top: 4px solid #203A32; border-radius: 16px; background: #FFFFFF; box-shadow: 0 4px 18px rgba(32, 58, 50, 0.06); min-height: 220px; display: flex; flex-direction: column; justify-content: space-between; margin-bottom: 0.85rem;">
                 <div>
-                <div style="width: 60px; height: 60px; border-radius: 14px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.95rem; margin-bottom: 1.4rem; box-shadow: 0 2px 8px rgba(32, 58, 50, 0.06);">
-                🛠️
+                <div style="width: 60px; height: 60px; border-radius: 14px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; margin-bottom: 1.4rem; box-shadow: 0 2px 8px rgba(32, 58, 50, 0.06);">
+                {admin_icon_svg}
                 </div>
                 <h3 style="font-size: 1.45rem; font-weight: 750; color: #203A32; margin: 0 0 0.6rem 0;">
                 Administrator
@@ -170,8 +175,8 @@ def render_role_selection_screen() -> None:
                 <!-- Legacy descriptor for compatibility: Report facility issues, track their status, and view updates. -->
                 <div class="dashboard-card" style="padding: 2.75rem 2.5rem 2.25rem 2.5rem; border-top: 4px solid #A8B9A3; border-radius: 16px; background: #FFFFFF; box-shadow: 0 4px 18px rgba(32, 58, 50, 0.06); min-height: 220px; display: flex; flex-direction: column; justify-content: space-between; margin-bottom: 0.85rem;">
                 <div>
-                <div style="width: 60px; height: 60px; border-radius: 14px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; font-size: 1.95rem; margin-bottom: 1.4rem; box-shadow: 0 2px 8px rgba(32, 58, 50, 0.06);">
-                🎓
+                <div style="width: 60px; height: 60px; border-radius: 14px; background-color: #DCE5D8; border: 1.5px solid #A8B9A3; display: flex; align-items: center; justify-content: center; margin-bottom: 1.4rem; box-shadow: 0 2px 8px rgba(32, 58, 50, 0.06);">
+                {student_icon_svg}
                 </div>
                 <h3 style="font-size: 1.45rem; font-weight: 750; color: #203A32; margin: 0 0 0.6rem 0;">
                 Student
