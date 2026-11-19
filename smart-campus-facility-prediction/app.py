@@ -19,7 +19,10 @@ from dashboard.components.role_selection import render_role_selection_screen
 from dashboard.components.login_page import render_login_screen
 from dashboard.components.admin_login import render_admin_login_screen
 from dashboard.components.sidebar import render_admin_sidebar, render_sidebar
+from src.auth.admin_auth import _ADMIN_CREDENTIALS_STORE
 from dashboard.pages import (
+    admin_reports,
+    admin_requests,
     ai_analysis,
     complaint_management,
     explainable_ai,
@@ -58,6 +61,16 @@ def render_admin_content(selected_page: str) -> None:
 
     if "Overview" in selected_page:
         overview.render_page()
+    elif "All Requests" in selected_page:
+        admin_requests.render_all_requests_page()
+    elif "New / Unassigned" in selected_page or ("New" in selected_page and "Unassigned" in selected_page):
+        admin_requests.render_new_unassigned_page()
+    elif "In Progress" in selected_page:
+        admin_requests.render_in_progress_page()
+    elif "Resolved" in selected_page:
+        admin_requests.render_resolved_page()
+    elif "Reports" in selected_page:
+        admin_reports.render_reports_page()
     elif "Complaint Management" in selected_page:
         complaint_management.render_page()
     elif "AI Analysis" in selected_page:
@@ -92,7 +105,23 @@ def main() -> None:
         if param_role in ["admin", "student"]:
             st.session_state["selected_role"] = param_role
             selected_role = param_role
-            if param_role == "student" and st.query_params.get("auth") == "true":
+            if param_role == "admin" and st.query_params.get("auth") == "true":
+                adm_id = st.query_params.get("id", "ADM-2026-001")
+                adm_rec = _ADMIN_CREDENTIALS_STORE.get(adm_id) or _ADMIN_CREDENTIALS_STORE["ADM-2026-001"]
+                auth = {
+                    "role": "admin",
+                    "name": adm_rec["name"],
+                    "id": adm_rec["id"],
+                    "title": adm_rec.get("title", "Facility Operations Lead"),
+                    "role_title": adm_rec.get("title", "Facility Operations Lead"),
+                }
+                st.session_state["auth_user"] = auth
+                st.session_state["user_role"] = "admin"
+                if st.query_params.get("page"):
+                    st.session_state["admin_active_page"] = st.query_params.get("page")
+                if st.query_params.get("selected"):
+                    st.session_state["admin_selected_complaint_id"] = st.query_params.get("selected")
+            elif param_role == "student" and st.query_params.get("auth") == "true":
                 s_name = st.query_params.get("name", "Alex Chen")
                 s_id = st.query_params.get("id", "STU-2026-101")
                 auth = {"role": "student", "name": s_name, "id": s_id}

@@ -16,16 +16,14 @@ NAVIGATION_OPTIONS = [
     "🧠 Model Insights",
 ]
 
-# Full Admin navigation menu (8 logical sections)
+# FIPP 2.0 Control Centre Navigation (Phase 4)
 ADMIN_NAVIGATION_OPTIONS = [
     "📊 Overview",
-    "📋 Complaint Management",
-    "⚡ AI Analysis",
-    "🚨 Priority Queue",
-    "🔮 Predictive Maintenance",
-    "🔁 Recurring Issues",
-    "🔬 Explainable AI",
-    "⚙️ Settings",
+    "📋 All Requests",
+    "🆕 New / Unassigned",
+    "⏳ In Progress",
+    "✅ Resolved",
+    "📈 Reports",
 ]
 
 
@@ -50,60 +48,97 @@ def render_admin_sidebar(
     admin_id = admin_id or auth.get("id") or "ADM-2026-001"
     admin_title = admin_title or auth.get("title") or auth.get("role_title") or "Facility Operations Lead"
 
+    # Dark forest-green sidebar styling with pale sage highlights
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"] {
+            background-color: #172D28 !important;
+            border-right: 1px solid rgba(220, 229, 216, 0.18) !important;
+        }
+        [data-testid="stSidebar"] hr {
+            border-color: rgba(220, 229, 216, 0.2) !important;
+        }
+        [data-testid="stSidebar"] .stRadio label p {
+            color: #DCE5D8 !important;
+            font-size: 0.92rem !important;
+            font-weight: 500 !important;
+        }
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:hover {
+            background-color: rgba(32, 58, 50, 0.8) !important;
+            border-radius: 6px !important;
+        }
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label[data-checked="true"],
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) {
+            background-color: #203A32 !important;
+            border-left: 4px solid #A8B9A3 !important;
+            border-radius: 6px !important;
+            padding-left: 0.5rem !important;
+        }
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label[data-checked="true"] p,
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label:has(input:checked) p {
+            color: #FFFFFF !important;
+            font-weight: 750 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     # Container with pale sage border and warm forest styling
     st.markdown(
         f"""
         <div class="admin-sidebar-box">
-            <div style="display: flex; align-items: center; gap: 0.65rem; padding-bottom: 0.75rem; border-bottom: 1px solid #DCE5D8; margin-bottom: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.65rem; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(220, 229, 216, 0.2); margin-bottom: 0.75rem;">
                 <div style="
-                    width: 38px;
-                    height: 38px;
-                    border-radius: 8px;
-                    background-color: #DCE5D8;
-                    border: 1px solid #A8B9A3;
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 10px;
+                    background-color: #203A32;
+                    border: 1.5px solid #A8B9A3;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 1.25rem;
+                    font-size: 1.35rem;
                 ">
                     🏫
                 </div>
                 <div>
-                    <h3 style="margin: 0; font-size: 1.05rem; color: #203A32; font-weight: 700;">
-                        FIPP Intelligence
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #FFFFFF; font-weight: 800; letter-spacing: -0.01em;">
+                        FIPP Operations
                     </h3>
-                    <p style="margin: 0; font-size: 0.76rem; color: #4A6357;">
-                        Facility Prediction &amp; Prioritisation
+                    <p style="margin: 0; font-size: 0.76rem; color: #DCE5D8; font-weight: 500;">
+                        Control Centre &bull; Admin
                     </p>
                 </div>
             </div>
             <div style="
-                background-color: #F5F7F2;
-                border: 1px solid #DCE5D8;
+                background-color: #203A32;
+                border: 1px solid rgba(220, 229, 216, 0.25);
                 border-radius: 8px;
-                padding: 0.65rem 0.8rem;
+                padding: 0.75rem 0.85rem;
                 margin-bottom: 0.85rem;
             ">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
                     <span style="
                         font-size: 0.68rem;
-                        font-weight: 700;
-                        color: #203A32;
-                        background-color: #DCE5D8;
-                        padding: 0.12rem 0.5rem;
+                        font-weight: 750;
+                        color: #FFFFFF;
+                        background-color: #172D28;
+                        padding: 0.15rem 0.55rem;
                         border-radius: 4px;
                         text-transform: uppercase;
-                        letter-spacing: 0.04em;
+                        letter-spacing: 0.05em;
                         border: 1px solid #A8B9A3;
-                    ">Administrator</span>
+                    ">Control Centre</span>
                 </div>
-                <div style="font-size: 0.88rem; font-weight: 600; color: #203A32; margin-top: 0.2rem;">
+                <div style="font-size: 0.92rem; font-weight: 700; color: #FFFFFF; margin-top: 0.2rem;">
                     {admin_name}
                 </div>
-                <div style="font-size: 0.76rem; font-weight: 500; color: #4A6357; margin-top: 0.1rem; margin-bottom: 0.2rem;">
+                <div style="font-size: 0.78rem; font-weight: 500; color: #DCE5D8; margin-top: 0.1rem; margin-bottom: 0.2rem;">
                     {admin_title}
                 </div>
-                <div style="font-size: 0.75rem; color: #6D8276; font-family: monospace;">
+                <div style="font-size: 0.75rem; color: #A8B9A3; font-family: monospace;">
                     ID: {admin_id}
                 </div>
             </div>
@@ -114,7 +149,7 @@ def render_admin_sidebar(
 
     # Navigation Menu Header
     st.markdown(
-        "<span style='font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #4A6357;'>Navigation</span>",
+        "<span style='font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #DCE5D8;'>Control Centre Menu</span>",
         unsafe_allow_html=True,
     )
 
@@ -122,7 +157,7 @@ def render_admin_sidebar(
     current_page = st.session_state.get("admin_active_page", ADMIN_NAVIGATION_OPTIONS[0])
     default_idx = 0
     for i, opt in enumerate(ADMIN_NAVIGATION_OPTIONS):
-        if current_page in opt or opt in current_page:
+        if current_page == opt or current_page in opt or opt in current_page:
             default_idx = i
             break
 
@@ -155,19 +190,19 @@ def render_admin_sidebar(
     st.markdown(
         f"""
         <div style="
-            background-color: #FFFFFF;
-            border: 1px solid #DCE5D8;
+            background-color: #203A32;
+            border: 1px solid rgba(220, 229, 216, 0.22);
             border-radius: 8px;
             padding: 0.75rem 0.85rem;
             margin-bottom: 0.75rem;
             font-size: 0.78rem;
-            color: #203A32;
+            color: #DCE5D8;
             line-height: 1.6;
         ">
-            <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4A6357;">Repository Status</span><br>
-            • Total Tickets: <strong>{total_tickets}</strong><br>
-            • Open Backlog: <strong>{open_backlog}</strong><br>
-            • High Priority: <strong>{high_prio}</strong>
+            <span style="font-size: 0.7rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.06em; color: #A8B9A3;">Telemetry Status</span><br>
+            • Total Tickets: <strong style="color: #FFFFFF;">{total_tickets}</strong><br>
+            • Open Backlog: <strong style="color: #FFFFFF;">{open_backlog}</strong><br>
+            • High Priority: <strong style="color: #FFFFFF;">{high_prio}</strong>
         </div>
         """,
         unsafe_allow_html=True,

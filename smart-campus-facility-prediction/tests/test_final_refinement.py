@@ -255,19 +255,17 @@ class TestFinalRefinementRequirements(unittest.TestCase):
         self.assertNotIn("email", source.lower())
 
     def test_requirement_8_admin_right_sidebar(self):
-        """8. Admin right sidebar contains admin identity, all 8 navigation items, and logout button."""
+        """8. Admin sidebar contains admin identity, all 6 navigation items, and logout button."""
         from dashboard.components.sidebar import ADMIN_NAVIGATION_OPTIONS, render_admin_sidebar
 
-        # Check all 8 navigation menu sections
+        # Check all 6 navigation menu sections
         expected_sections = [
             "Overview",
-            "Complaint Management",
-            "AI Analysis",
-            "Priority Queue",
-            "Predictive Maintenance",
-            "Recurring Issues",
-            "Explainable AI",
-            "Settings",
+            "All Requests",
+            "New / Unassigned",
+            "In Progress",
+            "Resolved",
+            "Reports",
         ]
         for section in expected_sections:
             self.assertTrue(

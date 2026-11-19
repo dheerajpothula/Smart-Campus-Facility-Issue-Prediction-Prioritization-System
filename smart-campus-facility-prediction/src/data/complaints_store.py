@@ -548,29 +548,171 @@ def add_complaint(new_ticket: dict) -> str:
     return cid
 
 
-def update_complaint_status(complaint_id: str, new_status: str, action_taken: str | None = None) -> bool:
-    """Updates the status and optional action of a specific complaint, persisting to disk."""
+def update_complaint_status_extended(
+    complaint_id: str,
+    new_status: str,
+    remarks: str | None = None,
+    admin_id: str | None = None,
+    admin_title: str | None = None,
+    assigned_staff: str | None = None,
+) -> bool:
+    """
+    Updates the status, assigned staff, and remarks of a complaint record.
+    Preserves existing tokens, timestamps, and history. Synchronizes with student portal and disk storage.
+    """
     if "complaints_records" not in st.session_state:
         st.session_state["complaints_records"] = _load_from_disk() or _generate_seed_complaints()
 
     norm_status = _normalize_status(new_status)
     for r in st.session_state["complaints_records"]:
-        if r["complaint_id"] == complaint_id:
+        if r.get("complaint_id") == complaint_id:
+            old_status = r.get("status", "Submitted")
             r["status"] = norm_status
-            if action_taken:
-                r["action_taken"] = action_taken
-            # Append status update to remarks history if present
+            if remarks:
+                r["action_taken"] = remarks
+                if norm_status == "Resolved":
+                    r["closing_remarks"] = remarks
+            if assigned_staff:
+                r["allotted_person"] = assigned_staff
+
             now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+            admin_label = f"{admin_title or 'Administrator'} ({admin_id or 'Admin Desk'})"
             remarks_list = r.setdefault("remarks_history", [])
             remarks_list.insert(0, {
-                "remarks": f"Status updated to '{norm_status}'. {action_taken or ''}".strip(),
+                "remarks": f"Status updated to '{norm_status}'. {remarks or ''}".strip(),
                 "update_date": now_str,
-                "name": "Administrator / Triage Squad",
-                "supporting_document": "None"
+                "name": admin_label,
+                "previous_status": old_status,
+                "new_status": norm_status,
+                "supporting_document": "None",
+            })
+            if norm_status == "Resolved":
+                r["resolved_at"] = now_str
+                r["resolved_by"] = admin_id or "Administrator"
+
+            _save_to_disk(st.session_state["complaints_records"])
+            return True
+    return False
+
+
+def update_complaint_status(complaint_id: str, new_status: str, action_taken: str | None = None) -> bool:
+    """Updates the status and optional action of a specific complaint, persisting to disk."""
+    auth = st.session_state.get("auth_user") or {}
+    admin_id = auth.get("id")
+    admin_title = auth.get("title") or auth.get("role_title")
+    return update_complaint_status_extended(
+        complaint_id=complaint_id,
+        new_status=new_status,
+        remarks=action_taken,
+        admin_id=admin_id,
+        admin_title=admin_title,
+    )
+
+
+def reopen_complaint(
+    complaint_id: str,
+    remarks: str,
+    admin_id: str | None = None,
+    admin_title: str | None = None,
+) -> bool:
+    """
+    Reopens a resolved complaint, transitioning it back to 'Under Review'.
+    Preserves all previous resolution remarks, timestamps, and status history.
+    """
+    if "complaints_records" not in st.session_state:
+        st.session_state["complaints_records"] = _load_from_disk() or _generate_seed_complaints()
+
+    for r in st.session_state["complaints_records"]:
+        if r.get("complaint_id") == complaint_id:
+            old_status = r.get("status")
+            r["status"] = "Under Review"
+            r["is_reopened"] = True
+            r["reopened_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+            admin_label = f"{admin_title or 'Administrator'} ({admin_id or 'Admin Desk'})"
+            remarks_list = r.setdefault("remarks_history", [])
+            remarks_list.insert(0, {
+                "remarks": f"Complaint Reopened: {remarks.strip()}",
+                "update_date": now_str,
+                "name": admin_label,
+                "previous_status": old_status,
+                "new_status": "Under Review",
+                "supporting_document": "None",
             })
             _save_to_disk(st.session_state["complaints_records"])
             return True
     return False
+
+
+def assign_complaint_staff(
+    complaint_id: str,
+    staff_name: str,
+    remarks: str | None = None,
+    admin_id: str | None = None,
+    admin_title: str | None = None,
+) -> bool:
+    """
+    Assigns a technician or facility department to a complaint ticket.
+    Advances Submitted tickets to Assigned.
+    """
+    if "complaints_records" not in st.session_state:
+        st.session_state["complaints_records"] = _load_from_disk() or _generate_seed_complaints()
+
+    for r in st.session_state["complaints_records"]:
+        if r.get("complaint_id") == complaint_id:
+            old_status = r.get("status", "Submitted")
+            new_status = "Assigned" if old_status == "Submitted" else old_status
+            r["allotted_person"] = staff_name.strip()
+            r["status"] = new_status
+
+            now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+            admin_label = f"{admin_title or 'Administrator'} ({admin_id or 'Admin Desk'})"
+            remarks_list = r.setdefault("remarks_history", [])
+            rem_text = f"Assigned to {staff_name.strip()}."
+            if remarks:
+                rem_text += f" Remarks: {remarks.strip()}"
+            remarks_list.insert(0, {
+                "remarks": rem_text,
+                "update_date": now_str,
+                "name": admin_label,
+                "previous_status": old_status,
+                "new_status": new_status,
+                "supporting_document": "None",
+            })
+            _save_to_disk(st.session_state["complaints_records"])
+            return True
+    return False
+
+
+def get_control_centre_kpis(df: pd.DataFrame | None = None) -> dict:
+    """
+    Computes exact real-time complaint counts for the 4 Control Centre KPI cards:
+    Total, New, In Progress, Resolved.
+    Never uses hardcoded statistics.
+    """
+    if df is None:
+        df = get_complaints_df()
+
+    if df.empty or "status" not in df.columns:
+        return {
+            "total": 0,
+            "new": 0,
+            "in_progress": 0,
+            "resolved": 0,
+        }
+
+    total = len(df)
+    new_count = int((df["status"] == "Submitted").sum())
+    in_prog_count = int(df["status"].isin(["In Progress", "Under Review", "Assigned"]).sum())
+    resolved_count = int((df["status"] == "Resolved").sum())
+
+    return {
+        "total": total,
+        "new": new_count,
+        "in_progress": in_prog_count,
+        "resolved": resolved_count,
+    }
 
 
 def withdraw_complaint(complaint_id: str, student_id: str | None = None, reason: str = "") -> bool:
