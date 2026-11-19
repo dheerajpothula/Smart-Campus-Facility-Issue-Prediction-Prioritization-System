@@ -29,6 +29,11 @@ class TestFIPPLandingPage(unittest.TestCase):
 
     def setUp(self):
         st.session_state.clear()
+        st._main._form_data = None
+
+    def tearDown(self):
+        st.session_state.clear()
+        st._main._form_data = None
 
     def test_exact_campus_image_asset(self):
         """Validates that the exact panoramic photograph (IMAGE 2) is in place and used."""

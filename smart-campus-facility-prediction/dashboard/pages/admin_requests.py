@@ -37,7 +37,10 @@ def render_requests_view(view_mode: str = "all") -> None:
         view_mode: One of 'all', 'new', 'in_progress', 'resolved'.
     """
     # Safe session-state initialization before creating widgets
-    st.session_state.setdefault(f"search_{view_mode}", "")
+    if st.query_params.get("search"):
+        st.session_state[f"search_{view_mode}"] = st.query_params.get("search")
+    else:
+        st.session_state.setdefault(f"search_{view_mode}", "")
     st.session_state.setdefault(f"sort_{view_mode}", "Newest first")
     st.session_state.setdefault(f"f_stat_{view_mode}", "All Statuses")
     st.session_state.setdefault(f"f_cat_{view_mode}", "All Categories")
@@ -48,7 +51,7 @@ def render_requests_view(view_mode: str = "all") -> None:
 
     titles = {
         "all": ("All Requests", "Manage and review submitted facility complaints.", "FACILITY OPERATIONS · ALL REQUESTS"),
-        "new": ("New / Unassigned", "Incoming complaints awaiting administrator evaluation, priority validation, and squad dispatch.", "NEW & UNASSIGNED TRIAGE"),
+        "new": ("New / Unassigned", "Review newly submitted facility complaints awaiting administrative action.", "NEW & UNASSIGNED TRIAGE"),
         "in_progress": ("In Progress", "Active repair operations, dispatched technical squads, and ongoing maintenance tasks.", "IN PROGRESS WORK ORDERS"),
         "resolved": ("Resolved", "Permanent historical archive of verified, closed, and resolved campus facility tickets.", "RESOLVED FACILITY ARCHIVE"),
     }
@@ -62,9 +65,17 @@ def render_requests_view(view_mode: str = "all") -> None:
         st.info("No facility tickets currently loaded in the repository.")
         return
 
+    # Defensive column extraction for staff assignments
+    staff_s = raw_df["assigned_staff"] if "assigned_staff" in raw_df.columns else pd.Series([""] * len(raw_df), index=raw_df.index)
+    allotted_s = raw_df["allotted_person"] if "allotted_person" in raw_df.columns else pd.Series([""] * len(raw_df), index=raw_df.index)
+    is_unassigned_record = staff_s.fillna("").astype(str).str.strip().isin(["", "Unassigned", "None"]) & \
+                           allotted_s.fillna("").astype(str).str.strip().isin(["", "Unassigned", "None"])
+
     # Base filtering by view mode
     if view_mode == "new":
-        mode_df = raw_df[raw_df["status"] == "Submitted"]
+        is_submitted = raw_df["status"] == "Submitted"
+        is_unassigned_review = (raw_df["status"] == "Under Review") & is_unassigned_record
+        mode_df = raw_df[is_submitted | is_unassigned_review]
     elif view_mode == "in_progress":
         mode_df = raw_df[raw_df["status"].isin(["In Progress", "Under Review", "Assigned"])]
     elif view_mode == "resolved":
@@ -73,37 +84,65 @@ def render_requests_view(view_mode: str = "all") -> None:
         mode_df = raw_df.copy()
 
     # 1. SUMMARY INFORMATION: Compact, restrained summary indicators calculated dynamically
-    total_count = len(raw_df)
-    new_count = int((raw_df["status"] == "Submitted").sum())
-    in_prog_count = int(raw_df["status"].isin(["In Progress", "Under Review", "Assigned"]).sum())
-    resolved_count = int((raw_df["status"] == "Resolved").sum())
+    if view_mode == "new":
+        total_new_count = int((raw_df["status"] == "Submitted").sum())
+        awaiting_review_count = int((raw_df["status"] == "Under Review").sum())
+        unassigned_count = int(
+            ((raw_df["status"].isin(["Submitted", "Under Review"])) & is_unassigned_record).sum()
+        )
+        st.markdown(
+            f"""
+            <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.85rem;">
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Total New Requests</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{total_new_count}</span>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #55685F;"></span>
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Awaiting Review</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{awaiting_review_count}</span>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #A8B9A3;"></span>
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Unassigned</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{unassigned_count}</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    else:
+        total_count = len(raw_df)
+        new_count = int((raw_df["status"] == "Submitted").sum())
+        in_prog_count = int(raw_df["status"].isin(["In Progress", "Under Review", "Assigned"]).sum())
+        resolved_count = int((raw_df["status"] == "Resolved").sum())
 
-    st.markdown(
-        f"""
-        <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.85rem;">
-            <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
-                <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Total Requests</span>
-                <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{total_count}</span>
+        st.markdown(
+            f"""
+            <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.85rem;">
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Total Requests</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{total_count}</span>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #55685F;"></span>
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">New</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{new_count}</span>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #A8B9A3;"></span>
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">In Progress</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{in_prog_count}</span>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #203A32;"></span>
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Resolved</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{resolved_count}</span>
+                </div>
             </div>
-            <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
-                <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #55685F;"></span>
-                <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">New</span>
-                <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{new_count}</span>
-            </div>
-            <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
-                <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #A8B9A3;"></span>
-                <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">In Progress</span>
-                <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{in_prog_count}</span>
-            </div>
-            <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
-                <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #203A32;"></span>
-                <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Resolved</span>
-                <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{resolved_count}</span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
 
     # 2. SEARCH & FILTERS TOOLBAR: Single compact, unified toolbar
     st.markdown(
@@ -154,6 +193,8 @@ def render_requests_view(view_mode: str = "all") -> None:
     with f_col1:
         if view_mode == "all":
             status_choices = ["All Statuses"] + PROGRESS_STAGES + ["Withdrawn"]
+        elif view_mode == "new":
+            status_choices = ["All Statuses", "Submitted", "Under Review"]
         else:
             status_choices = ["All Statuses"]
         if st.session_state.get(f"f_stat_{view_mode}") not in status_choices:
@@ -291,12 +332,18 @@ def render_requests_view(view_mode: str = "all") -> None:
 
         # Useful Empty State
         if filtered_df.empty:
+            empty_title = "No New or Unassigned Complaints" if mode_df.empty and view_mode == "new" else "No matching complaints found"
+            empty_msg = (
+                "All campus facility complaints have been reviewed and dispatched to maintenance squads. Newly submitted student queries will appear here automatically."
+                if mode_df.empty and view_mode == "new"
+                else "No submitted facility complaints match your active search query or filter criteria. Try resetting filters to view all records."
+            )
             st.markdown(
-                """
+                f"""
                 <div style="background: #FFFFFF; border: 1px dashed #A8B9A3; border-radius: 8px; padding: 2.25rem 1.5rem; text-align: center; margin: 1.25rem 0;">
-                    <div style="font-size: 1.05rem; font-weight: 700; color: #203A32; margin-bottom: 0.35rem;">No matching complaints found</div>
-                    <div style="font-size: 0.85rem; color: #55685F; max-width: 440px; margin: 0 auto 1.25rem auto;">
-                        No submitted facility complaints match your active search query or filter criteria. Try resetting filters to view all records.
+                    <div style="font-size: 1.05rem; font-weight: 700; color: #203A32; margin-bottom: 0.35rem;">{empty_title}</div>
+                    <div style="font-size: 0.85rem; color: #55685F; max-width: 460px; margin: 0 auto 1.25rem auto;">
+                        {empty_msg}
                     </div>
                 </div>
                 """,

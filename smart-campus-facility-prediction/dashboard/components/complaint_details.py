@@ -319,6 +319,20 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
                     st.error("Failed to reopen complaint.")
         return
 
+    # Quick Triage Action for newly submitted complaints
+    if curr_status == "Submitted":
+        if st.button("Mark as Under Review", key=f"btn_quick_review_{cid}", type="secondary", use_container_width=True):
+            ok = update_complaint_status_extended(
+                complaint_id=cid,
+                new_status="Under Review",
+                remarks="Complaint acknowledged and placed under administrative review.",
+                admin_id=admin_id,
+                admin_title=admin_title,
+            )
+            if ok:
+                st.success(f"Complaint {cid} marked as Under Review.")
+                st.rerun()
+
     # Normal Lifecycle Actions
     curr_stage_idx = PROGRESS_STAGES.index(curr_status) if curr_status in PROGRESS_STAGES else 0
 
@@ -352,6 +366,8 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
     is_resolving = (new_status == "Resolved")
     if is_resolving:
         st.warning("Marking as **Resolved** requires clear resolution remarks explaining the work completed.")
+    elif new_status == "In Progress" and curr_status in ["Submitted", "Under Review"]:
+        st.info("Advancing this ticket to **In Progress** transitions it from New / Unassigned triage into active operations.")
 
     if st.button("Save Operational Update", key=f"btn_save_panel_{cid}", type="primary", use_container_width=True):
         if is_resolving and not admin_remarks.strip():
