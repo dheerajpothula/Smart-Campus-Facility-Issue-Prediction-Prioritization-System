@@ -7,6 +7,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
+from pathlib import Path
 from dashboard.components.styles import get_priority_badge, get_status_badge, _clean_html
 from src.data.complaints_store import (
     PROGRESS_STAGES,
@@ -36,7 +37,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         complaint_record: The complaint ticket dictionary to display.
     """
     if not complaint_record:
-        st.info("Select any complaint from the list to view its complete operational profile.")
+        st.info("Select any complaint from the table to view its operational details.")
         return
 
     cid = complaint_record.get("complaint_id", "CMP-2026-000")
@@ -44,188 +45,247 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
     status_badge = get_status_badge(curr_status)
     priority_tier = complaint_record.get("priority_tier", "Medium")
     priority_score = complaint_record.get("priority_score", 0.0)
-    prio_badge = get_priority_badge(priority_tier)
+    prio_badge = get_priority_badge(priority_tier) if priority_tier else "<span style='color: #8A9E93; font-size: 0.8rem;'>—</span>"
 
-    # Panel Container with Modern Sage & Forest styling
-    st.markdown(
-        f"""
-        <div style="
-            background: #FFFFFF;
-            border: 1px solid #DCE5D8;
-            border-top: 4px solid #203A32;
-            border-radius: 12px;
-            padding: 1.25rem 1.4rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 12px rgba(32, 58, 50, 0.05);
-        ">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #DCE5D8; padding-bottom: 0.75rem; margin-bottom: 1rem;">
-                <div>
-                    <span style="
-                        font-family: monospace;
-                        font-size: 0.88rem;
-                        font-weight: 800;
-                        color: #203A32;
-                        background: #DCE5D8;
-                        padding: 0.2rem 0.55rem;
-                        border-radius: 4px;
-                        border: 1px solid #A8B9A3;
-                    ">{cid}</span>
-                    <span style="font-size: 0.76rem; color: #4A6357; font-weight: 600; margin-left: 0.4rem;">
-                        Inspection Panel
-                    </span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.4rem;">
-                    {prio_badge}
-                    {status_badge}
-                </div>
+    # Header with Token and Close Action
+    c_head_left, c_head_right = st.columns([3.2, 1.2])
+    with c_head_left:
+        st.markdown(
+            f"""
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                <span style="
+                    font-family: monospace;
+                    font-size: 0.95rem;
+                    font-weight: 800;
+                    color: #203A32;
+                    background: #DCE5D8;
+                    padding: 0.2rem 0.55rem;
+                    border-radius: 4px;
+                    border: 1px solid #A8B9A3;
+                ">{cid}</span>
+                {status_badge}
+                {prio_badge}
             </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Close button
-    c_close_col, _ = st.columns([1, 2])
-    with c_close_col:
-        if st.button("Close Panel", key=f"btn_close_panel_{cid}", type="secondary", use_container_width=True):
+            """,
+            unsafe_allow_html=True,
+        )
+    with c_head_right:
+        if st.button("✕ Close", key=f"btn_close_panel_{cid}", type="secondary", use_container_width=True):
             st.session_state["admin_selected_complaint_id"] = None
             st.rerun()
 
-    # 1. STUDENT INFORMATION SECTION
-    stu_name = complaint_record.get("student_name") or complaint_record.get("reported_by") or "Campus Reporter"
-    stu_id = complaint_record.get("student_id") or "Staff / Internal Log"
-    contact_no = complaint_record.get("contact_number") or complaint_record.get("mobile_number") or "Not provided"
-
+    # Panel Container with Modern Sage & Forest styling
     st.markdown(
-        f"""
-        <div style="background: #F5F7F2; border: 1px solid #DCE5D8; border-radius: 8px; padding: 0.85rem 1rem; margin: 0.9rem 0;">
-            <div style="font-size: 0.74rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #203A32; margin-bottom: 0.4rem;">
-                Student / Reporter Information
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; font-size: 0.84rem;">
-                <div><span style="color: #6D8276;">Name:</span> <strong>{stu_name}</strong></div>
-                <div><span style="color: #6D8276;">Student ID:</span> <code>{stu_id}</code></div>
-                <div><span style="color: #6D8276;">Contact No:</span> <strong>{contact_no}</strong></div>
-                <div><span style="color: #6D8276;">Reported By:</span> {complaint_record.get("reported_by", "Student Portal")}</div>
-            </div>
-        </div>
+        """
+        <div style="border-top: 2px solid #DCE5D8; margin-bottom: 0.75rem;"></div>
         """,
         unsafe_allow_html=True,
     )
 
-    # 2. COMPLAINT INFORMATION SECTION
-    title = complaint_record.get("title", "Facility Issue")
-    msg_type = complaint_record.get("message_type", "Complaint / Query")
-    cat = complaint_record.get("category") or complaint_record.get("facility_type", "General")
-    sub_cat = complaint_record.get("sub_category", "Standard")
-    spec_cat = complaint_record.get("specific_category") or "General Issue"
-    bld = complaint_record.get("building") or complaint_record.get("block", "Campus Grounds")
-    loc = complaint_record.get("location", "Campus")
-    spec_loc = complaint_record.get("specific_location") or "Specified area"
-    desc = complaint_record.get("description", "No description provided.")
-    supp_doc = complaint_record.get("supporting_document") or "None submitted"
-    dt_rep = complaint_record.get("date_reported", "Recently")
+    # A. COMPLAINT INFORMATION SECTION
+    title = complaint_record.get("title") or "—"
+    cat = complaint_record.get("facility_type") or complaint_record.get("category") or "—"
+    sub_cat = complaint_record.get("sub_category") or "—"
+    spec_cat = complaint_record.get("specific_category") or "—"
+    bld = complaint_record.get("building") or complaint_record.get("block") or "—"
+    floor = complaint_record.get("floor") or "—"
+    room_area = complaint_record.get("room_no") or complaint_record.get("specific_location") or complaint_record.get("location") or "—"
+    desc = complaint_record.get("description") or "No description provided."
+    dt_rep = complaint_record.get("date_reported") or "—"
 
     st.markdown(
         f"""
         <div style="margin-bottom: 0.85rem;">
-            <div style="font-size: 0.74rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #203A32; margin-bottom: 0.35rem;">
-                Complaint Details
+            <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F; margin-bottom: 0.3rem;">
+                A. Complaint Information
             </div>
-            <h4 style="margin: 0 0 0.45rem 0; font-size: 1.05rem; color: #203A32; font-weight: 700;">{title}</h4>
-            <div style="font-size: 0.83rem; color: #4A6357; line-height: 1.5; margin-bottom: 0.6rem; background: #FFFFFF; border: 1px solid #DCE5D8; border-left: 3px solid #A8B9A3; border-radius: 6px; padding: 0.65rem 0.85rem;">
-                <strong>Description:</strong><br/>{desc}
+            <div style="font-size: 1.05rem; color: #203A32; font-weight: 700; margin-bottom: 0.4rem; line-height: 1.35;">
+                {title}
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; font-size: 0.82rem; color: #203A32;">
-                <div><span style="color: #6D8276;">Message Type:</span> <strong>{msg_type}</strong></div>
+            <div style="font-size: 0.83rem; color: #324E43; line-height: 1.5; margin-bottom: 0.6rem; background: #FFFFFF; border: 1px solid #DCE5D8; border-left: 3px solid #203A32; border-radius: 6px; padding: 0.65rem 0.85rem;">
+                <div style="font-size: 0.72rem; font-weight: 700; color: #55685F; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.2rem;">Full Description</div>
+                {desc}
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.65rem; font-size: 0.82rem; color: #203A32; background: #F8FAF7; border: 1px solid #EDF2EB; border-radius: 6px; padding: 0.6rem 0.75rem;">
                 <div><span style="color: #6D8276;">Category:</span> <strong>{cat}</strong></div>
                 <div><span style="color: #6D8276;">Subcategory:</span> {sub_cat}</div>
                 <div><span style="color: #6D8276;">Specific Type:</span> {spec_cat}</div>
                 <div><span style="color: #6D8276;">Building / Block:</span> <strong>{bld}</strong></div>
-                <div><span style="color: #6D8276;">Location:</span> {loc}</div>
-                <div><span style="color: #6D8276;">Submission Date:</span> {dt_rep}</div>
-                <div><span style="color: #6D8276;">Attachment:</span> {supp_doc}</div>
+                <div><span style="color: #6D8276;">Floor:</span> {floor}</div>
+                <div><span style="color: #6D8276;">Room / Area:</span> <strong>{room_area}</strong></div>
+                <div style="grid-column: span 2;"><span style="color: #6D8276;">Submitted:</span> {dt_rep}</div>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # 3. MCPI PREDICTION INFORMATION
-    sev = complaint_record.get("severity", "Medium")
-    loc_type = complaint_record.get("location_type", "Standard Facility")
-    rec_risk = complaint_record.get("recurrence_risk", 0.3)
-    imp_scale = complaint_record.get("impact_scale", 0.5)
-    rec_count = complaint_record.get("recurrence_count", 0)
-
-    st.markdown(
-        f"""
-        <div style="background: #F0F4ED; border: 1px solid #DCE5D8; border-radius: 8px; padding: 0.85rem 1rem; margin: 0.9rem 0;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-                <span style="font-size: 0.74rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #203A32;">
-                    MCPI Priority &amp; Heuristics
-                </span>
-                <span style="font-size: 0.78rem; font-weight: 700; color: #203A32;">
-                    Score: {priority_score} / 100
-                </span>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; font-size: 0.82rem; color: #203A32;">
-                <div><span style="color: #6D8276;">Severity:</span> <strong>{sev}</strong></div>
-                <div><span style="color: #6D8276;">Location Criticality:</span> {loc_type}</div>
-                <div><span style="color: #6D8276;">Recurrence Risk:</span> {int(rec_risk * 100)}% ({rec_count} previous)</div>
-                <div><span style="color: #6D8276;">Impact Scale:</span> {int(imp_scale * 100)}%</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # 4. ADMINISTRATIVE & ASSIGNMENT STATUS
-    staff_member = complaint_record.get("allotted_person") or "Unassigned"
-    action_taken = complaint_record.get("action_taken") or "No operational remarks recorded."
-    closing_remarks = complaint_record.get("closing_remarks")
+    # B. STUDENT INFORMATION SECTION
+    stu_name = complaint_record.get("student_name") or complaint_record.get("reported_by") or "—"
+    stu_id = complaint_record.get("student_id") or "—"
+    raw_contact = complaint_record.get("contact_number") or complaint_record.get("mobile_number")
+    if raw_contact and str(raw_contact).strip() and str(raw_contact).strip() not in ["Not provided", "None", "nan", "—"]:
+        contact_no = str(raw_contact).strip()
+    else:
+        contact_no = "—"
 
     st.markdown(
         f"""
         <div style="margin-bottom: 0.85rem;">
-            <div style="font-size: 0.74rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #203A32; margin-bottom: 0.35rem;">
-                Administrative Status
+            <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F; margin-bottom: 0.3rem;">
+                B. Student Information
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; font-size: 0.82rem; color: #203A32; margin-bottom: 0.5rem;">
-                <div><span style="color: #6D8276;">Current Status:</span> <strong>{curr_status}</strong></div>
-                <div><span style="color: #6D8276;">Assigned Staff:</span> <strong>{staff_member}</strong></div>
+            <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.6rem 0.75rem; font-size: 0.82rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.65rem;">
+                <div><span style="color: #6D8276;">Student Name:</span> <strong>{stu_name}</strong></div>
+                <div><span style="color: #6D8276;">Student ID:</span> <code>{stu_id}</code></div>
+                <div><span style="color: #6D8276;">Contact No:</span> <strong>{contact_no}</strong></div>
+                <div><span style="color: #6D8276;">Reporter:</span> {complaint_record.get("reported_by", "Student Portal")}</div>
             </div>
-            <div style="font-size: 0.82rem; background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.55rem 0.75rem; color: #203A32;">
-                <strong>Latest Operational Remarks:</strong><br/>{action_taken}
-            </div>
-            {f'<div style="font-size: 0.82rem; margin-top: 0.4rem; background: #DCE5D8; border-radius: 6px; padding: 0.45rem 0.65rem; color: #203A32;"><strong>Resolution Notes:</strong> {closing_remarks}</div>' if closing_remarks else ''}
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # 5. STATUS HISTORY
+    # C. COMPLAINT STATUS & MCPI PRIORITY
+    staff_member = complaint_record.get("allotted_person") or "Unassigned"
+    sev = complaint_record.get("severity") or "—"
+    loc_type = complaint_record.get("location_type") or "Standard Facility"
+    rec_risk = complaint_record.get("recurrence_risk", 0.0)
+    imp_scale = complaint_record.get("impact_scale", 0.0)
+
+    st.markdown(
+        f"""
+        <div style="margin-bottom: 0.85rem;">
+            <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F; margin-bottom: 0.3rem;">
+                C. Complaint Status &amp; MCPI Priority
+            </div>
+            <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.6rem 0.75rem; font-size: 0.82rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.65rem; margin-bottom: 0.4rem;">
+                    <div><span style="color: #6D8276;">Current Status:</span> <strong>{curr_status}</strong></div>
+                    <div><span style="color: #6D8276;">Assigned Squad:</span> <strong>{staff_member}</strong></div>
+                    <div><span style="color: #6D8276;">Priority Tier:</span> <strong>{priority_tier or '—'}</strong></div>
+                    <div><span style="color: #6D8276;">MCPI Score:</span> <strong>{priority_score} / 100</strong></div>
+                </div>
+                <div style="border-top: 1px solid #EDF2EB; padding-top: 0.35rem; font-size: 0.76rem; color: #55685F; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <span>Severity: <strong>{sev}</strong></span>
+                    <span>Location Criticality: <strong>{loc_type}</strong></span>
+                    <span>Recurrence Risk: <strong>{int(rec_risk * 100)}%</strong></span>
+                    <span>Impact Scale: <strong>{int(imp_scale * 100)}%</strong></span>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # D. ATTACHMENTS
+    supp_doc = complaint_record.get("supporting_document")
+    has_attachment = False
+    attachment_name = None
+    attachment_path = None
+
+    if supp_doc and str(supp_doc).strip() not in ["", "None", "None submitted", "nan", "null"]:
+        attachment_name = str(supp_doc).strip()
+        candidate_paths = [
+            Path(attachment_name),
+            Path("data/uploads") / attachment_name,
+            Path("data/processed") / attachment_name,
+        ]
+        attachment_path = next((p for p in candidate_paths if p.is_file()), None)
+        has_attachment = True
+
+    st.markdown(
+        """
+        <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F; margin-bottom: 0.3rem;">
+            D. Attachments
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if has_attachment:
+        if attachment_path:
+            with open(attachment_path, "rb") as f:
+                file_bytes = f.read()
+            st.download_button(
+                label=f"Download Attachment ({attachment_path.name})",
+                data=file_bytes,
+                file_name=attachment_path.name,
+                key=f"dl_attachment_{cid}",
+                type="secondary",
+                use_container_width=True,
+            )
+        else:
+            st.markdown(
+                f"""
+                <div style="background: #F8FAF7; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.82rem; color: #203A32;">
+                    Attached File Reference: <code>{attachment_name}</code>
+                    <div style="font-size: 0.74rem; color: #6D8276; margin-top: 0.15rem;">(File record stored; file not present in local filesystem)</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+    else:
+        st.markdown(
+            """
+            <div style="background: #F8FAF7; border: 1px dashed #DCE5D8; border-radius: 6px; padding: 0.45rem 0.75rem; font-size: 0.8rem; color: #6D8276;">
+                — No attachments submitted with this ticket.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # E. REMARKS AND STATUS HISTORY
     history_list = complaint_record.get("remarks_history") or []
+    st.markdown(
+        f"""
+        <div style="margin-top: 0.85rem; margin-bottom: 0.3rem;">
+            <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F;">
+                E. Remarks & Status History ({len(history_list)})
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     if history_list:
-        with st.expander(f"Status & Remarks History ({len(history_list)})", expanded=False):
+        with st.expander(f"View Status History ({len(history_list)} entries)", expanded=False):
             for h in history_list:
-                h_date = h.get("update_date", "")
+                h_date = h.get("update_date", "Earlier")
                 h_name = h.get("name", "System")
                 h_rem = h.get("remarks", "")
+                h_prev = h.get("previous_status")
+                h_new = h.get("new_status")
+                trans_text = f" &bull; {h_prev} → {h_new}" if h_prev and h_new else ""
                 st.markdown(
                     f"""
                     <div style="border-left: 2px solid #A8B9A3; padding-left: 0.6rem; margin-bottom: 0.6rem; font-size: 0.79rem;">
-                        <div style="color: #4A6357; font-weight: 600;">{h_date} &bull; {h_name}</div>
-                        <div style="color: #203A32;">{h_rem}</div>
+                        <div style="color: #4A6357; font-weight: 600;">{h_date} &bull; {h_name}{trans_text}</div>
+                        <div style="color: #203A32; margin-top: 0.15rem;">{h_rem}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
+    else:
+        action_taken = complaint_record.get("action_taken") or "No operational remarks recorded."
+        st.markdown(
+            f"""
+            <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.45rem 0.65rem; font-size: 0.8rem; color: #4A6357;">
+                {action_taken}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    st.markdown("<hr style='margin: 0.9rem 0; border: none; border-top: 1px solid #DCE5D8;'/>", unsafe_allow_html=True)
+    st.markdown("<div style='border-top: 1px solid #DCE5D8; margin: 0.9rem 0 0.65rem 0;'></div>", unsafe_allow_html=True)
 
-    # 6. ADMINISTRATIVE ACTIONS FORM
+    # F. ADMINISTRATIVE ACTIONS FORM
     st.markdown(
-        "<div style='font-size: 0.88rem; font-weight: 750; color: #203A32; margin-bottom: 0.4rem;'>Operational Actions</div>",
+        """
+        <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F; margin-bottom: 0.35rem;">
+            F. Administrative Actions
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -235,7 +295,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
 
     # If ticket is currently Resolved, offer Reopen Action
     if curr_status == "Resolved":
-        st.info("This ticket is currently marked as **Resolved**. You may reopen it with an explanation.")
+        st.info("This ticket is currently marked as **Resolved**. You may reopen it with an operational justification.")
         reopen_reason = st.text_input(
             "Reopening Justification (Mandatory)",
             placeholder="e.g. Issue recurred, repairs incomplete...",
@@ -284,7 +344,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         "Administrative Remarks / Dispatch Log",
         value="" if curr_status == new_status else f"Status transition to {new_status}.",
         placeholder="Enter technical observations, repair schedule, or completion notes...",
-        height=85,
+        height=80,
         key=f"panel_remarks_{cid}",
     )
 

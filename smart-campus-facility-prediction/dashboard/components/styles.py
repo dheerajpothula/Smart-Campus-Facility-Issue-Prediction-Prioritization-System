@@ -558,6 +558,57 @@ GLOBAL_LIGHT_THEME_CSS = """
         background-color: var(--secondary-btn-hover) !important;
     }
 
+    /* Enterprise Complaint Table & Toolbar Utilities */
+    .fipp-table-header {
+        border-top: 1px solid var(--border-soft);
+        border-bottom: 2px solid var(--border-soft);
+        padding: 0.45rem 0.6rem;
+        background-color: #F8FAF7;
+    }
+    .fipp-th-text {
+        font-size: 0.72rem;
+        font-weight: 750;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    .fipp-table-row {
+        border-bottom: 1px solid #EDF2EB;
+        padding: 0.45rem 0.6rem;
+        background-color: #FFFFFF;
+        transition: background-color 0.12s ease;
+    }
+    .fipp-table-row:hover {
+        background-color: #F8FAF7;
+    }
+    .fipp-cell-token {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 0.8rem;
+        font-weight: 750;
+        color: var(--forest-green);
+        white-space: nowrap;
+    }
+    .fipp-cell-title {
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: var(--forest-green);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .fipp-cell-muted {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .fipp-cell-date {
+        font-size: 0.78rem;
+        color: var(--text-subtle);
+        white-space: nowrap;
+    }
+
     /* Hide Streamlit default watermark/menu */
     footer { visibility: hidden !important; }
     #MainMenu { visibility: hidden !important; }
@@ -630,20 +681,25 @@ def get_priority_badge(priority: str) -> str:
 def get_status_badge(status: str) -> str:
     """
     Returns an HTML maintenance status badge in Modern Sage & Forest palette.
-    Supports all 5 standard progress stages: Submitted, Under Review, Assigned, In Progress, Resolved.
+    Supports all standard progress stages: Submitted, Under Review, Assigned, In Progress, Resolved, Withdrawn.
+    Uses clean, subtle status indicator dots instead of decorative emoji symbols.
     """
     s_lower = str(status).strip().lower()
     if "resolved" in s_lower or "closed" in s_lower:
         bg, color, border = "#203A32", "#FFFFFF", "#203A32"
         icon = "✓ "
         label = "Resolved"
+    elif "withdrawn" in s_lower:
+        bg, color, border = "#F3F4F6", "#4B5563", "#D1D5DB"
+        icon = "● "
+        label = "Withdrawn"
     elif "progress" in s_lower or "investigating" in s_lower:
         bg, color, border = "#DCE5D8", "#203A32", "#A8B9A3"
-        icon = "⏳ "
+        icon = "● "
         label = "In Progress"
     elif "dispatched" in s_lower or "assigned" in s_lower:
         bg, color, border = "#E6ECE2", "#203A32", "#C5D4BF"
-        icon = "⚡ "
+        icon = "● "
         label = "Assigned"
     elif "review" in s_lower:
         bg, color, border = "#EFF4ED", "#324E43", "#DCE5D8"
@@ -651,16 +707,16 @@ def get_status_badge(status: str) -> str:
         label = "Under Review"
     else:  # Submitted / Reported
         bg, color, border = "#FFFFFF", "#55685F", "#DCE5D8"
-        icon = "📌 "
+        icon = "● "
         label = "Submitted"
 
     return f"""<span style="
         background-color: {bg};
         color: {color};
         border: 1px solid {border};
-        padding: 0.2rem 0.55rem;
-        border-radius: 6px;
-        font-size: 0.74rem;
+        padding: 0.18rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.72rem;
         font-weight: 600;
         display: inline-flex;
         align-items: center;
