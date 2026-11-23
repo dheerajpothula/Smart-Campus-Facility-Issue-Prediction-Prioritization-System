@@ -1,0 +1,14 @@
+[Unit]
+Description=Timer for FIPP Daily Database Automated Backup
+Requires=fipp-backup.service
+
+[Timer]
+# Run daily at 02:30 AM campus local time
+OnCalendar=*-*-* 02:30:00
+# Run immediately if server was asleep or down during scheduled time
+Persistent=true
+# 5 minute randomized jitter to avoid resource spikes
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=FIPP Daily Database Automated Backup Service
+After=network.target
+
+[Service]
+Type=oneshot
+User=fipp
+Group=fipp
+WorkingDirectory=/opt/fipp/smart-campus-facility-prediction
+EnvironmentFile=-/etc/fipp/.env
+ExecStart=/opt/fipp/smart-campus-facility-prediction/venv/bin/python scripts/backup_database.py
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=fipp-backup

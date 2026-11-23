@@ -300,7 +300,15 @@ def render_student_dashboard() -> None:
         st.session_state["student_active_view"] = None
 
     active_view = st.session_state.get("student_active_view")
-    if active_view not in ["raise", "history"]:
+    if isinstance(active_view, str):
+        v_low = active_view.lower().strip()
+        if "raise" in v_low:
+            active_view = "raise"
+        elif "hist" in v_low:
+            active_view = "history"
+        elif active_view not in ["raise", "history"]:
+            active_view = None
+    elif active_view not in ["raise", "history"]:
         active_view = None
 
     # =========================================================================
@@ -1225,6 +1233,17 @@ def render_student_dashboard() -> None:
             elif len(clean_desc) > 500:
                 validation_errors.append(f"Description exceeds the maximum limit of 500 characters ({len(clean_desc)} characters typed).")
 
+            # 7. Optional Photo Upload validation (magic bytes, image stream integrity, size)
+            if photo_file is not None:
+                try:
+                    from src.utils.file_upload import validate_image_content
+                    f_bytes = photo_file.getvalue() if hasattr(photo_file, "getvalue") else photo_file.read()
+                    is_valid_img, img_err = validate_image_content(f_bytes)
+                    if not is_valid_img:
+                        validation_errors.append(f"Invalid attachment: {img_err}")
+                except Exception as exc:
+                    validation_errors.append(f"Unable to process attachment: {exc}")
+
             if validation_errors:
                 st.session_state["sq_validation_errors"] = validation_errors
                 st.rerun()
@@ -1274,8 +1293,18 @@ def render_student_dashboard() -> None:
                 }
 
                 if photo_file is not None:
+                    from src.utils.file_upload import sanitize_filename, process_and_save_upload
+                    safe_photo_name = sanitize_filename(photo_file.name)
                     new_ticket["has_photo"] = True
-                    new_ticket["photo_name"] = photo_file.name
+                    new_ticket["photo_name"] = safe_photo_name
+                    # Securely persist attachment outside public web root
+                    try:
+                        ok_upload, msg_upload, meta_upload = process_and_save_upload(photo_file, token="CMP-PENDING")
+                        if ok_upload and meta_upload:
+                            new_ticket["photo_stored_filename"] = meta_upload["stored_filename"]
+                            new_ticket["photo_sha256"] = meta_upload["sha256"]
+                    except Exception:
+                        pass
 
                 try:
                     created_token = add_complaint(new_ticket)

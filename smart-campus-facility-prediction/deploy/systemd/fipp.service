@@ -1,0 +1,28 @@
+[Unit]
+Description=FIPP — Smart Campus Facility Issue Prediction & Prioritisation Platform
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=fipp
+Group=fipp
+WorkingDirectory=/opt/fipp/smart-campus-facility-prediction
+EnvironmentFile=-/etc/fipp/.env
+ExecStart=/opt/fipp/smart-campus-facility-prediction/venv/bin/streamlit run app.py --server.port=8501 --server.address=127.0.0.1 --server.headless=true --browser.gatherUsageStats=false
+
+# Sandboxing & Security Hardening
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Restart on failure with exponential backoff
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=fipp-app
+
+[Install]
+WantedBy=multi-user.target

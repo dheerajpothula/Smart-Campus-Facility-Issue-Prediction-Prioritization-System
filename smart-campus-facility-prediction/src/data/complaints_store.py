@@ -4,7 +4,9 @@ Manages persistent complaint records, seed datasets, CSV ingestion, priority pre
 Enforces permanent sequential token generation (CMP-2026-001, CMP-2026-002, ...) and student identity isolation.
 """
 import json
+import os
 import re
+import threading
 from datetime import datetime, timedelta
 from pathlib import Path
 import pandas as pd
@@ -12,7 +14,15 @@ import streamlit as st
 
 from src.prediction.priority_scoring import calculate_priority_score, get_current_weights
 
-DATA_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "processed" / "complaints.json"
+# Data file path: configurable via FIPP_DATA_FILE environment variable with fallback
+DATA_FILE_ENV = os.environ.get("FIPP_DATA_FILE")
+if DATA_FILE_ENV:
+    DATA_FILE = Path(DATA_FILE_ENV).resolve()
+else:
+    DATA_FILE = Path(__file__).resolve().parent.parent.parent / "data" / "processed" / "complaints.json"
+
+# Re-entrant thread lock for concurrency protection across simultaneous Streamlit sessions
+_STORE_LOCK = threading.RLock()
 
 # Canonical 5-stage progress lifecycle
 PROGRESS_STAGES = [
@@ -204,6 +214,9 @@ def _generate_seed_complaints() -> list[dict]:
             "status": "Resolved",
             "date_reported": (now - timedelta(days=3)).strftime("%Y-%m-%d %H:%M"),
             "estimated_resolution": (now - timedelta(days=1)).strftime("%Y-%m-%d"),
+            "resolved_at": (now - timedelta(days=1)).strftime("%Y-%m-%d %H:%M"),
+            "resolved_by": "Facility Operations Admin",
+            "closing_remarks": "Dispenser solenoid valve replaced and tested.",
             "reported_by": "Hostel Representative",
             "action_taken": "Dispenser solenoid valve replaced and tested.",
         },
@@ -226,6 +239,9 @@ def _generate_seed_complaints() -> list[dict]:
             "status": "Resolved",
             "date_reported": (now - timedelta(days=5)).strftime("%Y-%m-%d %H:%M"),
             "estimated_resolution": (now - timedelta(days=3)).strftime("%Y-%m-%d"),
+            "resolved_at": (now - timedelta(days=3)).strftime("%Y-%m-%d %H:%M"),
+            "resolved_by": "Maintenance Supervisor",
+            "closing_remarks": "Reinforced with expansion anchors.",
             "reported_by": "Security Officer",
             "action_taken": "Reinforced with expansion anchors.",
         },
@@ -260,32 +276,52 @@ def _migrate_tokens_and_statuses(records: list[dict]) -> list[dict]:
             r["student_name"] = None
             migrated = True
 
+        # Ensure resolved records carry resolution metadata
+        if r.get("status") == "Resolved":
+            if not r.get("resolved_at"):
+                r["resolved_at"] = r.get("estimated_resolution") or r.get("date_reported")
+                migrated = True
+            if not r.get("closing_remarks"):
+                r["closing_remarks"] = r.get("action_taken") or "Issue successfully resolved."
+                migrated = True
+            if not r.get("resolved_by"):
+                r["resolved_by"] = "Facility Operations Admin"
+                migrated = True
+
     if migrated:
         _save_to_disk(records)
     return records
 
 
 def _save_to_disk(records: list[dict]) -> None:
-    """Persists records to local JSON file for persistence across server restarts."""
-    try:
-        DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(records, f, indent=2)
-    except Exception:
-        pass
+    """Persists records to local JSON file atomically using a temporary file and thread lock."""
+    with _STORE_LOCK:
+        try:
+            DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+            temp_path = DATA_FILE.with_suffix(".tmp")
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump(records, f, indent=2, ensure_ascii=False)
+            os.replace(temp_path, DATA_FILE)
+        except Exception:
+            try:
+                with open(DATA_FILE, "w", encoding="utf-8") as f:
+                    json.dump(records, f, indent=2, ensure_ascii=False)
+            except Exception:
+                pass
 
 
 def _load_from_disk() -> list[dict] | None:
     """Attempts to read persisted records from local storage and normalizes them."""
-    try:
-        if DATA_FILE.is_file():
-            with open(DATA_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data, list) and len(data) > 0:
-                    return _migrate_tokens_and_statuses(data)
-    except Exception:
-        pass
-    return None
+    with _STORE_LOCK:
+        try:
+            if DATA_FILE.is_file():
+                with open(DATA_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, list) and len(data) > 0:
+                        return _migrate_tokens_and_statuses(data)
+        except Exception:
+            pass
+        return None
 
 
 def generate_next_token(records: list[dict] | None = None) -> str:
@@ -431,121 +467,129 @@ def add_complaint(new_ticket: dict) -> str:
     """
     Adds a new complaint ticket to the repository, performs automated ML scoring,
     generates a unique sequential CMP-2026-XXX token, and persists it to session state and disk storage.
+    Thread-safe against concurrent submissions across multiple sessions.
     """
-    if "complaints_records" not in st.session_state:
-        st.session_state["complaints_records"] = _load_from_disk() or _generate_seed_complaints()
+    with _STORE_LOCK:
+        disk_records = _load_from_disk()
+        if disk_records is not None:
+            records = disk_records
+            st.session_state["complaints_records"] = records
+        elif "complaints_records" in st.session_state:
+            records = st.session_state["complaints_records"]
+        else:
+            records = _generate_seed_complaints()
+            st.session_state["complaints_records"] = records
 
-    records = st.session_state["complaints_records"]
+        # Generate next permanent 3-digit zero-padded sequential token if not already validly supplied
+        passed_id = str(new_ticket.get("complaint_id", "")).strip()
+        if passed_id and re.match(r"^CMP-2026-\d{3,}$", passed_id):
+            cid = passed_id
+        else:
+            cid = generate_next_token(records)
+        new_ticket["complaint_id"] = cid
 
-    # Generate next permanent 3-digit zero-padded sequential token if not already validly supplied
-    passed_id = str(new_ticket.get("complaint_id", "")).strip()
-    if passed_id and re.match(r"^CMP-2026-\d{3,}$", passed_id):
-        cid = passed_id
-    else:
-        cid = generate_next_token(records)
-    new_ticket["complaint_id"] = cid
+        if "date_reported" not in new_ticket or not new_ticket["date_reported"]:
+            new_ticket["date_reported"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    if "date_reported" not in new_ticket or not new_ticket["date_reported"]:
-        new_ticket["date_reported"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+        # Canonical status (default: Submitted)
+        new_ticket["status"] = _normalize_status(new_ticket.get("status", "Submitted"))
 
-    # Canonical status (default: Submitted)
-    new_ticket["status"] = _normalize_status(new_ticket.get("status", "Submitted"))
+        # Normalize fields from Stage 1 RMS workflow
+        if "building" not in new_ticket and "block" in new_ticket:
+            new_ticket["building"] = new_ticket["block"]
+        if "facility_type" not in new_ticket and "category" in new_ticket:
+            new_ticket["facility_type"] = new_ticket["category"]
 
-    # Normalize fields from Stage 1 RMS workflow
-    if "building" not in new_ticket and "block" in new_ticket:
-        new_ticket["building"] = new_ticket["block"]
-    if "facility_type" not in new_ticket and "category" in new_ticket:
-        new_ticket["facility_type"] = new_ticket["category"]
+        # Handle multiple specific categories from Stage 2 dynamic checkboxes
+        if "specific_categories" in new_ticket and isinstance(new_ticket["specific_categories"], list):
+            if not new_ticket.get("specific_category"):
+                new_ticket["specific_category"] = ", ".join(new_ticket["specific_categories"])
+        elif "specific_category" in new_ticket and isinstance(new_ticket["specific_category"], str):
+            new_ticket.setdefault("specific_categories", [new_ticket["specific_category"]])
 
-    # Handle multiple specific categories from Stage 2 dynamic checkboxes
-    if "specific_categories" in new_ticket and isinstance(new_ticket["specific_categories"], list):
-        if not new_ticket.get("specific_category"):
-            new_ticket["specific_category"] = ", ".join(new_ticket["specific_categories"])
-    elif "specific_category" in new_ticket and isinstance(new_ticket["specific_category"], str):
-        new_ticket.setdefault("specific_categories", [new_ticket["specific_category"]])
+        if "title" not in new_ticket or not new_ticket["title"]:
+            msg_t = new_ticket.get("message_type", "Query")
+            spec_cat = new_ticket.get("specific_category") or new_ticket.get("sub_category") or new_ticket.get("category", "Issue")
+            new_ticket["title"] = f"[{msg_t}] {spec_cat}"
 
-    if "title" not in new_ticket or not new_ticket["title"]:
-        msg_t = new_ticket.get("message_type", "Query")
-        spec_cat = new_ticket.get("specific_category") or new_ticket.get("sub_category") or new_ticket.get("category", "Issue")
-        new_ticket["title"] = f"[{msg_t}] {spec_cat}"
+        new_ticket.setdefault("subject", new_ticket.get("title", ""))
 
-    new_ticket.setdefault("subject", new_ticket.get("title", ""))
+        # Format location string
+        bld = new_ticket.get("building", "")
+        sub_bld = new_ticket.get("sub_block", "")
+        spec = new_ticket.get("specific_location", "")
+        if not spec:
+            if new_ticket.get("room_type") == "Room No" and new_ticket.get("room_number"):
+                spec = f"Room {new_ticket['room_number']}"
+            elif new_ticket.get("specified_location"):
+                spec = new_ticket["specified_location"]
+            new_ticket["specific_location"] = spec
 
-    # Format location string
-    bld = new_ticket.get("building", "")
-    sub_bld = new_ticket.get("sub_block", "")
-    spec = new_ticket.get("specific_location", "")
-    if not spec:
-        if new_ticket.get("room_type") == "Room No" and new_ticket.get("room_number"):
-            spec = f"Room {new_ticket['room_number']}"
-        elif new_ticket.get("specified_location"):
-            spec = new_ticket["specified_location"]
-        new_ticket["specific_location"] = spec
+        if sub_bld and spec:
+            loc_detail = f"{sub_bld}, {spec}"
+        else:
+            loc_detail = sub_bld or spec
 
-    if sub_bld and spec:
-        loc_detail = f"{sub_bld}, {spec}"
-    else:
-        loc_detail = sub_bld or spec
+        if bld and loc_detail:
+            new_ticket["location"] = f"{bld} - {loc_detail}"
+        elif not new_ticket.get("location"):
+            new_ticket["location"] = bld or loc_detail or "Campus Grounds"
 
-    if bld and loc_detail:
-        new_ticket["location"] = f"{bld} - {loc_detail}"
-    elif not new_ticket.get("location"):
-        new_ticket["location"] = bld or loc_detail or "Campus Grounds"
+        # Reference RMS tracking fields (None by default until real assignment exists)
+        new_ticket.setdefault("allotted_person", None)
+        new_ticket.setdefault("department", None)
+        new_ticket.setdefault("designation", None)
 
-    # Reference RMS tracking fields (None by default until real assignment exists)
-    new_ticket.setdefault("allotted_person", None)
-    new_ticket.setdefault("department", None)
-    new_ticket.setdefault("designation", None)
+        # Ensure student identity fields
+        new_ticket.setdefault("student_id", None)
+        new_ticket.setdefault("student_name", None)
 
-    # Ensure student identity fields
-    new_ticket.setdefault("student_id", None)
-    new_ticket.setdefault("student_name", None)
+        # Predict severity and attributes if not already provided
+        if "severity" not in new_ticket or "location_type" not in new_ticket:
+            pred = predict_issue_attributes(
+                category=new_ticket.get("facility_type", "Other maintenance issues"),
+                title=new_ticket.get("title", ""),
+                description=new_ticket.get("description", ""),
+                building=bld,
+                specific_location=spec,
+            )
+            new_ticket.setdefault("severity", pred["severity"])
+            new_ticket.setdefault("location_type", pred["location_type"])
+            new_ticket.setdefault("recurrence_risk", pred["recurrence_risk"])
+            new_ticket.setdefault("impact_scale", pred["impact_scale"])
+            new_ticket.setdefault("estimated_resolution", pred["estimated_resolution"])
 
-    # Predict severity and attributes if not already provided
-    if "severity" not in new_ticket or "location_type" not in new_ticket:
-        pred = predict_issue_attributes(
-            category=new_ticket.get("facility_type", "Other maintenance issues"),
-            title=new_ticket.get("title", ""),
-            description=new_ticket.get("description", ""),
-            building=bld,
-            specific_location=spec,
+        new_ticket.setdefault("is_recurring", False)
+        new_ticket.setdefault("recurrence_count", 0)
+        new_ticket.setdefault("action_taken", "Reported by user; queued for triage.")
+        new_ticket.setdefault("remarks_history", [
+            {
+                "remarks": "Your request has been forwarded to the concerned Department for necessary action.",
+                "update_date": datetime.now().strftime("%m/%d/%Y %I:%M:%S %p"),
+                "name": "System Triage",
+                "supporting_document": "None",
+            }
+        ])
+
+        # Calculate Priority Score dynamically for Admin triage
+        weights = get_current_weights()
+        score, tier, bdown = calculate_priority_score(
+            severity=new_ticket["severity"],
+            location_type=new_ticket["location_type"],
+            recurrence_risk=new_ticket["recurrence_risk"],
+            impact_scale=new_ticket["impact_scale"],
+            weights=weights,
         )
-        new_ticket.setdefault("severity", pred["severity"])
-        new_ticket.setdefault("location_type", pred["location_type"])
-        new_ticket.setdefault("recurrence_risk", pred["recurrence_risk"])
-        new_ticket.setdefault("impact_scale", pred["impact_scale"])
-        new_ticket.setdefault("estimated_resolution", pred["estimated_resolution"])
+        new_ticket["priority_score"] = score
+        new_ticket["priority_tier"] = tier
+        new_ticket["score_breakdown"] = bdown
 
-    new_ticket.setdefault("is_recurring", False)
-    new_ticket.setdefault("recurrence_count", 0)
-    new_ticket.setdefault("action_taken", "Reported by user; queued for triage.")
-    new_ticket.setdefault("remarks_history", [
-        {
-            "remarks": "Your request has been forwarded to the concerned Department for necessary action.",
-            "update_date": datetime.now().strftime("%m/%d/%Y %I:%M:%S %p"),
-            "name": "System Triage",
-            "supporting_document": "None",
-        }
-    ])
+        # Prepend to records (newest first)
+        records.insert(0, new_ticket)
+        st.session_state["complaints_records"] = records
+        _save_to_disk(records)
 
-    # Calculate Priority Score dynamically for Admin triage
-    weights = get_current_weights()
-    score, tier, bdown = calculate_priority_score(
-        severity=new_ticket["severity"],
-        location_type=new_ticket["location_type"],
-        recurrence_risk=new_ticket["recurrence_risk"],
-        impact_scale=new_ticket["impact_scale"],
-        weights=weights,
-    )
-    new_ticket["priority_score"] = score
-    new_ticket["priority_tier"] = tier
-    new_ticket["score_breakdown"] = bdown
-
-    # Prepend to records (newest first)
-    st.session_state["complaints_records"].insert(0, new_ticket)
-    _save_to_disk(st.session_state["complaints_records"])
-
-    return cid
+        return cid
 
 
 def update_complaint_status_extended(
@@ -559,40 +603,52 @@ def update_complaint_status_extended(
     """
     Updates the status, assigned staff, and remarks of a complaint record.
     Preserves existing tokens, timestamps, and history. Synchronizes with student portal and disk storage.
+    Thread-safe under concurrent operations.
     """
-    if "complaints_records" not in st.session_state:
-        st.session_state["complaints_records"] = _load_from_disk() or _generate_seed_complaints()
+    with _STORE_LOCK:
+        disk_data = _load_from_disk()
+        if disk_data is not None:
+            records = disk_data
+            st.session_state["complaints_records"] = records
+        elif "complaints_records" in st.session_state:
+            records = st.session_state["complaints_records"]
+        else:
+            records = _generate_seed_complaints()
+            st.session_state["complaints_records"] = records
 
-    norm_status = _normalize_status(new_status)
-    for r in st.session_state["complaints_records"]:
-        if r.get("complaint_id") == complaint_id:
-            old_status = r.get("status", "Submitted")
-            r["status"] = norm_status
-            if remarks:
-                r["action_taken"] = remarks
+        norm_status = _normalize_status(new_status)
+        for r in records:
+            if r.get("complaint_id") == complaint_id:
+                old_status = r.get("status", "Submitted")
+                r["status"] = norm_status
+                if remarks:
+                    r["action_taken"] = remarks
+                    if norm_status == "Resolved":
+                        r["closing_remarks"] = remarks
+                if assigned_staff is not None:
+                    if assigned_staff in ["Unassigned", "None", ""]:
+                        r["allotted_person"] = None
+                    else:
+                        r["allotted_person"] = assigned_staff
+
+                now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+                admin_label = f"{admin_title or 'Administrator'} ({admin_id or 'Admin Desk'})"
+                remarks_list = r.setdefault("remarks_history", [])
+                remarks_list.insert(0, {
+                    "remarks": f"Status updated to '{norm_status}'. {remarks or ''}".strip(),
+                    "update_date": now_str,
+                    "name": admin_label,
+                    "previous_status": old_status,
+                    "new_status": norm_status,
+                    "supporting_document": "None",
+                })
                 if norm_status == "Resolved":
-                    r["closing_remarks"] = remarks
-            if assigned_staff:
-                r["allotted_person"] = assigned_staff
+                    r["resolved_at"] = now_str
+                    r["resolved_by"] = admin_id or "Administrator"
 
-            now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
-            admin_label = f"{admin_title or 'Administrator'} ({admin_id or 'Admin Desk'})"
-            remarks_list = r.setdefault("remarks_history", [])
-            remarks_list.insert(0, {
-                "remarks": f"Status updated to '{norm_status}'. {remarks or ''}".strip(),
-                "update_date": now_str,
-                "name": admin_label,
-                "previous_status": old_status,
-                "new_status": norm_status,
-                "supporting_document": "None",
-            })
-            if norm_status == "Resolved":
-                r["resolved_at"] = now_str
-                r["resolved_by"] = admin_id or "Administrator"
-
-            _save_to_disk(st.session_state["complaints_records"])
-            return True
-    return False
+                _save_to_disk(records)
+                return True
+        return False
 
 
 def update_complaint_status(complaint_id: str, new_status: str, action_taken: str | None = None) -> bool:
@@ -618,31 +674,48 @@ def reopen_complaint(
     """
     Reopens a resolved complaint, transitioning it back to 'Under Review'.
     Preserves all previous resolution remarks, timestamps, and status history.
+    Thread-safe under concurrent operations.
     """
-    if "complaints_records" not in st.session_state:
-        st.session_state["complaints_records"] = _load_from_disk() or _generate_seed_complaints()
+    with _STORE_LOCK:
+        disk_data = _load_from_disk()
+        if disk_data is not None:
+            records = disk_data
+            st.session_state["complaints_records"] = records
+        elif "complaints_records" in st.session_state:
+            records = st.session_state["complaints_records"]
+        else:
+            records = _generate_seed_complaints()
+            st.session_state["complaints_records"] = records
 
-    for r in st.session_state["complaints_records"]:
-        if r.get("complaint_id") == complaint_id:
-            old_status = r.get("status")
-            r["status"] = "Under Review"
-            r["is_reopened"] = True
-            r["reopened_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        for r in records:
+            if r.get("complaint_id") == complaint_id:
+                old_status = r.get("status")
+                r["status"] = "Under Review"
+                r["is_reopened"] = True
+                r["reopened_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
-            admin_label = f"{admin_title or 'Administrator'} ({admin_id or 'Admin Desk'})"
-            remarks_list = r.setdefault("remarks_history", [])
-            remarks_list.insert(0, {
-                "remarks": f"Complaint Reopened: {remarks.strip()}",
-                "update_date": now_str,
-                "name": admin_label,
-                "previous_status": old_status,
-                "new_status": "Under Review",
-                "supporting_document": "None",
-            })
-            _save_to_disk(st.session_state["complaints_records"])
-            return True
-    return False
+                # Strictly preserve previous resolution remarks, timestamps, and resolving admin
+                if "resolved_at" in r and "original_resolved_at" not in r:
+                    r["original_resolved_at"] = r["resolved_at"]
+                if "closing_remarks" in r and "previous_closing_remarks" not in r:
+                    r["previous_closing_remarks"] = r["closing_remarks"]
+                if "resolved_by" in r and "original_resolved_by" not in r:
+                    r["original_resolved_by"] = r["resolved_by"]
+
+                now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+                admin_label = f"{admin_title or 'Administrator'} ({admin_id or 'Admin Desk'})"
+                remarks_list = r.setdefault("remarks_history", [])
+                remarks_list.insert(0, {
+                    "remarks": f"Complaint Reopened: {remarks.strip()}",
+                    "update_date": now_str,
+                    "name": admin_label,
+                    "previous_status": old_status,
+                    "new_status": "Under Review",
+                    "supporting_document": "None",
+                })
+                _save_to_disk(records)
+                return True
+        return False
 
 
 def assign_complaint_staff(
@@ -655,34 +728,43 @@ def assign_complaint_staff(
     """
     Assigns a technician or facility department to a complaint ticket.
     Advances Submitted tickets to Assigned.
+    Thread-safe under concurrent operations.
     """
-    if "complaints_records" not in st.session_state:
-        st.session_state["complaints_records"] = _load_from_disk() or _generate_seed_complaints()
+    with _STORE_LOCK:
+        disk_data = _load_from_disk()
+        if disk_data is not None:
+            records = disk_data
+            st.session_state["complaints_records"] = records
+        elif "complaints_records" in st.session_state:
+            records = st.session_state["complaints_records"]
+        else:
+            records = _generate_seed_complaints()
+            st.session_state["complaints_records"] = records
 
-    for r in st.session_state["complaints_records"]:
-        if r.get("complaint_id") == complaint_id:
-            old_status = r.get("status", "Submitted")
-            new_status = "Assigned" if old_status == "Submitted" else old_status
-            r["allotted_person"] = staff_name.strip()
-            r["status"] = new_status
+        for r in records:
+            if r.get("complaint_id") == complaint_id:
+                old_status = r.get("status", "Submitted")
+                new_status = "Assigned" if old_status == "Submitted" else old_status
+                r["allotted_person"] = staff_name.strip()
+                r["status"] = new_status
 
-            now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
-            admin_label = f"{admin_title or 'Administrator'} ({admin_id or 'Admin Desk'})"
-            remarks_list = r.setdefault("remarks_history", [])
-            rem_text = f"Assigned to {staff_name.strip()}."
-            if remarks:
-                rem_text += f" Remarks: {remarks.strip()}"
-            remarks_list.insert(0, {
-                "remarks": rem_text,
-                "update_date": now_str,
-                "name": admin_label,
-                "previous_status": old_status,
-                "new_status": new_status,
-                "supporting_document": "None",
-            })
-            _save_to_disk(st.session_state["complaints_records"])
-            return True
-    return False
+                now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+                admin_label = f"{admin_title or 'Administrator'} ({admin_id or 'Admin Desk'})"
+                remarks_list = r.setdefault("remarks_history", [])
+                rem_text = f"Assigned to {staff_name.strip()}."
+                if remarks:
+                    rem_text += f" Remarks: {remarks.strip()}"
+                remarks_list.insert(0, {
+                    "remarks": rem_text,
+                    "update_date": now_str,
+                    "name": admin_label,
+                    "previous_status": old_status,
+                    "new_status": new_status,
+                    "supporting_document": "None",
+                })
+                _save_to_disk(records)
+                return True
+        return False
 
 
 def get_control_centre_kpis(df: pd.DataFrame | None = None) -> dict:
@@ -719,91 +801,111 @@ def withdraw_complaint(complaint_id: str, student_id: str | None = None, reason:
     """
     Safely withdraws an eligible open complaint belonging to the authenticated student.
     Enforces student authorization isolation and records withdrawal in remarks history.
+    Thread-safe under concurrent operations.
     """
-    if "complaints_records" not in st.session_state:
-        st.session_state["complaints_records"] = _load_from_disk() or _generate_seed_complaints()
+    with _STORE_LOCK:
+        disk_data = _load_from_disk()
+        if disk_data is not None:
+            records = disk_data
+            st.session_state["complaints_records"] = records
+        elif "complaints_records" in st.session_state:
+            records = st.session_state["complaints_records"]
+        else:
+            records = _generate_seed_complaints()
+            st.session_state["complaints_records"] = records
 
-    for r in st.session_state["complaints_records"]:
-        if r.get("complaint_id") == complaint_id:
-            # Enforce student isolation if student_id is passed
-            if student_id and r.get("student_id") and r.get("student_id") != student_id:
-                return False
-            curr_status = _normalize_status(r.get("status"))
-            if curr_status in ["Resolved", "Withdrawn"]:
-                return False
+        for r in records:
+            if r.get("complaint_id") == complaint_id:
+                # Enforce student isolation if student_id is passed
+                if student_id and r.get("student_id") and r.get("student_id") != student_id:
+                    return False
+                curr_status = _normalize_status(r.get("status"))
+                if curr_status in ["Resolved", "Withdrawn"]:
+                    return False
 
-            r["status"] = "Withdrawn"
-            r["is_withdrawn"] = True
-            r["withdrawal_reason"] = reason.strip() or "Withdrawn by student"
+                r["status"] = "Withdrawn"
+                r["is_withdrawn"] = True
+                r["withdrawal_reason"] = reason.strip() or "Withdrawn by student"
 
-            now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
-            remarks_list = r.setdefault("remarks_history", [])
-            remarks_list.insert(0, {
-                "remarks": f"Request withdrawn by student. Reason: {reason.strip() or 'Not specified'}",
-                "update_date": now_str,
-                "name": f"Student ({student_id or r.get('student_id', 'Self')})",
-                "supporting_document": "None",
-            })
-            _save_to_disk(st.session_state["complaints_records"])
-            return True
-    return False
+                now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+                remarks_list = r.setdefault("remarks_history", [])
+                remarks_list.insert(0, {
+                    "remarks": f"Request withdrawn by student. Reason: {reason.strip() or 'Not specified'}",
+                    "update_date": now_str,
+                    "name": f"Student ({student_id or r.get('student_id', 'Self')})",
+                    "supporting_document": "None",
+                })
+                _save_to_disk(records)
+                return True
+        return False
 
 
 def submit_complaint_feedback(complaint_id: str, rating: int, comments: str = "", student_id: str | None = None) -> bool:
     """
     Submits student feedback (1-5 star rating and optional suggestions) for a resolved complaint.
     Enforces student authorization isolation and persists feedback to ticket storage.
+    Thread-safe under concurrent operations.
     """
-    if "complaints_records" not in st.session_state:
-        st.session_state["complaints_records"] = _load_from_disk() or _generate_seed_complaints()
+    with _STORE_LOCK:
+        disk_data = _load_from_disk()
+        if disk_data is not None:
+            records = disk_data
+            st.session_state["complaints_records"] = records
+        elif "complaints_records" in st.session_state:
+            records = st.session_state["complaints_records"]
+        else:
+            records = _generate_seed_complaints()
+            st.session_state["complaints_records"] = records
 
-    rating_labels = {
-        1: "Poor",
-        2: "Below Average",
-        3: "Average",
-        4: "Good",
-        5: "Excellent",
-    }
+        rating_labels = {
+            1: "Poor",
+            2: "Below Average",
+            3: "Average",
+            4: "Good",
+            5: "Excellent",
+        }
 
-    for r in st.session_state["complaints_records"]:
-        if r.get("complaint_id") == complaint_id:
-            if student_id and r.get("student_id") and r.get("student_id") != student_id:
-                return False
-            curr_status = _normalize_status(r.get("status"))
-            if curr_status != "Resolved":
-                return False
+        for r in records:
+            if r.get("complaint_id") == complaint_id:
+                if student_id and r.get("student_id") and r.get("student_id") != student_id:
+                    return False
+                curr_status = _normalize_status(r.get("status"))
+                if curr_status != "Resolved":
+                    return False
 
-            r["feedback"] = {
-                "rating": rating,
-                "rating_label": rating_labels.get(rating, "Good"),
-                "comments": comments.strip(),
-                "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            }
+                r["feedback"] = {
+                    "rating": rating,
+                    "rating_label": rating_labels.get(rating, "Good"),
+                    "comments": comments.strip(),
+                    "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }
 
-            now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
-            remarks_list = r.setdefault("remarks_history", [])
-            remarks_list.insert(0, {
-                "remarks": f"Feedback submitted: {rating} Star(s) ({rating_labels.get(rating, '')}) - {comments.strip() or 'No comments'}",
-                "update_date": now_str,
-                "name": f"Student ({student_id or r.get('student_id', 'Self')})",
-                "supporting_document": "None",
-            })
-            _save_to_disk(st.session_state["complaints_records"])
-            return True
-    return False
+                now_str = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+                remarks_list = r.setdefault("remarks_history", [])
+                remarks_list.insert(0, {
+                    "remarks": f"Feedback submitted: {rating} Star(s) ({rating_labels.get(rating, '')}) - {comments.strip() or 'No comments'}",
+                    "update_date": now_str,
+                    "name": f"Student ({student_id or r.get('student_id', 'Self')})",
+                    "supporting_document": "None",
+                })
+                _save_to_disk(records)
+                return True
+        return False
 
 
 def clear_all_complaints() -> None:
     """Empties the complaints repository to test empty-state handling."""
-    st.session_state["complaints_records"] = []
-    _save_to_disk([])
+    with _STORE_LOCK:
+        st.session_state["complaints_records"] = []
+        _save_to_disk([])
 
 
 def reset_to_default_dataset() -> None:
     """Restores the standard sample campus complaint dataset with CMP-2026-001..007 tokens."""
-    seed = _generate_seed_complaints()
-    st.session_state["complaints_records"] = seed
-    _save_to_disk(seed)
+    with _STORE_LOCK:
+        seed = _generate_seed_complaints()
+        st.session_state["complaints_records"] = seed
+        _save_to_disk(seed)
 
 
 def get_kpi_summary(df: pd.DataFrame) -> dict:

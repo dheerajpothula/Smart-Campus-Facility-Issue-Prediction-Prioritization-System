@@ -179,7 +179,62 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         unsafe_allow_html=True,
     )
 
-    # D. ATTACHMENTS
+    # D. RESOLUTION INFORMATION (Dedicated section for resolved or previously resolved tickets)
+    history_list = complaint_record.get("remarks_history") or []
+    has_res_info = (curr_status == "Resolved") or bool(complaint_record.get("resolved_at")) or bool(complaint_record.get("closing_remarks"))
+    if has_res_info:
+        res_remarks = complaint_record.get("closing_remarks") or complaint_record.get("action_taken") or "Issue successfully resolved."
+        res_date = complaint_record.get("resolved_at") or complaint_record.get("estimated_resolution") or "—"
+        res_admin = complaint_record.get("resolved_by") or "Facility Operations Admin"
+        prev_status = "In Progress"
+
+        for h in history_list:
+            if h.get("new_status") == "Resolved":
+                if h.get("previous_status"):
+                    prev_status = h.get("previous_status")
+                if h.get("update_date") and (res_date == "—" or not complaint_record.get("resolved_at")):
+                    res_date = h.get("update_date")
+                if h.get("name") and (res_admin == "Facility Operations Admin" or not complaint_record.get("resolved_by")):
+                    res_admin = h.get("name")
+                if h.get("remarks") and not complaint_record.get("closing_remarks"):
+                    res_remarks = h.get("remarks")
+                break
+
+        reopened_notice_html = ""
+        if complaint_record.get("is_reopened"):
+            reop_at = complaint_record.get("reopened_at", "Recorded in history")
+            orig_at = complaint_record.get("original_resolved_at", res_date)
+            reopened_notice_html = f"""
+            <div style="background: #FFFBF0; border: 1px solid #E6D2A9; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.77rem; color: #8A6D3B; margin-top: 0.45rem;">
+                <strong>Reopened Ticket:</strong> Reopened on {reop_at}. Prior resolution timestamp: {orig_at}.
+            </div>
+            """
+
+        st.markdown(
+            f"""
+            <div style="margin-bottom: 0.85rem;">
+                <div style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.05em; color: #55685F; margin-bottom: 0.3rem;">
+                    Resolution Information
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-left: 3px solid #203A32; border-radius: 6px; padding: 0.65rem 0.85rem; font-size: 0.82rem;">
+                    <div style="margin-bottom: 0.35rem;">
+                        <span style="color: #6D8276; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Resolution Remarks:</span>
+                        <div style="color: #203A32; font-weight: 600; margin-top: 0.15rem; line-height: 1.45;">{res_remarks}</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.65rem; margin-top: 0.45rem; border-top: 1px solid #EDF2EB; padding-top: 0.4rem;">
+                        <div><span style="color: #6D8276;">Resolved Date &amp; Time:</span> <strong>{res_date}</strong></div>
+                        <div><span style="color: #6D8276;">Resolving Administrator:</span> <strong>{res_admin}</strong></div>
+                        <div><span style="color: #6D8276;">Previous Status:</span> <strong>{prev_status}</strong></div>
+                        <div><span style="color: #6D8276;">Audit Status:</span> <strong style="color: #203A32;">Verified Record</strong></div>
+                    </div>
+                    {reopened_notice_html}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # E. ATTACHMENTS
     supp_doc = complaint_record.get("supporting_document")
     has_attachment = False
     attachment_name = None
@@ -302,9 +357,15 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
             placeholder="e.g. Issue recurred, repairs incomplete...",
             key=f"input_reopen_reason_{cid}",
         )
+        confirm_reopen = st.checkbox(
+            "I confirm reopening this complaint and restoring it to active review",
+            key=f"chk_confirm_reopen_{cid}",
+        )
         if st.button("Reopen Complaint", key=f"btn_reopen_{cid}", type="primary", use_container_width=True):
             if not reopen_reason.strip():
                 st.error("Please provide a justification to reopen this complaint.")
+            elif not confirm_reopen:
+                st.error("Please confirm reopening by checking the confirmation box.")
             else:
                 ok = reopen_complaint(
                     complaint_id=cid,
@@ -333,6 +394,20 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
                 st.success(f"Complaint {cid} marked as Under Review.")
                 st.rerun()
 
+    # Quick Action for assigned complaints to transition directly into active work
+    if curr_status == "Assigned":
+        if st.button("Start Work / Move to In Progress", key=f"btn_quick_in_progress_{cid}", type="secondary", use_container_width=True):
+            ok = update_complaint_status_extended(
+                complaint_id=cid,
+                new_status="In Progress",
+                remarks="Work commenced on-site by assigned squad.",
+                admin_id=admin_id,
+                admin_title=admin_title,
+            )
+            if ok:
+                st.success(f"Complaint {cid} moved to In Progress.")
+                st.rerun()
+
     # Normal Lifecycle Actions
     curr_stage_idx = PROGRESS_STAGES.index(curr_status) if curr_status in PROGRESS_STAGES else 0
 
@@ -344,13 +419,16 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
     )
 
     # Assigned staff selection
+    squad_options = list(MAINTENANCE_SQUADS)
+    if staff_member and staff_member not in squad_options and staff_member not in ["Unassigned", "None", "—"]:
+        squad_options.append(staff_member)
     current_staff_idx = 0
-    if staff_member in MAINTENANCE_SQUADS:
-        current_staff_idx = MAINTENANCE_SQUADS.index(staff_member)
+    if staff_member in squad_options:
+        current_staff_idx = squad_options.index(staff_member)
 
     assigned_staff = st.selectbox(
         "Assign Maintenance Squad / Technician",
-        options=MAINTENANCE_SQUADS,
+        options=squad_options,
         index=current_staff_idx,
         key=f"panel_staff_sel_{cid}",
     )
@@ -373,7 +451,7 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
         if is_resolving and not admin_remarks.strip():
             st.error("Resolution remarks are mandatory when marking a ticket as Resolved.")
         else:
-            final_staff = assigned_staff if assigned_staff != "Unassigned" else None
+            final_staff = assigned_staff if assigned_staff != "Unassigned" else "Unassigned"
             ok = update_complaint_status_extended(
                 complaint_id=cid,
                 new_status=new_status,

@@ -1,0 +1,97 @@
+{
+  "Health Checks": {
+    "status": "PASSED",
+    "duration_ms": 46.19,
+    "details": {
+      "status": "healthy",
+      "records": 24,
+      "ml": {
+        "nlp_classifier": "active",
+        "severity_model": "active",
+        "shap_explainer": "active",
+        "priority_engine": "active"
+      }
+    }
+  },
+  "Authentication & Persistence": {
+    "status": "PASSED",
+    "duration_ms": 987.31,
+    "details": {
+      "admin_authenticated": true,
+      "student_authenticated": true,
+      "token_revoked": true,
+      "rehash_persisted": true
+    }
+  },
+  "RBAC & Student Isolation": {
+    "status": "PASSED",
+    "duration_ms": 752.77,
+    "details": {
+      "rbac_enforced": true,
+      "student_isolation_verified": true,
+      "created_token": "CMP-2026-025"
+    }
+  },
+  "Taxonomy Endpoint": {
+    "status": "PASSED",
+    "duration_ms": 5.29,
+    "details": {
+      "category_count": 19,
+      "first_category": "Air Conditioner"
+    }
+  },
+  "Secure File Upload": {
+    "status": "PASSED",
+    "duration_ms": 268.15,
+    "details": {
+      "stored_filename": "CMP-PHOTO_d4e63adb45a4.png",
+      "security_validation_passed": true
+    }
+  },
+  "Admin Workflows & Lifecycle": {
+    "status": "PASSED",
+    "duration_ms": 624.45,
+    "details": {
+      "lifecycle_verified": true,
+      "token": "CMP-2026-026",
+      "remarks_count": 5
+    }
+  },
+  "Student Withdrawal": {
+    "status": "PASSED",
+    "duration_ms": 288.97,
+    "details": {
+      "withdrawal_verified": true,
+      "token": "CMP-2026-027"
+    }
+  },
+  "Reports & PII Export": {
+    "status": "PASSED",
+    "duration_ms": 253.02,
+    "details": {
+      "analytics_ok": true,
+      "export_redacted": true
+    }
+  },
+  "ML & Predictions": {
+    "status": "PASSED",
+    "duration_ms": 274.29,
+    "details": {
+      "nlp_analyzed": true,
+      "expected_impact": "Medium",
+      "shap_ready": true,
+      "weights_updated": true
+    }
+  },
+  "Migration Safety": {
+    "status": "PASSED",
+    "duration_ms": 322.2,
+    "details": {
+      "dry_run_success": true,
+      "migrated_live_count": 27,
+      "staging_total": 27,
+      "token_collisions": 0,
+      "switch_status": "PRESERVED_JSON_LIVE (No production switch executed)"
+    }
+  }
+}

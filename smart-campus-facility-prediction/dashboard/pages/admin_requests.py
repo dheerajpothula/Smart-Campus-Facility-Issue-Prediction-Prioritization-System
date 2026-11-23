@@ -1,7 +1,6 @@
 """
 Facility Operations Control Centre — Unified Requests Management.
-Implements Phase 2: All Requests (Search, Multi-Filter, Sorting, Pagination, Enterprise Table,
-and Right-Side Complaint Details Panel).
+Implements Phase 2: All Requests, Phase 3: New / Unassigned, Phase 4: In Progress, and Phase 5: Resolved.
 Preserves Modern Sage & Forest color system and enterprise dashboard usability patterns.
 """
 import streamlit as st
@@ -25,7 +24,9 @@ def reset_requests_filters(view_mode: str) -> None:
     st.session_state[f"f_cat_{view_mode}"] = "All Categories"
     st.session_state[f"f_loc_{view_mode}"] = "All Locations"
     st.session_state[f"f_date_{view_mode}"] = "All Dates"
+    st.session_state[f"f_res_date_{view_mode}"] = "All Dates"
     st.session_state[f"f_prio_{view_mode}"] = "All Priorities"
+    st.session_state[f"f_assign_{view_mode}"] = "All Assignments"
     st.session_state[f"page_sel_{view_mode}"] = 1
 
 
@@ -46,14 +47,16 @@ def render_requests_view(view_mode: str = "all") -> None:
     st.session_state.setdefault(f"f_cat_{view_mode}", "All Categories")
     st.session_state.setdefault(f"f_loc_{view_mode}", "All Locations")
     st.session_state.setdefault(f"f_date_{view_mode}", "All Dates")
+    st.session_state.setdefault(f"f_res_date_{view_mode}", "All Dates")
     st.session_state.setdefault(f"f_prio_{view_mode}", "All Priorities")
+    st.session_state.setdefault(f"f_assign_{view_mode}", "All Assignments")
     st.session_state.setdefault(f"page_sel_{view_mode}", 1)
 
     titles = {
         "all": ("All Requests", "Manage and review submitted facility complaints.", "FACILITY OPERATIONS · ALL REQUESTS"),
         "new": ("New / Unassigned", "Review newly submitted facility complaints awaiting administrative action.", "NEW & UNASSIGNED TRIAGE"),
-        "in_progress": ("In Progress", "Active repair operations, dispatched technical squads, and ongoing maintenance tasks.", "IN PROGRESS WORK ORDERS"),
-        "resolved": ("Resolved", "Permanent historical archive of verified, closed, and resolved campus facility tickets.", "RESOLVED FACILITY ARCHIVE"),
+        "in_progress": ("In Progress", "Track and manage facility complaints currently being addressed.", "FACILITY OPERATIONS · IN PROGRESS"),
+        "resolved": ("Resolved", "Review completed facility complaints and their resolution history.", "FACILITY OPERATIONS · RESOLVED"),
     }
 
     title, subtitle, kicker = titles.get(view_mode, titles["all"])
@@ -77,7 +80,9 @@ def render_requests_view(view_mode: str = "all") -> None:
         is_unassigned_review = (raw_df["status"] == "Under Review") & is_unassigned_record
         mode_df = raw_df[is_submitted | is_unassigned_review]
     elif view_mode == "in_progress":
-        mode_df = raw_df[raw_df["status"].isin(["In Progress", "Under Review", "Assigned"])]
+        is_in_progress = raw_df["status"] == "In Progress"
+        is_assigned = raw_df["status"] == "Assigned"
+        mode_df = raw_df[is_in_progress | is_assigned]
     elif view_mode == "resolved":
         mode_df = raw_df[raw_df["status"] == "Resolved"]
     else:
@@ -106,6 +111,92 @@ def render_requests_view(view_mode: str = "all") -> None:
                     <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #A8B9A3;"></span>
                     <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Unassigned</span>
                     <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{unassigned_count}</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    elif view_mode == "in_progress":
+        total_in_prog_count = int((raw_df["status"] == "In Progress").sum())
+        assigned_count = int(
+            ((raw_df["status"].isin(["In Progress", "Assigned"])) & ((raw_df["status"] == "Assigned") | (~is_unassigned_record))).sum()
+        )
+        awaiting_action_count = int(
+            ((raw_df["status"] == "In Progress") & is_unassigned_record).sum()
+        )
+        st.markdown(
+            f"""
+            <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.85rem;">
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Total In Progress</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{total_in_prog_count}</span>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #203A32;"></span>
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Assigned</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{assigned_count}</span>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #A8B9A3;"></span>
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Awaiting Action</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{awaiting_action_count}</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    elif view_mode == "resolved":
+        total_resolved = int((raw_df["status"] == "Resolved").sum())
+        today_dt = pd.Timestamp.now().normalize()
+        res_records = raw_df[raw_df["status"] == "Resolved"]
+
+        def _check_today(val):
+            if not val or pd.isna(val):
+                return False
+            try:
+                return pd.to_datetime(val).normalize() == today_dt
+            except Exception:
+                return False
+
+        res_today_count = sum(1 for _, row in res_records.iterrows() if _check_today(row.get("resolved_at")))
+        res_rate = int(round((total_resolved / len(raw_df)) * 100)) if len(raw_df) > 0 else 0
+
+        turnaround_days = []
+        for _, row in res_records.iterrows():
+            res_time = row.get("resolved_at") or row.get("estimated_resolution")
+            rep_time = row.get("date_reported")
+            if res_time and rep_time:
+                try:
+                    t_res = pd.to_datetime(res_time)
+                    t_rep = pd.to_datetime(rep_time)
+                    diff = (t_res - t_rep).total_seconds() / 86400.0
+                    if diff >= 0:
+                        turnaround_days.append(diff)
+                except Exception:
+                    pass
+        avg_turnaround_val = f"{sum(turnaround_days)/len(turnaround_days):.1f}d avg" if turnaround_days else "—"
+
+        st.markdown(
+            f"""
+            <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.85rem;">
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Total Resolved</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{total_resolved}</span>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #203A32;"></span>
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Resolved Today</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{res_today_count}</span>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #A8B9A3;"></span>
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Resolution Rate</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{res_rate}%</span>
+                </div>
+                <div style="background: #FFFFFF; border: 1px solid #DCE5D8; border-radius: 6px; padding: 0.35rem 0.75rem; display: inline-flex; align-items: center; gap: 0.45rem;">
+                    <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background-color: #55685F;"></span>
+                    <span style="font-size: 0.72rem; font-weight: 750; text-transform: uppercase; letter-spacing: 0.04em; color: #55685F;">Avg Turnaround</span>
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #203A32;">{avg_turnaround_val}</span>
                 </div>
             </div>
             """,
@@ -165,9 +256,14 @@ def render_requests_view(view_mode: str = "all") -> None:
             label_visibility="collapsed",
         )
     with c_srt:
-        sort_options = ["Newest first", "Oldest first", "Highest existing priority"]
+        if view_mode == "resolved":
+            sort_options = ["Newest first", "Oldest first", "Newest resolved", "Oldest resolved", "Highest existing priority"]
+            default_sort = "Newest first"
+        else:
+            sort_options = ["Newest first", "Oldest first", "Highest existing priority"]
+            default_sort = "Newest first"
         if st.session_state.get(f"sort_{view_mode}") not in sort_options:
-            st.session_state[f"sort_{view_mode}"] = "Newest first"
+            st.session_state[f"sort_{view_mode}"] = default_sort
         cur_sort = st.session_state[f"sort_{view_mode}"]
         cur_sort_idx = sort_options.index(cur_sort)
         sort_by = st.selectbox(
@@ -187,55 +283,155 @@ def render_requests_view(view_mode: str = "all") -> None:
             args=(view_mode,),
         )
 
-    # Toolbar Row 2: Five compact filters supporting stored fields
-    f_col1, f_col2, f_col3, f_col4, f_col5 = st.columns([1.1, 1.2, 1.2, 1.1, 1.1])
+    # Toolbar Row 2: Compact filters supporting stored fields
+    if view_mode == "in_progress":
+        f_col1, f_col2, f_col3, f_col4, f_col5, f_col6 = st.columns([1.0, 1.15, 1.15, 1.15, 1.05, 1.0])
 
-    with f_col1:
-        if view_mode == "all":
-            status_choices = ["All Statuses"] + PROGRESS_STAGES + ["Withdrawn"]
-        elif view_mode == "new":
-            status_choices = ["All Statuses", "Submitted", "Under Review"]
-        else:
-            status_choices = ["All Statuses"]
-        if st.session_state.get(f"f_stat_{view_mode}") not in status_choices:
-            st.session_state[f"f_stat_{view_mode}"] = "All Statuses"
-        cur_stat = st.session_state[f"f_stat_{view_mode}"]
-        cur_stat_idx = status_choices.index(cur_stat)
-        sel_status = st.selectbox("Status", options=status_choices, index=cur_stat_idx, key=f"f_stat_{view_mode}")
+        with f_col1:
+            status_choices = ["All Statuses", "In Progress", "Assigned"]
+            if st.session_state.get(f"f_stat_{view_mode}") not in status_choices:
+                st.session_state[f"f_stat_{view_mode}"] = "All Statuses"
+            cur_stat = st.session_state[f"f_stat_{view_mode}"]
+            cur_stat_idx = status_choices.index(cur_stat)
+            sel_status = st.selectbox("Status", options=status_choices, index=cur_stat_idx, key=f"f_stat_{view_mode}")
 
-    with f_col2:
-        all_cats = sorted(list(set(raw_df["facility_type"].dropna().unique()) | set(raw_df.get("category", pd.Series(dtype=object)).dropna().unique())))
-        cat_choices = ["All Categories"] + [c for c in all_cats if str(c).strip()]
-        if st.session_state.get(f"f_cat_{view_mode}") not in cat_choices:
-            st.session_state[f"f_cat_{view_mode}"] = "All Categories"
-        cur_cat = st.session_state[f"f_cat_{view_mode}"]
-        cur_cat_idx = cat_choices.index(cur_cat)
-        sel_cat = st.selectbox("Category", options=cat_choices, index=cur_cat_idx, key=f"f_cat_{view_mode}")
+        with f_col2:
+            assign_choices = ["All Assignments", "Assigned", "Unassigned"]
+            if st.session_state.get(f"f_assign_{view_mode}") not in assign_choices:
+                st.session_state[f"f_assign_{view_mode}"] = "All Assignments"
+            cur_assign = st.session_state[f"f_assign_{view_mode}"]
+            cur_assign_idx = assign_choices.index(cur_assign)
+            sel_assign = st.selectbox("Assignment", options=assign_choices, index=cur_assign_idx, key=f"f_assign_{view_mode}")
 
-    with f_col3:
-        all_locs = sorted(list(set(raw_df["building"].dropna().unique()) | set(raw_df["location"].dropna().unique())))
-        loc_choices = ["All Locations"] + [l for l in all_locs if str(l).strip()]
-        if st.session_state.get(f"f_loc_{view_mode}") not in loc_choices:
-            st.session_state[f"f_loc_{view_mode}"] = "All Locations"
-        cur_loc = st.session_state[f"f_loc_{view_mode}"]
-        cur_loc_idx = loc_choices.index(cur_loc)
-        sel_loc = st.selectbox("Building / Location", options=loc_choices, index=cur_loc_idx, key=f"f_loc_{view_mode}")
+        with f_col3:
+            all_cats = sorted(list(set(raw_df["facility_type"].dropna().unique()) | set(raw_df.get("category", pd.Series(dtype=object)).dropna().unique())))
+            cat_choices = ["All Categories"] + [c for c in all_cats if str(c).strip()]
+            if st.session_state.get(f"f_cat_{view_mode}") not in cat_choices:
+                st.session_state[f"f_cat_{view_mode}"] = "All Categories"
+            cur_cat = st.session_state[f"f_cat_{view_mode}"]
+            cur_cat_idx = cat_choices.index(cur_cat)
+            sel_cat = st.selectbox("Category", options=cat_choices, index=cur_cat_idx, key=f"f_cat_{view_mode}")
 
-    with f_col4:
-        date_choices = ["All Dates", "Today", "Past 7 Days", "Past 30 Days"]
-        if st.session_state.get(f"f_date_{view_mode}") not in date_choices:
-            st.session_state[f"f_date_{view_mode}"] = "All Dates"
-        cur_date = st.session_state[f"f_date_{view_mode}"]
-        cur_date_idx = date_choices.index(cur_date)
-        sel_date = st.selectbox("Submission Date", options=date_choices, index=cur_date_idx, key=f"f_date_{view_mode}")
+        with f_col4:
+            all_locs = sorted(list(set(raw_df["building"].dropna().unique()) | set(raw_df["location"].dropna().unique())))
+            loc_choices = ["All Locations"] + [l for l in all_locs if str(l).strip()]
+            if st.session_state.get(f"f_loc_{view_mode}") not in loc_choices:
+                st.session_state[f"f_loc_{view_mode}"] = "All Locations"
+            cur_loc = st.session_state[f"f_loc_{view_mode}"]
+            cur_loc_idx = loc_choices.index(cur_loc)
+            sel_loc = st.selectbox("Building / Location", options=loc_choices, index=cur_loc_idx, key=f"f_loc_{view_mode}")
 
-    with f_col5:
-        prio_choices = ["All Priorities", "Critical", "High", "Medium", "Low"]
-        if st.session_state.get(f"f_prio_{view_mode}") not in prio_choices:
-            st.session_state[f"f_prio_{view_mode}"] = "All Priorities"
-        cur_prio = st.session_state[f"f_prio_{view_mode}"]
-        cur_prio_idx = prio_choices.index(cur_prio)
-        sel_prio = st.selectbox("MCPI Priority", options=prio_choices, index=cur_prio_idx, key=f"f_prio_{view_mode}")
+        with f_col5:
+            date_choices = ["All Dates", "Today", "Past 7 Days", "Past 30 Days"]
+            if st.session_state.get(f"f_date_{view_mode}") not in date_choices:
+                st.session_state[f"f_date_{view_mode}"] = "All Dates"
+            cur_date = st.session_state[f"f_date_{view_mode}"]
+            cur_date_idx = date_choices.index(cur_date)
+            sel_date = st.selectbox("Submission Date", options=date_choices, index=cur_date_idx, key=f"f_date_{view_mode}")
+
+        with f_col6:
+            prio_choices = ["All Priorities", "Critical", "High", "Medium", "Low"]
+            if st.session_state.get(f"f_prio_{view_mode}") not in prio_choices:
+                st.session_state[f"f_prio_{view_mode}"] = "All Priorities"
+            cur_prio = st.session_state[f"f_prio_{view_mode}"]
+            cur_prio_idx = prio_choices.index(cur_prio)
+            sel_prio = st.selectbox("MCPI Priority", options=prio_choices, index=cur_prio_idx, key=f"f_prio_{view_mode}")
+    elif view_mode == "resolved":
+        sel_assign = "All Assignments"
+        sel_status = "Resolved"
+        f_col1, f_col2, f_col3, f_col4, f_col5 = st.columns([1.2, 1.2, 1.1, 1.1, 1.0])
+
+        with f_col1:
+            all_cats = sorted(list(set(raw_df["facility_type"].dropna().unique()) | set(raw_df.get("category", pd.Series(dtype=object)).dropna().unique())))
+            cat_choices = ["All Categories"] + [c for c in all_cats if str(c).strip()]
+            if st.session_state.get(f"f_cat_{view_mode}") not in cat_choices:
+                st.session_state[f"f_cat_{view_mode}"] = "All Categories"
+            cur_cat = st.session_state[f"f_cat_{view_mode}"]
+            cur_cat_idx = cat_choices.index(cur_cat)
+            sel_cat = st.selectbox("Category", options=cat_choices, index=cur_cat_idx, key=f"f_cat_{view_mode}")
+
+        with f_col2:
+            all_locs = sorted(list(set(raw_df["building"].dropna().unique()) | set(raw_df["location"].dropna().unique())))
+            loc_choices = ["All Locations"] + [l for l in all_locs if str(l).strip()]
+            if st.session_state.get(f"f_loc_{view_mode}") not in loc_choices:
+                st.session_state[f"f_loc_{view_mode}"] = "All Locations"
+            cur_loc = st.session_state[f"f_loc_{view_mode}"]
+            cur_loc_idx = loc_choices.index(cur_loc)
+            sel_loc = st.selectbox("Building / Location", options=loc_choices, index=cur_loc_idx, key=f"f_loc_{view_mode}")
+
+        with f_col3:
+            date_choices = ["All Dates", "Today", "Past 7 Days", "Past 30 Days"]
+            if st.session_state.get(f"f_date_{view_mode}") not in date_choices:
+                st.session_state[f"f_date_{view_mode}"] = "All Dates"
+            cur_date = st.session_state[f"f_date_{view_mode}"]
+            cur_date_idx = date_choices.index(cur_date)
+            sel_date = st.selectbox("Submission Date", options=date_choices, index=cur_date_idx, key=f"f_date_{view_mode}")
+
+        with f_col4:
+            res_date_choices = ["All Dates", "Today", "Past 7 Days", "Past 30 Days"]
+            if st.session_state.get(f"f_res_date_{view_mode}") not in res_date_choices:
+                st.session_state[f"f_res_date_{view_mode}"] = "All Dates"
+            cur_res_date = st.session_state[f"f_res_date_{view_mode}"]
+            cur_res_date_idx = res_date_choices.index(cur_res_date)
+            sel_res_date = st.selectbox("Resolution Date", options=res_date_choices, index=cur_res_date_idx, key=f"f_res_date_{view_mode}")
+
+        with f_col5:
+            prio_choices = ["All Priorities", "Critical", "High", "Medium", "Low"]
+            if st.session_state.get(f"f_prio_{view_mode}") not in prio_choices:
+                st.session_state[f"f_prio_{view_mode}"] = "All Priorities"
+            cur_prio = st.session_state[f"f_prio_{view_mode}"]
+            cur_prio_idx = prio_choices.index(cur_prio)
+            sel_prio = st.selectbox("MCPI Priority", options=prio_choices, index=cur_prio_idx, key=f"f_prio_{view_mode}")
+    else:
+        sel_assign = "All Assignments"
+        f_col1, f_col2, f_col3, f_col4, f_col5 = st.columns([1.1, 1.2, 1.2, 1.1, 1.1])
+
+        with f_col1:
+            if view_mode == "all":
+                status_choices = ["All Statuses"] + PROGRESS_STAGES + ["Withdrawn"]
+            elif view_mode == "new":
+                status_choices = ["All Statuses", "Submitted", "Under Review"]
+            else:
+                status_choices = ["All Statuses"]
+            if st.session_state.get(f"f_stat_{view_mode}") not in status_choices:
+                st.session_state[f"f_stat_{view_mode}"] = "All Statuses"
+            cur_stat = st.session_state[f"f_stat_{view_mode}"]
+            cur_stat_idx = status_choices.index(cur_stat)
+            sel_status = st.selectbox("Status", options=status_choices, index=cur_stat_idx, key=f"f_stat_{view_mode}")
+
+        with f_col2:
+            all_cats = sorted(list(set(raw_df["facility_type"].dropna().unique()) | set(raw_df.get("category", pd.Series(dtype=object)).dropna().unique())))
+            cat_choices = ["All Categories"] + [c for c in all_cats if str(c).strip()]
+            if st.session_state.get(f"f_cat_{view_mode}") not in cat_choices:
+                st.session_state[f"f_cat_{view_mode}"] = "All Categories"
+            cur_cat = st.session_state[f"f_cat_{view_mode}"]
+            cur_cat_idx = cat_choices.index(cur_cat)
+            sel_cat = st.selectbox("Category", options=cat_choices, index=cur_cat_idx, key=f"f_cat_{view_mode}")
+
+        with f_col3:
+            all_locs = sorted(list(set(raw_df["building"].dropna().unique()) | set(raw_df["location"].dropna().unique())))
+            loc_choices = ["All Locations"] + [l for l in all_locs if str(l).strip()]
+            if st.session_state.get(f"f_loc_{view_mode}") not in loc_choices:
+                st.session_state[f"f_loc_{view_mode}"] = "All Locations"
+            cur_loc = st.session_state[f"f_loc_{view_mode}"]
+            cur_loc_idx = loc_choices.index(cur_loc)
+            sel_loc = st.selectbox("Building / Location", options=loc_choices, index=cur_loc_idx, key=f"f_loc_{view_mode}")
+
+        with f_col4:
+            date_choices = ["All Dates", "Today", "Past 7 Days", "Past 30 Days"]
+            if st.session_state.get(f"f_date_{view_mode}") not in date_choices:
+                st.session_state[f"f_date_{view_mode}"] = "All Dates"
+            cur_date = st.session_state[f"f_date_{view_mode}"]
+            cur_date_idx = date_choices.index(cur_date)
+            sel_date = st.selectbox("Submission Date", options=date_choices, index=cur_date_idx, key=f"f_date_{view_mode}")
+
+        with f_col5:
+            prio_choices = ["All Priorities", "Critical", "High", "Medium", "Low"]
+            if st.session_state.get(f"f_prio_{view_mode}") not in prio_choices:
+                st.session_state[f"f_prio_{view_mode}"] = "All Priorities"
+            cur_prio = st.session_state[f"f_prio_{view_mode}"]
+            cur_prio_idx = prio_choices.index(cur_prio)
+            sel_prio = st.selectbox("MCPI Priority", options=prio_choices, index=cur_prio_idx, key=f"f_prio_{view_mode}")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -255,6 +451,17 @@ def render_requests_view(view_mode: str = "all") -> None:
     # Filters
     if sel_status != "All Statuses":
         filtered_df = filtered_df[filtered_df["status"] == sel_status]
+
+    if view_mode == "in_progress" and sel_assign != "All Assignments":
+        df_staff = filtered_df["assigned_staff"] if "assigned_staff" in filtered_df.columns else pd.Series([""] * len(filtered_df), index=filtered_df.index)
+        df_allotted = filtered_df["allotted_person"] if "allotted_person" in filtered_df.columns else pd.Series([""] * len(filtered_df), index=filtered_df.index)
+        df_is_unassigned = df_staff.fillna("").astype(str).str.strip().isin(["", "Unassigned", "None", "nan"]) & \
+                           df_allotted.fillna("").astype(str).str.strip().isin(["", "Unassigned", "None", "nan"])
+        df_is_assigned = (filtered_df["status"] == "Assigned") | (~df_is_unassigned)
+        if sel_assign == "Assigned":
+            filtered_df = filtered_df[df_is_assigned]
+        elif sel_assign == "Unassigned":
+            filtered_df = filtered_df[df_is_unassigned & (filtered_df["status"] != "Assigned")]
 
     if sel_cat != "All Categories":
         m_c1 = filtered_df["facility_type"] == sel_cat
@@ -276,13 +483,40 @@ def render_requests_view(view_mode: str = "all") -> None:
         elif sel_date == "Past 30 Days":
             filtered_df = filtered_df[dts.dt.normalize() >= (today - pd.Timedelta(days=30))]
 
+    if view_mode == "resolved" and sel_res_date != "All Dates":
+        res_col = filtered_df["resolved_at"] if "resolved_at" in filtered_df.columns else pd.Series([None] * len(filtered_df), index=filtered_df.index)
+        if "estimated_resolution" in filtered_df.columns:
+            res_col = res_col.fillna(filtered_df["estimated_resolution"])
+        dts_res = pd.to_datetime(res_col, errors="coerce")
+        today = pd.Timestamp.now().normalize()
+        if sel_res_date == "Today":
+            filtered_df = filtered_df[dts_res.dt.normalize() == today]
+        elif sel_res_date == "Past 7 Days":
+            filtered_df = filtered_df[dts_res.dt.normalize() >= (today - pd.Timedelta(days=7))]
+        elif sel_res_date == "Past 30 Days":
+            filtered_df = filtered_df[dts_res.dt.normalize() >= (today - pd.Timedelta(days=30))]
+
     if sel_prio != "All Priorities" and "priority_tier" in filtered_df.columns:
         filtered_df = filtered_df[filtered_df["priority_tier"] == sel_prio]
 
     # Sorting
-    if sort_by == "Newest first" and "date_reported" in filtered_df.columns:
+    if sort_by == "Newest resolved":
+        res_s = filtered_df["resolved_at"] if "resolved_at" in filtered_df.columns else pd.Series([None] * len(filtered_df), index=filtered_df.index)
+        if "estimated_resolution" in filtered_df.columns:
+            res_s = res_s.fillna(filtered_df["estimated_resolution"])
+        if "date_reported" in filtered_df.columns:
+            res_s = res_s.fillna(filtered_df["date_reported"])
+        filtered_df = filtered_df.assign(_d_res=pd.to_datetime(res_s, errors="coerce")).sort_values(by="_d_res", ascending=False).drop(columns=["_d_res"])
+    elif sort_by == "Oldest resolved":
+        res_s = filtered_df["resolved_at"] if "resolved_at" in filtered_df.columns else pd.Series([None] * len(filtered_df), index=filtered_df.index)
+        if "estimated_resolution" in filtered_df.columns:
+            res_s = res_s.fillna(filtered_df["estimated_resolution"])
+        if "date_reported" in filtered_df.columns:
+            res_s = res_s.fillna(filtered_df["date_reported"])
+        filtered_df = filtered_df.assign(_d_res=pd.to_datetime(res_s, errors="coerce")).sort_values(by="_d_res", ascending=True).drop(columns=["_d_res"])
+    elif sort_by in ["Newest first", "Newest submitted"] and "date_reported" in filtered_df.columns:
         filtered_df = filtered_df.assign(_d_s=pd.to_datetime(filtered_df["date_reported"], errors="coerce")).sort_values(by="_d_s", ascending=False).drop(columns=["_d_s"])
-    elif sort_by == "Oldest first" and "date_reported" in filtered_df.columns:
+    elif sort_by in ["Oldest first", "Oldest submitted"] and "date_reported" in filtered_df.columns:
         filtered_df = filtered_df.assign(_d_s=pd.to_datetime(filtered_df["date_reported"], errors="coerce")).sort_values(by="_d_s", ascending=True).drop(columns=["_d_s"])
     elif sort_by == "Highest existing priority":
         if "priority_score" in filtered_df.columns:
@@ -332,12 +566,18 @@ def render_requests_view(view_mode: str = "all") -> None:
 
         # Useful Empty State
         if filtered_df.empty:
-            empty_title = "No New or Unassigned Complaints" if mode_df.empty and view_mode == "new" else "No matching complaints found"
-            empty_msg = (
-                "All campus facility complaints have been reviewed and dispatched to maintenance squads. Newly submitted student queries will appear here automatically."
-                if mode_df.empty and view_mode == "new"
-                else "No submitted facility complaints match your active search query or filter criteria. Try resetting filters to view all records."
-            )
+            if mode_df.empty and view_mode == "new":
+                empty_title = "No New or Unassigned Complaints"
+                empty_msg = "All campus facility complaints have been reviewed and dispatched to maintenance squads. Newly submitted student queries will appear here automatically."
+            elif mode_df.empty and view_mode == "in_progress":
+                empty_title = "No In Progress Complaints"
+                empty_msg = "There are currently no active repair operations or maintenance work orders in progress. Newly dispatched tasks will appear here automatically."
+            elif mode_df.empty and view_mode == "resolved":
+                empty_title = "No Resolved Complaints"
+                empty_msg = "No facility complaints have been marked as resolved yet. When facility technicians or administrators mark work complete, resolved records will be archived here."
+            else:
+                empty_title = "No matching complaints found"
+                empty_msg = "No submitted facility complaints match your active search query or filter criteria. Try resetting filters to view all records."
             st.markdown(
                 f"""
                 <div style="background: #FFFFFF; border: 1px dashed #A8B9A3; border-radius: 8px; padding: 2.25rem 1.5rem; text-align: center; margin: 1.25rem 0;">
@@ -393,31 +633,79 @@ def render_requests_view(view_mode: str = "all") -> None:
         else:
             page_df = filtered_df
 
-        # 4. COMPLAINT TABLE: Clean, readable enterprise table (not wrapped in oversized cards)
+        # 4. COMPLAINT TABLE: Clean, readable enterprise table
         if selected_record:
-            # Master-detail split view: Core columns fit cleanly without text truncation or button clipping
-            col_widths = [1.15, 2.3, 1.2, 0.95, 1.4]
-            headers = [
-                ("TOKEN", "left"),
-                ("ISSUE", "left"),
-                ("STATUS", "left"),
-                ("PRIORITY", "left"),
-                ("ACTION", "right"),
-            ]
+            # Master-detail split view
+            if view_mode == "in_progress":
+                col_widths = [1.1, 2.0, 1.0, 1.2, 0.95]
+                headers = [
+                    ("TOKEN", "left"),
+                    ("ISSUE", "left"),
+                    ("STATUS", "left"),
+                    ("ASSIGNED TO", "left"),
+                    ("ACTION", "right"),
+                ]
+            elif view_mode == "resolved":
+                col_widths = [1.1, 2.0, 1.0, 1.15, 0.95]
+                headers = [
+                    ("TOKEN", "left"),
+                    ("ISSUE", "left"),
+                    ("STATUS", "left"),
+                    ("RESOLVED", "left"),
+                    ("ACTION", "right"),
+                ]
+            else:
+                col_widths = [1.15, 2.3, 1.2, 0.95, 1.4]
+                headers = [
+                    ("TOKEN", "left"),
+                    ("ISSUE", "left"),
+                    ("STATUS", "left"),
+                    ("PRIORITY", "left"),
+                    ("ACTION", "right"),
+                ]
         else:
-            # Full table view: All requested columns displayed with balanced widths
-            col_widths = [1.1, 2.35, 0.95, 1.15, 1.15, 0.95, 1.05, 0.85, 1.0]
-            headers = [
-                ("TOKEN", "left"),
-                ("ISSUE", "left"),
-                ("STUDENT ID", "left"),
-                ("CATEGORY", "left"),
-                ("LOCATION", "left"),
-                ("SUBMITTED", "left"),
-                ("STATUS", "left"),
-                ("PRIORITY", "left"),
-                ("ACTION", "right"),
-            ]
+            # Full table view
+            if view_mode == "in_progress":
+                col_widths = [1.0, 2.1, 0.85, 1.0, 1.0, 0.85, 0.9, 1.15, 0.75, 0.85]
+                headers = [
+                    ("TOKEN", "left"),
+                    ("ISSUE", "left"),
+                    ("STUDENT ID", "left"),
+                    ("CATEGORY", "left"),
+                    ("LOCATION", "left"),
+                    ("SUBMITTED", "left"),
+                    ("STATUS", "left"),
+                    ("ASSIGNED TO", "left"),
+                    ("PRIORITY", "left"),
+                    ("ACTION", "right"),
+                ]
+            elif view_mode == "resolved":
+                col_widths = [1.0, 2.1, 0.85, 1.0, 1.0, 0.85, 0.85, 0.85, 0.75, 0.85]
+                headers = [
+                    ("TOKEN", "left"),
+                    ("ISSUE", "left"),
+                    ("STUDENT ID", "left"),
+                    ("CATEGORY", "left"),
+                    ("LOCATION", "left"),
+                    ("SUBMITTED", "left"),
+                    ("RESOLVED", "left"),
+                    ("STATUS", "left"),
+                    ("PRIORITY", "left"),
+                    ("ACTION", "right"),
+                ]
+            else:
+                col_widths = [1.1, 2.35, 0.95, 1.15, 1.15, 0.95, 1.05, 0.85, 1.0]
+                headers = [
+                    ("TOKEN", "left"),
+                    ("ISSUE", "left"),
+                    ("STUDENT ID", "left"),
+                    ("CATEGORY", "left"),
+                    ("LOCATION", "left"),
+                    ("SUBMITTED", "left"),
+                    ("STATUS", "left"),
+                    ("PRIORITY", "left"),
+                    ("ACTION", "right"),
+                ]
 
         # Table Header
         h_cols = st.columns(col_widths)
@@ -438,12 +726,22 @@ def render_requests_view(view_mode: str = "all") -> None:
             loc = str(row.get("building") or row.get("location") or "—")
             dt = row.get("date_reported") or "—"
 
-            # Clean date formatting
+            # Clean date formatting for submission
             if dt != "—":
                 try:
                     dt = pd.to_datetime(dt).strftime("%d %b %Y")
                 except Exception:
                     dt = str(dt)[:10]
+
+            # Clean date formatting for resolution
+            res_val = row.get("resolved_at") or row.get("estimated_resolution")
+            if res_val and str(res_val).strip() not in ["None", "nan", "—", ""]:
+                try:
+                    res_display = pd.to_datetime(res_val).strftime("%d %b %Y")
+                except Exception:
+                    res_display = str(res_val)[:10]
+            else:
+                res_display = "—"
 
             status = row.get("status", "Submitted")
             s_badge = get_status_badge(status)
@@ -451,92 +749,139 @@ def render_requests_view(view_mode: str = "all") -> None:
             prio = row.get("priority_tier")
             p_badge = get_priority_badge(prio) if prio else "<span style='color: #8A9E93; font-size: 0.8rem;'>—</span>"
 
+            # Clean assignment formatting
+            staff_val = row.get("allotted_person") or row.get("assigned_staff")
+            if staff_val and str(staff_val).strip() not in ["None", "nan", "Unassigned", "—", ""]:
+                assigned_display = f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{staff_val}'>{staff_val}</div>"
+            else:
+                assigned_display = "<span style='color: #8A9E93; font-size: 0.78rem;'>Unassigned</span>"
+
             is_active = (cid == selected_cid)
 
             r_cols = st.columns(col_widths)
 
             if selected_record:
-                # 5-column master view for split pane
-                with r_cols[0]:
-                    st.markdown(
-                        f"<div class='fipp-cell-token' style='padding: 0.4rem 0;'>{cid}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[1]:
-                    st.markdown(
-                        f"<div class='fipp-cell-title' style='padding: 0.4rem 0;' title='{title}'>{title}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[2]:
-                    st.markdown(
-                        f"<div style='padding: 0.3rem 0;'>{s_badge}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[3]:
-                    st.markdown(
-                        f"<div style='padding: 0.3rem 0;'>{p_badge}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[4]:
-                    btn_label = "Viewing" if is_active else "Inspect"
-                    btn_type = "primary" if is_active else "secondary"
-                    if st.button(btn_label, key=f"btn_inspect_{view_mode}_{cid}", type=btn_type, use_container_width=True):
-                        if is_active:
-                            st.session_state["admin_selected_complaint_id"] = None
-                        else:
-                            st.session_state["admin_selected_complaint_id"] = cid
-                        st.rerun()
+                # Master view for split pane
+                if view_mode == "in_progress":
+                    with r_cols[0]:
+                        st.markdown(f"<div class='fipp-cell-token' style='padding: 0.4rem 0;'>{cid}</div>", unsafe_allow_html=True)
+                    with r_cols[1]:
+                        st.markdown(f"<div class='fipp-cell-title' style='padding: 0.4rem 0;' title='{title}'>{title}</div>", unsafe_allow_html=True)
+                    with r_cols[2]:
+                        st.markdown(f"<div style='padding: 0.3rem 0;'>{s_badge}</div>", unsafe_allow_html=True)
+                    with r_cols[3]:
+                        st.markdown(assigned_display, unsafe_allow_html=True)
+                    with r_cols[4]:
+                        btn_label = "Viewing" if is_active else "Inspect"
+                        btn_type = "primary" if is_active else "secondary"
+                        if st.button(btn_label, key=f"btn_inspect_{view_mode}_{cid}", type=btn_type, use_container_width=True):
+                            st.session_state["admin_selected_complaint_id"] = None if is_active else cid
+                            st.rerun()
+                elif view_mode == "resolved":
+                    with r_cols[0]:
+                        st.markdown(f"<div class='fipp-cell-token' style='padding: 0.4rem 0;'>{cid}</div>", unsafe_allow_html=True)
+                    with r_cols[1]:
+                        st.markdown(f"<div class='fipp-cell-title' style='padding: 0.4rem 0;' title='{title}'>{title}</div>", unsafe_allow_html=True)
+                    with r_cols[2]:
+                        st.markdown(f"<div style='padding: 0.3rem 0;'>{s_badge}</div>", unsafe_allow_html=True)
+                    with r_cols[3]:
+                        st.markdown(f"<div class='fipp-cell-date' style='padding: 0.4rem 0;'>{res_display}</div>", unsafe_allow_html=True)
+                    with r_cols[4]:
+                        btn_label = "Viewing" if is_active else "Inspect"
+                        btn_type = "primary" if is_active else "secondary"
+                        if st.button(btn_label, key=f"btn_inspect_{view_mode}_{cid}", type=btn_type, use_container_width=True):
+                            st.session_state["admin_selected_complaint_id"] = None if is_active else cid
+                            st.rerun()
+                else:
+                    with r_cols[0]:
+                        st.markdown(f"<div class='fipp-cell-token' style='padding: 0.4rem 0;'>{cid}</div>", unsafe_allow_html=True)
+                    with r_cols[1]:
+                        st.markdown(f"<div class='fipp-cell-title' style='padding: 0.4rem 0;' title='{title}'>{title}</div>", unsafe_allow_html=True)
+                    with r_cols[2]:
+                        st.markdown(f"<div style='padding: 0.3rem 0;'>{s_badge}</div>", unsafe_allow_html=True)
+                    with r_cols[3]:
+                        st.markdown(f"<div style='padding: 0.3rem 0;'>{p_badge}</div>", unsafe_allow_html=True)
+                    with r_cols[4]:
+                        btn_label = "Viewing" if is_active else "Inspect"
+                        btn_type = "primary" if is_active else "secondary"
+                        if st.button(btn_label, key=f"btn_inspect_{view_mode}_{cid}", type=btn_type, use_container_width=True):
+                            st.session_state["admin_selected_complaint_id"] = None if is_active else cid
+                            st.rerun()
             else:
-                # Complete 9-column enterprise view for full table
-                with r_cols[0]:
-                    st.markdown(
-                        f"<div class='fipp-cell-token' style='padding: 0.4rem 0;'>{cid}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[1]:
-                    st.markdown(
-                        f"<div class='fipp-cell-title' style='padding: 0.4rem 0;' title='{title}'>{title}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[2]:
-                    st.markdown(
-                        f"<div style='font-family: monospace; font-size: 0.78rem; color: #55685F; padding: 0.4rem 0; white-space: nowrap;'>{stu_id}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[3]:
-                    st.markdown(
-                        f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{cat}'>{cat}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[4]:
-                    st.markdown(
-                        f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{loc}'>{loc}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[5]:
-                    st.markdown(
-                        f"<div class='fipp-cell-date' style='padding: 0.4rem 0;'>{dt}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[6]:
-                    st.markdown(
-                        f"<div style='padding: 0.3rem 0;'>{s_badge}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[7]:
-                    st.markdown(
-                        f"<div style='padding: 0.3rem 0;'>{p_badge}</div>",
-                        unsafe_allow_html=True,
-                    )
-                with r_cols[8]:
-                    btn_label = "Viewing" if is_active else "Inspect"
-                    btn_type = "primary" if is_active else "secondary"
-                    if st.button(btn_label, key=f"btn_inspect_{view_mode}_{cid}", type=btn_type, use_container_width=True):
-                        if is_active:
-                            st.session_state["admin_selected_complaint_id"] = None
-                        else:
-                            st.session_state["admin_selected_complaint_id"] = cid
-                        st.rerun()
+                # Full table view
+                if view_mode == "in_progress":
+                    with r_cols[0]:
+                        st.markdown(f"<div class='fipp-cell-token' style='padding: 0.4rem 0;'>{cid}</div>", unsafe_allow_html=True)
+                    with r_cols[1]:
+                        st.markdown(f"<div class='fipp-cell-title' style='padding: 0.4rem 0;' title='{title}'>{title}</div>", unsafe_allow_html=True)
+                    with r_cols[2]:
+                        st.markdown(f"<div style='font-family: monospace; font-size: 0.78rem; color: #55685F; padding: 0.4rem 0; white-space: nowrap;'>{stu_id}</div>", unsafe_allow_html=True)
+                    with r_cols[3]:
+                        st.markdown(f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{cat}'>{cat}</div>", unsafe_allow_html=True)
+                    with r_cols[4]:
+                        st.markdown(f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{loc}'>{loc}</div>", unsafe_allow_html=True)
+                    with r_cols[5]:
+                        st.markdown(f"<div class='fipp-cell-date' style='padding: 0.4rem 0;'>{dt}</div>", unsafe_allow_html=True)
+                    with r_cols[6]:
+                        st.markdown(f"<div style='padding: 0.3rem 0;'>{s_badge}</div>", unsafe_allow_html=True)
+                    with r_cols[7]:
+                        st.markdown(assigned_display, unsafe_allow_html=True)
+                    with r_cols[8]:
+                        st.markdown(f"<div style='padding: 0.3rem 0;'>{p_badge}</div>", unsafe_allow_html=True)
+                    with r_cols[9]:
+                        btn_label = "Viewing" if is_active else "Inspect"
+                        btn_type = "primary" if is_active else "secondary"
+                        if st.button(btn_label, key=f"btn_inspect_{view_mode}_{cid}", type=btn_type, use_container_width=True):
+                            st.session_state["admin_selected_complaint_id"] = None if is_active else cid
+                            st.rerun()
+                elif view_mode == "resolved":
+                    with r_cols[0]:
+                        st.markdown(f"<div class='fipp-cell-token' style='padding: 0.4rem 0;'>{cid}</div>", unsafe_allow_html=True)
+                    with r_cols[1]:
+                        st.markdown(f"<div class='fipp-cell-title' style='padding: 0.4rem 0;' title='{title}'>{title}</div>", unsafe_allow_html=True)
+                    with r_cols[2]:
+                        st.markdown(f"<div style='font-family: monospace; font-size: 0.78rem; color: #55685F; padding: 0.4rem 0; white-space: nowrap;'>{stu_id}</div>", unsafe_allow_html=True)
+                    with r_cols[3]:
+                        st.markdown(f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{cat}'>{cat}</div>", unsafe_allow_html=True)
+                    with r_cols[4]:
+                        st.markdown(f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{loc}'>{loc}</div>", unsafe_allow_html=True)
+                    with r_cols[5]:
+                        st.markdown(f"<div class='fipp-cell-date' style='padding: 0.4rem 0;'>{dt}</div>", unsafe_allow_html=True)
+                    with r_cols[6]:
+                        st.markdown(f"<div class='fipp-cell-date' style='padding: 0.4rem 0;'>{res_display}</div>", unsafe_allow_html=True)
+                    with r_cols[7]:
+                        st.markdown(f"<div style='padding: 0.3rem 0;'>{s_badge}</div>", unsafe_allow_html=True)
+                    with r_cols[8]:
+                        st.markdown(f"<div style='padding: 0.3rem 0;'>{p_badge}</div>", unsafe_allow_html=True)
+                    with r_cols[9]:
+                        btn_label = "Viewing" if is_active else "Inspect"
+                        btn_type = "primary" if is_active else "secondary"
+                        if st.button(btn_label, key=f"btn_inspect_{view_mode}_{cid}", type=btn_type, use_container_width=True):
+                            st.session_state["admin_selected_complaint_id"] = None if is_active else cid
+                            st.rerun()
+                else:
+                    with r_cols[0]:
+                        st.markdown(f"<div class='fipp-cell-token' style='padding: 0.4rem 0;'>{cid}</div>", unsafe_allow_html=True)
+                    with r_cols[1]:
+                        st.markdown(f"<div class='fipp-cell-title' style='padding: 0.4rem 0;' title='{title}'>{title}</div>", unsafe_allow_html=True)
+                    with r_cols[2]:
+                        st.markdown(f"<div style='font-family: monospace; font-size: 0.78rem; color: #55685F; padding: 0.4rem 0; white-space: nowrap;'>{stu_id}</div>", unsafe_allow_html=True)
+                    with r_cols[3]:
+                        st.markdown(f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{cat}'>{cat}</div>", unsafe_allow_html=True)
+                    with r_cols[4]:
+                        st.markdown(f"<div class='fipp-cell-muted' style='padding: 0.4rem 0;' title='{loc}'>{loc}</div>", unsafe_allow_html=True)
+                    with r_cols[5]:
+                        st.markdown(f"<div class='fipp-cell-date' style='padding: 0.4rem 0;'>{dt}</div>", unsafe_allow_html=True)
+                    with r_cols[6]:
+                        st.markdown(f"<div style='padding: 0.3rem 0;'>{s_badge}</div>", unsafe_allow_html=True)
+                    with r_cols[7]:
+                        st.markdown(f"<div style='padding: 0.3rem 0;'>{p_badge}</div>", unsafe_allow_html=True)
+                    with r_cols[8]:
+                        btn_label = "Viewing" if is_active else "Inspect"
+                        btn_type = "primary" if is_active else "secondary"
+                        if st.button(btn_label, key=f"btn_inspect_{view_mode}_{cid}", type=btn_type, use_container_width=True):
+                            st.session_state["admin_selected_complaint_id"] = None if is_active else cid
+                            st.rerun()
 
             # Subtle row separator
             sep_border = "2px solid #203A32" if is_active else "1px solid #EDF2EB"
