@@ -92,7 +92,7 @@ async function run() {
   await saveScreenshot('fipp_phase2_admin_overview.png');
 
   // 6. Admin Control Centre - All Requests
-  await page.goto('http://127.0.0.1:5173/admin/requests', { waitUntil: 'networkidle0' });
+  await page.goto('http://127.0.0.1:5173/admin/all-requests', { waitUntil: 'networkidle0' });
   await new Promise(r => setTimeout(r, 1500));
   await saveScreenshot('fipp_phase2_admin_all_requests.png');
 

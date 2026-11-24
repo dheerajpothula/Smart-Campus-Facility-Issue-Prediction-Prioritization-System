@@ -54,6 +54,7 @@ export function App() {
           >
             <Route index element={<AdminOverviewPage />} />
             <Route path="all-requests" element={<AdminAllRequestsPage />} />
+            <Route path="requests" element={<Navigate to="/admin/all-requests" replace />} />
             <Route path="unassigned" element={<AdminUnassignedPage />} />
             <Route path="in-progress" element={<AdminInProgressPage />} />
             <Route path="resolved" element={<AdminResolvedPage />} />
