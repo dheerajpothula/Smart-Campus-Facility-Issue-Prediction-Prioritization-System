@@ -160,14 +160,22 @@ export interface AdminStatusUpdatePayload {
 export interface AnalyticsReportResponse {
   kpis: DashboardKPIs;
   trends: Array<{
-    date: string;
-    submitted: number;
-    resolved: number;
+    period: string;
+    reported_count: number;
+    resolved_count: number;
   }>;
   category_distribution: Array<{
     category: string;
     count: number;
     percentage: number;
   }>;
+  location_distribution: Array<{
+    location?: string;
+    building?: string;
+    count: number;
+    percentage?: number;
+    [key: string]: any;
+  }>;
+  priority_distribution: Record<string, number>;
   aging_brackets: Record<string, number>;
 }

@@ -7,6 +7,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Notification } from '../../components/ui/Notification';
+import { ComplaintDetailsDrawer } from '../../components/admin/ComplaintDetailsDrawer';
 import { formatDate } from '../../utils/formatters';
 import type { ComplaintDetail, DashboardKPIs } from '../../types';
 import {
@@ -18,11 +19,13 @@ import {
   TrendingUp,
   Building,
   RefreshCw,
+  Eye,
 } from 'lucide-react';
 
 export const AdminOverviewPage: React.FC = () => {
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
   const [recentComplaints, setRecentComplaints] = useState<ComplaintDetail[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<ComplaintDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -77,21 +80,23 @@ export const AdminOverviewPage: React.FC = () => {
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Requests */}
-        <Card className="p-5 bg-white border-[#DCE5D8]">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">Total Ledger</span>
-            <Building className="w-4 h-4 text-[#A8B9A3]" />
-          </div>
-          <p className="text-3xl font-bold text-[#172D28] mt-2">{kpis?.total ?? 0}</p>
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-[#52605B]">
-            <TrendingUp className="w-3.5 h-3.5 text-[#203A32]" />
-            <span>Resolution Rate: {kpis?.resolution_rate_percent ?? 0}%</span>
-          </div>
-        </Card>
+        <Link to="/admin/all-requests">
+          <Card className="p-5 bg-white border-[#DCE5D8] hover:border-[#203A32] transition-colors cursor-pointer h-full">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">Total Ledger</span>
+              <Building className="w-4 h-4 text-[#A8B9A3]" />
+            </div>
+            <p className="text-3xl font-bold text-[#172D28] mt-2">{kpis?.total ?? 0}</p>
+            <div className="mt-3 flex items-center gap-1.5 text-xs text-[#52605B]">
+              <TrendingUp className="w-3.5 h-3.5 text-[#203A32]" />
+              <span>Resolution Rate: {kpis?.resolution_rate_percent ?? 0}%</span>
+            </div>
+          </Card>
+        </Link>
 
         {/* New / Unassigned */}
         <Link to="/admin/unassigned">
-          <Card className="p-5 bg-white border-[#DCE5D8] hover:border-[#203A32] transition-colors cursor-pointer">
+          <Card className="p-5 bg-white border-[#DCE5D8] hover:border-[#203A32] transition-colors cursor-pointer h-full">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">New / Unassigned</span>
               <Inbox className="w-4 h-4 text-amber-600" />
@@ -106,7 +111,7 @@ export const AdminOverviewPage: React.FC = () => {
 
         {/* In Progress */}
         <Link to="/admin/in-progress">
-          <Card className="p-5 bg-white border-[#DCE5D8] hover:border-[#203A32] transition-colors cursor-pointer">
+          <Card className="p-5 bg-white border-[#DCE5D8] hover:border-[#203A32] transition-colors cursor-pointer h-full">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">In Progress</span>
               <Clock className="w-4 h-4 text-blue-600" />
@@ -121,7 +126,7 @@ export const AdminOverviewPage: React.FC = () => {
 
         {/* Resolved */}
         <Link to="/admin/resolved">
-          <Card className="p-5 bg-white border-[#DCE5D8] hover:border-[#203A32] transition-colors cursor-pointer">
+          <Card className="p-5 bg-white border-[#DCE5D8] hover:border-[#203A32] transition-colors cursor-pointer h-full">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">Resolved</span>
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -159,11 +164,16 @@ export const AdminOverviewPage: React.FC = () => {
                 <TableHead>Priority</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Reported</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {recentComplaints.map((ticket) => (
-                <TableRow key={ticket.complaint_id}>
+                <TableRow
+                  key={ticket.complaint_id}
+                  onClick={() => setSelectedTicket(ticket)}
+                  className="cursor-pointer hover:bg-[#F5F7F2]/80 transition-colors"
+                >
                   <TableCell className="font-mono text-xs font-bold text-[#203A32]">
                     {ticket.complaint_id}
                   </TableCell>
@@ -183,12 +193,36 @@ export const AdminOverviewPage: React.FC = () => {
                   <TableCell className="text-xs text-[#52605B]">
                     {formatDate(ticket.date_reported)}
                   </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTicket(ticket);
+                      }}
+                      leftIcon={<Eye className="w-3.5 h-3.5" />}
+                    >
+                      Inspect
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Details & Triage Drawer */}
+      <ComplaintDetailsDrawer
+        isOpen={!!selectedTicket}
+        ticket={selectedTicket}
+        onClose={() => setSelectedTicket(null)}
+        onTicketUpdated={(updated) => {
+          setSelectedTicket(updated);
+          fetchOverviewData();
+        }}
+      />
     </div>
   );
 };

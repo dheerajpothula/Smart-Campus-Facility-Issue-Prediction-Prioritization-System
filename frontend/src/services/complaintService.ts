@@ -102,6 +102,7 @@ export const complaintService = {
     category?: string;
     location?: string;
     status?: string;
+    trend_agg?: string;
   }): Promise<AnalyticsReportResponse> => {
     const q = new URLSearchParams();
     if (params?.start_date) q.append('start_date', params.start_date);
@@ -109,6 +110,7 @@ export const complaintService = {
     if (params?.category) q.append('category', params.category);
     if (params?.location) q.append('location', params.location);
     if (params?.status) q.append('status', params.status);
+    if (params?.trend_agg) q.append('trend_agg', params.trend_agg);
 
     const queryStr = q.toString() ? `?${q.toString()}` : '';
     return api.get(`/api/admin/reports/analytics${queryStr}`);

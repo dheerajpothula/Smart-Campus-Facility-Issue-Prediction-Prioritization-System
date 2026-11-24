@@ -18,6 +18,10 @@ import {
   Shield,
   RefreshCw,
   FileSpreadsheet,
+  Building,
+  AlertTriangle,
+  CheckCircle2,
+  Layers,
 } from 'lucide-react';
 
 export const AdminReportsPage: React.FC = () => {
@@ -31,6 +35,7 @@ export const AdminReportsPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('All Categories');
   const [locationFilter, setLocationFilter] = useState<string>('All Locations');
   const [statusFilter, setStatusFilter] = useState<string>('All Statuses');
+  const [trendAgg, setTrendAgg] = useState<'day' | 'week' | 'month'>('day');
 
   // Taxonomy
   const [taxonomy, setTaxonomy] = useState<TaxonomyHierarchyResponse | null>(null);
@@ -48,6 +53,7 @@ export const AdminReportsPage: React.FC = () => {
         category: categoryFilter !== 'All Categories' ? categoryFilter : undefined,
         location: locationFilter !== 'All Locations' ? locationFilter : undefined,
         status: statusFilter !== 'All Statuses' ? statusFilter : undefined,
+        trend_agg: trendAgg,
       });
       setReport(data);
     } catch (err: any) {
@@ -63,7 +69,7 @@ export const AdminReportsPage: React.FC = () => {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [startDate, endDate, categoryFilter, locationFilter, statusFilter]);
+  }, [startDate, endDate, categoryFilter, locationFilter, statusFilter, trendAgg]);
 
   const handleClearFilters = () => {
     setStartDate('');
@@ -71,6 +77,7 @@ export const AdminReportsPage: React.FC = () => {
     setCategoryFilter('All Categories');
     setLocationFilter('All Locations');
     setStatusFilter('All Statuses');
+    setTrendAgg('day');
   };
 
   // PII-Redacted Export Handler
@@ -102,6 +109,13 @@ export const AdminReportsPage: React.FC = () => {
     } finally {
       setExporting(false);
     }
+  };
+
+  const priorityColors: Record<string, { bg: string; text: string; bar: string }> = {
+    Critical: { bg: 'bg-red-50', text: 'text-red-800', bar: 'bg-red-600' },
+    High: { bg: 'bg-amber-50', text: 'text-amber-800', bar: 'bg-amber-500' },
+    Medium: { bg: 'bg-blue-50', text: 'text-blue-800', bar: 'bg-blue-500' },
+    Low: { bg: 'bg-gray-50', text: 'text-gray-800', bar: 'bg-gray-400' },
   };
 
   return (
@@ -141,7 +155,7 @@ export const AdminReportsPage: React.FC = () => {
 
       {/* Filter Ribbon */}
       <Card className="p-4 bg-white border-[#DCE5D8]">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <Input
             label="From Date"
             type="date"
@@ -190,6 +204,17 @@ export const AdminReportsPage: React.FC = () => {
               { value: 'Withdrawn', label: 'Withdrawn' },
             ]}
           />
+
+          <Select
+            label="Trend Grouping"
+            value={trendAgg}
+            onChange={(e) => setTrendAgg(e.target.value as any)}
+            options={[
+              { value: 'day', label: 'Daily Trends' },
+              { value: 'week', label: 'Weekly Summary' },
+              { value: 'month', label: 'Monthly Aggregate' },
+            ]}
+          />
         </div>
 
         <div className="flex justify-between items-center pt-3 mt-3 border-t border-[#DCE5D8]/60 text-xs">
@@ -208,10 +233,11 @@ export const AdminReportsPage: React.FC = () => {
       </Card>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-4 bg-white border-[#DCE5D8]">
           <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">Filtered Volume</span>
           <p className="text-3xl font-bold text-[#172D28] mt-1">{report?.kpis.total ?? 0}</p>
+          <span className="text-[11px] text-[#52605B] mt-1 block">Total incident entries</span>
         </Card>
 
         <Card className="p-4 bg-white border-[#DCE5D8]">
@@ -219,6 +245,7 @@ export const AdminReportsPage: React.FC = () => {
           <p className="text-3xl font-bold text-emerald-700 mt-1">
             {report?.kpis.resolution_rate_percent ?? 0}%
           </p>
+          <span className="text-[11px] text-[#52605B] mt-1 block">{report?.kpis.resolved ?? 0} resolved records</span>
         </Card>
 
         <Card className="p-4 bg-white border-[#DCE5D8]">
@@ -226,76 +253,219 @@ export const AdminReportsPage: React.FC = () => {
           <p className="text-3xl font-bold text-[#203A32] mt-1">
             {report?.kpis.average_turnaround_days ? `${report.kpis.average_turnaround_days} Days` : '1.8 Days'}
           </p>
+          <span className="text-[11px] text-[#52605B] mt-1 block">From report to resolution</span>
+        </Card>
+
+        <Card className="p-4 bg-white border-[#DCE5D8]">
+          <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">Active In-Flight</span>
+          <p className="text-3xl font-bold text-amber-700 mt-1">
+            {(report?.kpis.in_progress ?? 0) + (report?.kpis.new ?? 0)}
+          </p>
+          <span className="text-[11px] text-[#52605B] mt-1 block">
+            {report?.kpis.new ?? 0} unassigned, {report?.kpis.in_progress ?? 0} in progress
+          </span>
         </Card>
       </div>
 
       {loading ? (
         <LoadingSpinner label="Compiling report distributions..." className="py-20" />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Category Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-[#203A32]" /> Category Pareto Distribution
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {report?.category_distribution && report.category_distribution.length > 0 ? (
-                report.category_distribution.slice(0, 8).map((item) => (
-                  <div key={item.category} className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="font-medium text-[#172D28] truncate max-w-xs">{item.category}</span>
-                      <span className="font-mono text-[#52605B]">
-                        {item.count} tickets ({item.percentage}%)
-                      </span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-[#EAEFE6] overflow-hidden">
-                      <div
-                        className="h-full bg-[#203A32] rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, Math.max(item.percentage, 5))}%` }}
-                      />
-                    </div>
+        <div className="space-y-6">
+          {/* Trend Breakdown Chart */}
+          {report?.trends && report.trends.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between w-full">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-[#203A32]" />
+                    Incident Volume & Resolution Velocity ({trendAgg.toUpperCase()})
+                  </CardTitle>
+                  <div className="flex items-center gap-4 text-xs">
+                    <span className="flex items-center gap-1.5 text-[#172D28]">
+                      <span className="w-3 h-3 rounded-xs bg-[#203A32]" /> Reported
+                    </span>
+                    <span className="flex items-center gap-1.5 text-emerald-800">
+                      <span className="w-3 h-3 rounded-xs bg-emerald-600" /> Resolved
+                    </span>
                   </div>
-                ))
-              ) : (
-                <p className="text-xs text-[#52605B]">No category distribution data for selected filter.</p>
-              )}
-            </CardContent>
-          </Card>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-48 flex items-end gap-2 pt-6 pb-2 overflow-x-auto">
+                  {(() => {
+                    const maxVal = Math.max(
+                      ...report.trends.map((t) => Math.max(t.reported_count, t.resolved_count)),
+                      1
+                    );
+                    return report.trends.map((t, idx) => {
+                      const repHeight = Math.round((t.reported_count / maxVal) * 100);
+                      const resHeight = Math.round((t.resolved_count / maxVal) * 100);
+                      return (
+                        <div key={idx} className="flex-1 min-w-[36px] flex flex-col items-center gap-1 h-full justify-end">
+                          <div className="w-full flex items-end justify-center gap-1 h-36">
+                            <div
+                              className="w-1/2 bg-[#203A32] rounded-t-xs transition-all hover:bg-[#172D28]"
+                              style={{ height: `${Math.max(repHeight, 4)}%` }}
+                              title={`Reported: ${t.reported_count}`}
+                            />
+                            <div
+                              className="w-1/2 bg-emerald-600 rounded-t-xs transition-all hover:bg-emerald-700"
+                              style={{ height: `${Math.max(resHeight, 4)}%` }}
+                              title={`Resolved: ${t.resolved_count}`}
+                            />
+                          </div>
+                          <span className="text-[10px] font-mono text-[#52605B] truncate w-full text-center">
+                            {t.period.slice(-5)}
+                          </span>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Ticket Aging Brackets */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#203A32]" /> Work Order Aging Brackets
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {report?.aging_brackets ? (
-                Object.entries(report.aging_brackets).map(([bracket, count]) => {
-                  const maxCount = Math.max(...Object.values(report.aging_brackets), 1);
-                  const pct = Math.round((Number(count) / maxCount) * 100);
-                  return (
-                    <div key={bracket} className="space-y-1">
+          {/* 4-way analytical breakdown grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Category Pareto Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <BarChart2 className="w-4 h-4 text-[#203A32]" /> Category Pareto Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {report?.category_distribution && report.category_distribution.length > 0 ? (
+                  report.category_distribution.slice(0, 7).map((item) => (
+                    <div key={item.category} className="space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="font-medium text-[#172D28]">{bracket}</span>
-                        <span className="font-mono text-[#52605B] font-semibold">{count} active</span>
+                        <span className="font-medium text-[#172D28] truncate max-w-xs">{item.category}</span>
+                        <span className="font-mono text-[#52605B]">
+                          {item.count} tickets ({item.percentage}%)
+                        </span>
                       </div>
                       <div className="w-full h-2 rounded-full bg-[#EAEFE6] overflow-hidden">
                         <div
-                          className="h-full bg-[#A8B9A3] rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(100, Math.max(pct, 5))}%` }}
+                          className="h-full bg-[#203A32] rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(item.percentage, 5))}%` }}
                         />
                       </div>
                     </div>
-                  );
-                })
-              ) : (
-                <p className="text-xs text-[#52605B]">No aging data available.</p>
-              )}
-            </CardContent>
-          </Card>
+                  ))
+                ) : (
+                  <p className="text-xs text-[#52605B]">No category distribution data for selected filter.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Campus Location Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Building className="w-4 h-4 text-[#203A32]" /> Campus Location & Infrastructure Hotspots
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {report?.location_distribution && report.location_distribution.length > 0 ? (
+                  report.location_distribution.slice(0, 7).map((locItem, idx) => {
+                    const locName = locItem.location || locItem.building || `Zone ${idx + 1}`;
+                    const count = locItem.count || 0;
+                    const pct = locItem.percentage ?? Math.round((count / (report.kpis.total || 1)) * 100);
+                    return (
+                      <div key={locName} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-medium text-[#172D28] truncate max-w-xs">{locName}</span>
+                          <span className="font-mono text-[#52605B]">
+                            {count} tickets ({pct}%)
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-[#EAEFE6] overflow-hidden">
+                          <div
+                            className="h-full bg-[#172D28] rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(100, Math.max(pct, 5))}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-[#52605B]">No campus location data for selected filter.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Multi-Criteria Priority Breakdown */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-[#203A32]" /> Priority Hazard Index Breakdown
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {report?.priority_distribution ? (
+                  Object.entries(report.priority_distribution).map(([tier, count]) => {
+                    const total = report.kpis.total || 1;
+                    const pct = Math.round((Number(count) / total) * 100);
+                    const colorScheme = priorityColors[tier] || priorityColors.Low;
+                    return (
+                      <div key={tier} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className={`font-semibold px-2 py-0.5 rounded-md text-[11px] ${colorScheme.bg} ${colorScheme.text}`}>
+                            {tier}
+                          </span>
+                          <span className="font-mono text-[#52605B] font-semibold">
+                            {count} tickets ({pct}%)
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-[#EAEFE6] overflow-hidden">
+                          <div
+                            className={`h-full ${colorScheme.bar} rounded-full transition-all duration-500`}
+                            style={{ width: `${Math.min(100, Math.max(pct, 4))}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-[#52605B]">No priority distribution data available.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Ticket Aging Brackets */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#203A32]" /> Work Order Aging Brackets
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {report?.aging_brackets ? (
+                  Object.entries(report.aging_brackets).map(([bracket, count]) => {
+                    const maxCount = Math.max(...Object.values(report.aging_brackets), 1);
+                    const pct = Math.round((Number(count) / maxCount) * 100);
+                    return (
+                      <div key={bracket} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-medium text-[#172D28]">{bracket}</span>
+                          <span className="font-mono text-[#52605B] font-semibold">{count} active</span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-[#EAEFE6] overflow-hidden">
+                          <div
+                            className="h-full bg-[#A8B9A3] rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(100, Math.max(pct, 5))}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-[#52605B]">No aging data available.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       )}
     </div>

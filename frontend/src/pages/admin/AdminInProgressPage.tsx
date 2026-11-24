@@ -1,24 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { complaintService } from '../../services/complaintService';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Card } from '../../components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { Textarea } from '../../components/ui/Textarea';
-import { Modal } from '../../components/ui/Modal';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Notification } from '../../components/ui/Notification';
+import { ComplaintDetailsDrawer } from '../../components/admin/ComplaintDetailsDrawer';
 import { formatDate } from '../../utils/formatters';
 import type { ComplaintDetail } from '../../types';
 import {
   Clock,
-  CheckCircle2,
-  User,
   Wrench,
   RefreshCw,
-  Send,
 } from 'lucide-react';
 
 export const AdminInProgressPage: React.FC = () => {
@@ -27,11 +22,8 @@ export const AdminInProgressPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Resolve Modal
+  // Inspector & Resolution Drawer
   const [selectedTicket, setSelectedTicket] = useState<ComplaintDetail | null>(null);
-  const [resolveModalOpen, setResolveModalOpen] = useState<boolean>(false);
-  const [closingRemarks, setClosingRemarks] = useState<string>('');
-  const [resolving, setResolving] = useState<boolean>(false);
 
   const fetchInProgress = async () => {
     setLoading(true);
@@ -49,37 +41,6 @@ export const AdminInProgressPage: React.FC = () => {
   useEffect(() => {
     fetchInProgress();
   }, []);
-
-  const openResolveModal = (ticket: ComplaintDetail) => {
-    setSelectedTicket(ticket);
-    setClosingRemarks('Issue resolved on-site. Defective component replaced and tested operational.');
-    setResolveModalOpen(true);
-  };
-
-  const handleResolveSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedTicket) return;
-    if (!closingRemarks.trim()) {
-      setErrorMsg('Closing remarks detailing the repair are mandatory.');
-      return;
-    }
-
-    setResolving(true);
-    setErrorMsg(null);
-    try {
-      await complaintService.updateComplaintStatus(selectedTicket.complaint_id, {
-        status: 'Resolved',
-        remarks: closingRemarks.trim(),
-      });
-      setSuccessMsg(`Complaint ${selectedTicket.complaint_id} marked as Resolved.`);
-      setResolveModalOpen(false);
-      fetchInProgress();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to complete resolution.');
-    } finally {
-      setResolving(false);
-    }
-  };
 
   const assignedCount = complaints.filter((c) => c.status === 'Assigned').length;
   const inProgressCount = complaints.filter((c) => c.status === 'In Progress').length;
@@ -149,7 +110,11 @@ export const AdminInProgressPage: React.FC = () => {
           </TableHeader>
           <TableBody>
             {complaints.map((ticket) => (
-              <TableRow key={ticket.complaint_id}>
+              <TableRow
+                key={ticket.complaint_id}
+                onClick={() => setSelectedTicket(ticket)}
+                className="cursor-pointer hover:bg-[#F5F7F2]/80 transition-colors"
+              >
                 <TableCell className="font-mono text-xs font-bold text-[#203A32]">
                   {ticket.complaint_id}
                 </TableCell>
@@ -171,12 +136,15 @@ export const AdminInProgressPage: React.FC = () => {
                 </TableCell>
                 <TableCell className="text-right">
                   <Button
-                    variant="primary"
+                    variant="outline"
                     size="sm"
-                    onClick={() => openResolveModal(ticket)}
-                    leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedTicket(ticket);
+                    }}
+                    leftIcon={<Wrench className="w-3.5 h-3.5" />}
                   >
-                    Complete
+                    Inspect & Manage
                   </Button>
                 </TableCell>
               </TableRow>
@@ -185,49 +153,17 @@ export const AdminInProgressPage: React.FC = () => {
         </Table>
       )}
 
-      {/* Complete Resolution Modal */}
-      {selectedTicket && (
-        <Modal
-          isOpen={resolveModalOpen}
-          onClose={() => setResolveModalOpen(false)}
-          title={`Complete Work Order — ${selectedTicket.complaint_id}`}
-          description={`Record final repair details for: ${selectedTicket.title}`}
-          maxWidth="md"
-        >
-          <form onSubmit={handleResolveSubmit} className="space-y-4">
-            <div className="p-3 rounded-lg bg-[#F5F7F2] border border-[#DCE5D8] text-xs space-y-1">
-              <span className="text-[10px] uppercase font-semibold text-[#52605B]">Location</span>
-              <p className="font-medium text-[#172D28]">{selectedTicket.location}</p>
-              <span className="text-[10px] uppercase font-semibold text-[#52605B] block pt-1">Assigned Lead</span>
-              <p className="text-[#172D28]">{selectedTicket.allotted_person || 'Facility Squad'}</p>
-            </div>
-
-            <Textarea
-              label="Mandatory Resolution Remarks"
-              placeholder="Detail actions taken, repairs performed, and parts replaced..."
-              value={closingRemarks}
-              onChange={(e) => setClosingRemarks(e.target.value)}
-              rows={3}
-              required
-            />
-
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setResolveModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                isLoading={resolving}
-                leftIcon={<CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />}
-              >
-                Mark as Resolved
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
+      {/* Details & Resolution Drawer */}
+      <ComplaintDetailsDrawer
+        isOpen={!!selectedTicket}
+        ticket={selectedTicket}
+        onClose={() => setSelectedTicket(null)}
+        onTicketUpdated={(updated) => {
+          setSelectedTicket(updated);
+          setSuccessMsg(`Ticket ${updated.complaint_id} updated to "${updated.status}".`);
+          fetchInProgress();
+        }}
+      />
     </div>
   );
 };
