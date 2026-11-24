@@ -86,6 +86,7 @@ class TaxonomyHierarchyResponse(BaseModel):
 class StudentComplaintCreate(BaseModel):
     category_type: str = Field("Maintenance / Electrical Complaints", description="Category Type classification")
     message_type: str = Field(..., description="Message Type e.g. Grievance, Assistance, Enquiry, Feedback")
+    title: Optional[str] = Field(None, description="Complaint Title or brief subject")
     category: str = Field(..., description="One of the 19 verified Maintenance / Electrical categories")
     sub_category: Optional[str] = Field(None, description="Subcategory selected under the category")
     specific_categories: List[str] = Field(default_factory=list, description="Specific issue options checked")

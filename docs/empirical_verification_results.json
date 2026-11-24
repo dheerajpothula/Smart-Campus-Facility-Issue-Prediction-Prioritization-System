@@ -1,7 +1,7 @@
 {
   "Health Checks": {
     "status": "PASSED",
-    "duration_ms": 157.61,
+    "duration_ms": 63.79,
     "details": {
       "status": "healthy",
       "records": 7,
@@ -15,7 +15,7 @@
   },
   "Authentication & Persistence": {
     "status": "PASSED",
-    "duration_ms": 1872.73,
+    "duration_ms": 1505.93,
     "details": {
       "admin_authenticated": true,
       "student_authenticated": true,
@@ -25,7 +25,7 @@
   },
   "RBAC & Student Isolation": {
     "status": "PASSED",
-    "duration_ms": 1222.17,
+    "duration_ms": 1305.85,
     "details": {
       "rbac_enforced": true,
       "student_isolation_verified": true,
@@ -34,7 +34,7 @@
   },
   "Taxonomy Endpoint": {
     "status": "PASSED",
-    "duration_ms": 7.46,
+    "duration_ms": 24.13,
     "details": {
       "category_count": 19,
       "first_category": "Air Conditioner"
@@ -42,15 +42,15 @@
   },
   "Secure File Upload": {
     "status": "PASSED",
-    "duration_ms": 465.89,
+    "duration_ms": 646.82,
     "details": {
-      "stored_filename": "CMP-PHOTO_27cf0fb8d828.png",
+      "stored_filename": "CMP-PHOTO_42eb011fe345.png",
       "security_validation_passed": true
     }
   },
   "Admin Workflows & Lifecycle": {
     "status": "PASSED",
-    "duration_ms": 1127.13,
+    "duration_ms": 1252.62,
     "details": {
       "lifecycle_verified": true,
       "token": "CMP-2026-009",
@@ -59,7 +59,7 @@
   },
   "Student Withdrawal": {
     "status": "PASSED",
-    "duration_ms": 474.91,
+    "duration_ms": 485.09,
     "details": {
       "withdrawal_verified": true,
       "token": "CMP-2026-010"
@@ -67,7 +67,7 @@
   },
   "Reports & PII Export": {
     "status": "PASSED",
-    "duration_ms": 397.17,
+    "duration_ms": 483.36,
     "details": {
       "analytics_ok": true,
       "export_redacted": true
@@ -75,7 +75,7 @@
   },
   "ML & Predictions": {
     "status": "PASSED",
-    "duration_ms": 424.51,
+    "duration_ms": 493.61,
     "details": {
       "nlp_analyzed": true,
       "expected_impact": "Medium",
@@ -85,7 +85,7 @@
   },
   "Migration Safety": {
     "status": "PASSED",
-    "duration_ms": 698.8,
+    "duration_ms": 569.32,
     "details": {
       "dry_run_success": true,
       "migrated_live_count": 10,

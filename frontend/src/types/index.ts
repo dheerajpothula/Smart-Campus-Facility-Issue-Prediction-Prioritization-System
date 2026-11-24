@@ -77,6 +77,8 @@ export interface ComplaintDetail {
   estimated_resolution?: string | null;
   resolved_at?: string | null;
   resolved_by?: string | null;
+  resolution_date?: string | null;
+  status_history?: Array<{ status: string; timestamp?: string; date?: string }>;
   closing_remarks?: string | null;
   is_reopened: boolean;
   reopened_at?: string | null;
@@ -130,6 +132,7 @@ export interface TaxonomyHierarchyResponse {
 export interface StudentComplaintCreatePayload {
   category_type: string;
   message_type: string;
+  title?: string;
   category: string;
   sub_category?: string;
   specific_categories: string[];

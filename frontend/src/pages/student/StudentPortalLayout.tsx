@@ -83,7 +83,7 @@ export const StudentPortalLayout: React.FC = () => {
               }
             >
               <History className="w-4 h-4" />
-              History & Tracking
+              History
             </NavLink>
           </div>
         </div>

@@ -22,6 +22,8 @@ env/
 !**/data/processed/.gitkeep
 **/data/synthetic/*
 !**/data/synthetic/.gitkeep
+**/data/uploads/*
+!**/data/uploads/.gitkeep
 
 # Trained Model Artifacts
 **/models/*

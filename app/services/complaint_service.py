@@ -208,7 +208,9 @@ class ComplaintService:
 
             # Specific Category formatting
             spec_cat_str = ", ".join(data.specific_categories) if data.specific_categories else (data.sub_category or data.category)
-            title = f"[{data.message_type}] {spec_cat_str}"
+            title = (data.title or "").strip() if getattr(data, "title", None) else f"[{data.message_type}] {spec_cat_str}"
+            if not title:
+                title = f"[{data.message_type}] {spec_cat_str}"
 
             # Predict domain attributes and priority score
             pred = self.predict_issue_attributes(

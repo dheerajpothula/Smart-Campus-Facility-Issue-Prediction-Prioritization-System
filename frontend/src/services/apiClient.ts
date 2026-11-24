@@ -43,6 +43,8 @@ class TokenManager {
     sessionStorage.removeItem(this.ACCESS_TOKEN_KEY);
     sessionStorage.removeItem(this.REFRESH_TOKEN_KEY);
     sessionStorage.removeItem(this.USER_KEY);
+    sessionStorage.removeItem('fipp_student_agreed');
+    sessionStorage.removeItem('fipp_query_draft');
   }
 }
 
