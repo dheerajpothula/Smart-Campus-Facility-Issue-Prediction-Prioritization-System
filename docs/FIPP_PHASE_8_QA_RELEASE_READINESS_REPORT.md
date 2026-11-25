@@ -145,5 +145,5 @@ Frontend build flag (`npm run build`): `DEV` is automatically `false`, keeping D
 ## 10. Git Verification
 
 - **Starting Tag:** `checkpoint-phase8-stageb-start` -> `24804ccc1139beb767bd4c80545c042aa449dd18`
-- **Phase 8 QA Commit Hash:** _Recorded after commit & remote synchronization verification._
+- **Phase 8 QA Implementation & Suite Commit Hash:** `8c0d11efd7a52aab1f00eecff5c39c3e3256ee0a` (`main` -> `origin/main` verified)
 - **Pre-existing Unrelated Changes Preserved:** `docs/empirical_verification_results.json` left untouched.
