@@ -172,12 +172,18 @@ def reopen_complaint(
     Reopens a resolved complaint, transitioning status back to 'Under Review'.
     Preserves original resolution date and remarks in audit trail.
     """
-    reopened = complaint_service.reopen_complaint(
-        complaint_id=complaint_id,
-        remarks=payload.remarks,
-        admin_id=current_user["id"],
-        admin_title=current_user.get("title") or current_user.get("name"),
-    )
+    try:
+        reopened = complaint_service.reopen_complaint(
+            complaint_id=complaint_id,
+            remarks=payload.remarks,
+            admin_id=current_user["id"],
+            admin_title=current_user.get("title") or current_user.get("name"),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
     if not reopened:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -217,14 +223,26 @@ def get_analytics_report(
 
 @router.get("/reports/export")
 def export_complaints_csv(
-    redact_pii: bool = Query(True, description="Redact student PII under DPDP Act 2023"),
+    redact_pii: bool = Query(True, description="Mask direct student identifiers (student_id, student_name, contact_number)"),
+    start_date: Optional[str] = Query(None, description="Start date filter (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date filter (YYYY-MM-DD)"),
+    category: Optional[str] = Query(None, description="Category filter"),
+    location: Optional[str] = Query(None, description="Location filter"),
+    status_filter: Optional[str] = Query(None, alias="status", description="Status filter"),
     current_user: Dict[str, Any] = Depends(require_admin),
 ):
     """
-    Exports the complete complaint ledger as a standard CSV download.
-    Redacts student personal identifiable information (name, ID, phone) by default.
+    Exports filtered complaint ledger records as a standard CSV download.
+    Masks direct student identifiers (student_id, student_name, contact_number) by default.
     """
-    csv_data = analytics_service.export_complaints_csv(redact_pii=redact_pii)
+    csv_data = analytics_service.export_complaints_csv(
+        redact_pii=redact_pii,
+        start_date=start_date,
+        end_date=end_date,
+        category=category,
+        location=location,
+        status=status_filter,
+    )
     return Response(
         content=csv_data,
         media_type="text/csv",

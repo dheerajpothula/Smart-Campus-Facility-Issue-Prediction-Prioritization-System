@@ -147,6 +147,12 @@ class AdminStatusUpdateRequest(BaseModel):
     allotted_person: Optional[str] = Field(None, description="Name of assigned technician / engineering lead")
     squad_assigned: Optional[str] = Field(None, description="Department or maintenance squad assigned")
 
+    @model_validator(mode="after")
+    def validate_resolution_remarks(self) -> "AdminStatusUpdateRequest":
+        if self.status == "Resolved" and not (self.remarks and self.remarks.strip()):
+            raise ValueError("Mandatory closing remarks are required when marking a complaint as Resolved.")
+        return self
+
 
 class AdminReopenRequest(BaseModel):
     remarks: str = Field(..., min_length=3, max_length=500, description="Reason for reopening resolved ticket")
@@ -202,6 +208,9 @@ class ComplaintDetail(BaseModel):
     closing_remarks: Optional[str] = None
     is_reopened: bool = False
     reopened_at: Optional[str] = None
+    original_resolved_at: Optional[str] = None
+    original_resolved_by: Optional[str] = None
+    previous_closing_remarks: Optional[str] = None
     has_photo: bool = False
     photo_name: Optional[str] = None
     photo_stored_filename: Optional[str] = None

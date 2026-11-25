@@ -48,7 +48,7 @@ export const TableHead: React.FC<React.ThHTMLAttributes<HTMLTableCellElement>> =
   children,
   ...props
 }) => (
-  <th className={cn('px-4 py-3', className)} {...props}>
+  <th className={cn('px-3 py-3 whitespace-nowrap', className)} {...props}>
     {children}
   </th>
 );
@@ -58,7 +58,7 @@ export const TableCell: React.FC<React.TdHTMLAttributes<HTMLTableCellElement>> =
   children,
   ...props
 }) => (
-  <td className={cn('px-4 py-3.5 whitespace-nowrap', className)} {...props}>
+  <td className={cn('px-3 py-3 whitespace-nowrap', className)} {...props}>
     {children}
   </td>
 );

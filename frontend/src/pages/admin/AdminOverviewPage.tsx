@@ -6,6 +6,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { Notification } from '../../components/ui/Notification';
 import { ComplaintDetailsDrawer } from '../../components/admin/ComplaintDetailsDrawer';
 import { formatDate } from '../../utils/formatters';
@@ -29,8 +30,8 @@ export const AdminOverviewPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchOverviewData = async () => {
-    setLoading(true);
+  const fetchOverviewData = async (silent = false) => {
+    if (!silent) setLoading(true);
     setErrorMsg(null);
     try {
       const [kpiRes, listRes] = await Promise.all([
@@ -42,7 +43,7 @@ export const AdminOverviewPage: React.FC = () => {
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to fetch operational overview metrics.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -68,7 +69,7 @@ export const AdminOverviewPage: React.FC = () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={fetchOverviewData}
+          onClick={() => fetchOverviewData(false)}
           leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
         >
           Refresh Data
@@ -155,61 +156,69 @@ export const AdminOverviewPage: React.FC = () => {
         </CardHeader>
 
         <CardContent className="p-0">
-          <Table className="border-0 shadow-none">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Token</TableHead>
-                <TableHead>Issue & Category</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Reported</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentComplaints.map((ticket) => (
-                <TableRow
-                  key={ticket.complaint_id}
-                  onClick={() => setSelectedTicket(ticket)}
-                  className="cursor-pointer hover:bg-[#F5F7F2]/80 transition-colors"
-                >
-                  <TableCell className="font-mono text-xs font-bold text-[#203A32]">
-                    {ticket.complaint_id}
-                  </TableCell>
-                  <TableCell>
-                    <p className="font-semibold text-xs text-[#172D28] max-w-xs truncate">{ticket.title}</p>
-                    <p className="text-[11px] text-[#52605B]">{ticket.category}</p>
-                  </TableCell>
-                  <TableCell className="text-xs text-[#52605B] max-w-xs truncate">
-                    {ticket.location}
-                  </TableCell>
-                  <TableCell>
-                    <Badge priority={ticket.priority_tier} />
-                  </TableCell>
-                  <TableCell>
-                    <Badge status={ticket.status} />
-                  </TableCell>
-                  <TableCell className="text-xs text-[#52605B]">
-                    {formatDate(ticket.date_reported)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTicket(ticket);
-                      }}
-                      leftIcon={<Eye className="w-3.5 h-3.5" />}
-                    >
-                      Inspect
-                    </Button>
-                  </TableCell>
+          {recentComplaints.length === 0 ? (
+            <EmptyState
+              title="No Facility Requests Recorded"
+              description="Recent campus complaints will appear here once submitted."
+              className="m-4"
+            />
+          ) : (
+            <Table className="border-0 shadow-none">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Token</TableHead>
+                  <TableHead>Issue & Category</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Reported</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recentComplaints.map((ticket) => (
+                  <TableRow
+                    key={ticket.complaint_id}
+                    onClick={() => setSelectedTicket(ticket)}
+                    className="cursor-pointer hover:bg-[#F5F7F2]/80 transition-colors"
+                  >
+                    <TableCell className="font-mono text-xs font-bold text-[#203A32]">
+                      {ticket.complaint_id}
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-semibold text-xs text-[#172D28] max-w-[210px] truncate">{ticket.title}</p>
+                      <p className="text-[11px] text-[#52605B] max-w-[210px] truncate">{ticket.category}</p>
+                    </TableCell>
+                    <TableCell className="text-xs text-[#52605B] max-w-[170px] truncate">
+                      {ticket.location}
+                    </TableCell>
+                    <TableCell>
+                      <Badge priority={ticket.priority_tier} />
+                    </TableCell>
+                    <TableCell>
+                      <Badge status={ticket.status} />
+                    </TableCell>
+                    <TableCell className="text-xs text-[#52605B]">
+                      {formatDate(ticket.date_reported)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTicket(ticket);
+                        }}
+                        leftIcon={<Eye className="w-3.5 h-3.5" />}
+                      >
+                        Inspect
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -220,7 +229,7 @@ export const AdminOverviewPage: React.FC = () => {
         onClose={() => setSelectedTicket(null)}
         onTicketUpdated={(updated) => {
           setSelectedTicket(updated);
-          fetchOverviewData();
+          fetchOverviewData(true);
         }}
       />
     </div>

@@ -8,17 +8,22 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Notification } from '../../components/ui/Notification';
 import { ComplaintDetailsDrawer } from '../../components/admin/ComplaintDetailsDrawer';
-import { formatDate } from '../../utils/formatters';
+import { formatDateTime } from '../../utils/formatters';
 import type { ComplaintDetail } from '../../types';
 import {
   CheckCircle2,
   Star,
   Eye,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export const AdminResolvedPage: React.FC = () => {
   const [complaints, setComplaints] = useState<ComplaintDetail[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [page, setPage] = useState<number>(0);
+  const limit = 50;
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -26,22 +31,25 @@ export const AdminResolvedPage: React.FC = () => {
   // Inspector & Reopen Drawer
   const [selectedTicket, setSelectedTicket] = useState<ComplaintDetail | null>(null);
 
-  const fetchResolved = async () => {
-    setLoading(true);
+  const fetchResolved = async (silent = false) => {
+    if (!silent) setLoading(true);
     setErrorMsg(null);
     try {
-      const res = await complaintService.getResolvedComplaints();
+      const res = await complaintService.getResolvedComplaints(limit, page * limit);
       setComplaints(res.records);
+      setTotalCount(res.total_count);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to load resolved complaint records.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchResolved();
-  }, []);
+  }, [page]);
+
+  const totalPages = Math.ceil(totalCount / limit);
 
   const ratedTickets = complaints.filter((c) => c.feedback?.rating);
   const averageRating =
@@ -64,7 +72,7 @@ export const AdminResolvedPage: React.FC = () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={fetchResolved}
+          onClick={() => fetchResolved(false)}
           leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
         >
           Refresh
@@ -78,7 +86,7 @@ export const AdminResolvedPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="p-4 bg-white border-[#DCE5D8]">
           <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">Total Completed</span>
-          <p className="text-3xl font-bold text-emerald-700 mt-1">{complaints.length}</p>
+          <p className="text-3xl font-bold text-emerald-700 mt-1">{totalCount || complaints.length}</p>
         </Card>
 
         <Card className="p-4 bg-white border-[#DCE5D8]">
@@ -130,7 +138,7 @@ export const AdminResolvedPage: React.FC = () => {
                   {ticket.location}
                 </TableCell>
                 <TableCell className="text-xs text-[#52605B]">
-                  {ticket.allotted_person || 'Facility Squad'}
+                  {ticket.allotted_person || ticket.department || '—'}
                 </TableCell>
                 <TableCell>
                   {ticket.feedback?.rating ? (
@@ -143,7 +151,7 @@ export const AdminResolvedPage: React.FC = () => {
                   )}
                 </TableCell>
                 <TableCell className="text-xs text-[#52605B]">
-                  {ticket.resolved_at || formatDate(ticket.date_reported)}
+                  {ticket.resolved_at ? formatDateTime(ticket.resolved_at) : '—'}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button
@@ -164,6 +172,33 @@ export const AdminResolvedPage: React.FC = () => {
         </Table>
       )}
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-xs text-[#52605B] pt-2">
+          <span>Page {page + 1} of {totalPages}</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              leftIcon={<ChevronLeft className="w-3.5 h-3.5" />}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+              rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Resolution Details & Reopen Drawer */}
       <ComplaintDetailsDrawer
         isOpen={!!selectedTicket}
@@ -172,7 +207,7 @@ export const AdminResolvedPage: React.FC = () => {
         onTicketUpdated={(updated) => {
           setSelectedTicket(updated);
           setSuccessMsg(`Ticket ${updated.complaint_id} updated/reopened successfully.`);
-          fetchResolved();
+          fetchResolved(true);
         }}
       />
     </div>

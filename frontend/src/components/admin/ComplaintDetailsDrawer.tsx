@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { complaintService } from '../../services/complaintService';
+import { uploadService } from '../../services/uploadService';
+import { TokenManager } from '../../services/apiClient';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { Notification } from '../ui/Notification';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, formatDateTime } from '../../utils/formatters';
 import type { ComplaintDetail } from '../../types';
 import {
   X,
@@ -51,12 +53,10 @@ export const ComplaintDetailsDrawer: React.FC<ComplaintDetailsDrawerProps> = ({
   ticket,
   onTicketUpdated,
 }) => {
-  if (!isOpen || !ticket) return null;
-
-  // Status & action state
-  const [newStatus, setNewStatus] = useState<any>(ticket.status);
-  const [allottedPerson, setAllottedPerson] = useState<string>(ticket.allotted_person || '');
-  const [squadAssigned, setSquadAssigned] = useState<string>(ticket.department || '');
+  // Status & action state (hooks must always run unconditionally)
+  const [newStatus, setNewStatus] = useState<any>(ticket?.status || 'Submitted');
+  const [allottedPerson, setAllottedPerson] = useState<string>(ticket?.allotted_person || '');
+  const [squadAssigned, setSquadAssigned] = useState<string>(ticket?.department || '');
   const [remarks, setRemarks] = useState<string>('');
 
   // Reopen state
@@ -65,6 +65,7 @@ export const ComplaintDetailsDrawer: React.FC<ComplaintDetailsDrawerProps> = ({
 
   // Loading & notification state
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [loadingPhoto, setLoadingPhoto] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -81,6 +82,44 @@ export const ComplaintDetailsDrawer: React.FC<ComplaintDetailsDrawerProps> = ({
       setSuccessMsg(null);
     }
   }, [ticket]);
+
+  // Close drawer on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !ticket) return null;
+
+  // Authenticated attachment retrieval
+  const handleViewAttachment = async () => {
+    if (!ticket.photo_stored_filename) return;
+    setLoadingPhoto(true);
+    setErrorMsg(null);
+    try {
+      const token = TokenManager.getAccessToken();
+      const res = await fetch(uploadService.getPhotoUrl(ticket.photo_stored_filename), {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        throw new Error(`Unable to retrieve attachment (${res.status}).`);
+      }
+      const blob = await res.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Unable to load attachment.');
+    } finally {
+      setLoadingPhoto(false);
+    }
+  };
 
   // Handle Standard Status & Allotment Update
   const handleUpdateSubmit = async (e: React.FormEvent) => {
@@ -99,8 +138,8 @@ export const ComplaintDetailsDrawer: React.FC<ComplaintDetailsDrawerProps> = ({
       const updated = await complaintService.updateComplaintStatus(ticket.complaint_id, {
         status: newStatus,
         remarks: remarks.trim() || undefined,
-        allotted_person: allottedPerson.trim() || undefined,
-        squad_assigned: squadAssigned.trim() || undefined,
+        allotted_person: allottedPerson.trim(),
+        squad_assigned: squadAssigned.trim(),
       });
       setSuccessMsg(`Complaint ${updated.complaint_id} updated to "${updated.status}".`);
       setRemarks('');
@@ -274,14 +313,14 @@ export const ComplaintDetailsDrawer: React.FC<ComplaintDetailsDrawerProps> = ({
                     <FileText className="w-4 h-4 text-emerald-700" />
                     <span>Verified Photo Attachment: <strong>{ticket.photo_name || ticket.photo_stored_filename}</strong></span>
                   </span>
-                  <a
-                    href={`/api/uploads/photo/${encodeURIComponent(ticket.photo_stored_filename)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800 hover:underline"
+                  <button
+                    type="button"
+                    onClick={handleViewAttachment}
+                    disabled={loadingPhoto}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800 hover:underline cursor-pointer disabled:opacity-50"
                   >
-                    View <ExternalLink className="w-3 h-3" />
-                  </a>
+                    {loadingPhoto ? 'Opening...' : 'View'} <ExternalLink className="w-3 h-3" />
+                  </button>
                 </div>
               )}
             </div>
@@ -356,19 +395,69 @@ export const ComplaintDetailsDrawer: React.FC<ComplaintDetailsDrawerProps> = ({
 
               {ticket.score_breakdown && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                  {Object.entries(ticket.score_breakdown).map(([k, val]) => (
-                    <div key={k} className="p-2 rounded-lg bg-[#F5F7F2] border border-[#DCE5D8] text-center">
-                      <span className="text-[9px] uppercase font-semibold text-[#52605B] block truncate">
-                        {k.replace('weight_', '').replace('_', ' ')}
-                      </span>
-                      <span className="text-xs font-bold text-[#172D28] font-mono mt-0.5 block">
-                        {(Number(val) * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                  ))}
+                  {(() => {
+                    const entries = Object.entries(ticket.score_breakdown);
+                    const isRatioScale = entries.every(([, v]) => Number(v) <= 1.0);
+                    return entries.map(([k, val]) => (
+                      <div key={k} className="p-2 rounded-lg bg-[#F5F7F2] border border-[#DCE5D8] text-center">
+                        <span className="text-[9px] uppercase font-semibold text-[#52605B] block truncate" title={k}>
+                          {k.replace('weight_', '').replace(' Contribution', '').replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs font-bold text-[#172D28] font-mono mt-0.5 block">
+                          {isRatioScale
+                            ? `${(Number(val) * 100).toFixed(0)}%`
+                            : `${Number(val).toFixed(1)} pts`}
+                        </span>
+                      </div>
+                    ));
+                  })()}
                 </div>
               )}
             </div>
+
+            {/* Resolution & Prior Resolution History */}
+            {(ticket.status === 'Resolved' || ticket.resolved_at || ticket.closing_remarks || ticket.is_reopened) && (
+              <div className="p-4 rounded-xl bg-white border border-[#DCE5D8] space-y-2.5">
+                <span className="text-[10px] font-semibold text-[#52605B] uppercase tracking-wider flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" /> Resolution Record
+                </span>
+                {(ticket.closing_remarks || ticket.previous_closing_remarks) && (
+                  <p className="text-xs text-[#172D28] bg-[#F5F7F2]/60 p-2.5 rounded-lg border border-[#DCE5D8]/60">
+                    {ticket.closing_remarks || ticket.previous_closing_remarks}
+                  </p>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#52605B]">
+                  <div>
+                    <span className="text-[10px] block">Resolved Timestamp</span>
+                    <strong className="text-[#172D28]">
+                      {ticket.resolved_at ? formatDateTime(ticket.resolved_at) : '—'}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] block">Resolving Administrator</span>
+                    <strong className="text-[#172D28]">{ticket.resolved_by || '—'}</strong>
+                  </div>
+                </div>
+                {ticket.is_reopened && (
+                  <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-950 space-y-1">
+                    <p className="font-semibold">
+                      Reopened on {ticket.reopened_at ? formatDateTime(ticket.reopened_at) : 'record'}
+                    </p>
+                    {ticket.original_resolved_at && (
+                      <p className="text-[11px] text-amber-900">
+                        Prior resolution: {formatDateTime(ticket.original_resolved_at)}
+                        {ticket.original_resolved_by ? ` by ${ticket.original_resolved_by}` : ''}
+                      </p>
+                    )}
+                    {ticket.previous_closing_remarks && (
+                      <p className="text-[11px] text-amber-900 italic">
+                        Prior remarks: "{ticket.previous_closing_remarks}"
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Student Feedback (if Resolved & rated) */}
             {ticket.feedback && (
@@ -465,6 +554,7 @@ export const ComplaintDetailsDrawer: React.FC<ComplaintDetailsDrawerProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
+                      type="button"
                       onClick={() => {
                         setIsReopening(false);
                         setReopenRemarks('');

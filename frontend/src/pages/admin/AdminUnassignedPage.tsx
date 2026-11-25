@@ -14,10 +14,15 @@ import {
   Inbox,
   UserCheck,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export const AdminUnassignedPage: React.FC = () => {
   const [complaints, setComplaints] = useState<ComplaintDetail[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [page, setPage] = useState<number>(0);
+  const limit = 50;
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -25,22 +30,25 @@ export const AdminUnassignedPage: React.FC = () => {
   // Inspector & Assignment Drawer
   const [selectedTicket, setSelectedTicket] = useState<ComplaintDetail | null>(null);
 
-  const fetchUnassigned = async () => {
-    setLoading(true);
+  const fetchUnassigned = async (silent = false) => {
+    if (!silent) setLoading(true);
     setErrorMsg(null);
     try {
-      const res = await complaintService.getUnassignedComplaints();
+      const res = await complaintService.getUnassignedComplaints(limit, page * limit);
       setComplaints(res.records);
+      setTotalCount(res.total_count);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to load unassigned complaints.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchUnassigned();
-  }, []);
+  }, [page]);
+
+  const totalPages = Math.ceil(totalCount / limit);
 
   const criticalCount = complaints.filter(
     (c) => c.priority_tier === 'Critical' || c.priority_tier === 'High'
@@ -59,7 +67,7 @@ export const AdminUnassignedPage: React.FC = () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={fetchUnassigned}
+          onClick={() => fetchUnassigned(false)}
           leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
         >
           Refresh
@@ -73,7 +81,7 @@ export const AdminUnassignedPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="p-4 bg-white border-[#DCE5D8]">
           <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">Awaiting Triage</span>
-          <p className="text-3xl font-bold text-amber-700 mt-1">{complaints.length}</p>
+          <p className="text-3xl font-bold text-amber-700 mt-1">{totalCount || complaints.length}</p>
         </Card>
 
         <Card className="p-4 bg-white border-[#DCE5D8]">
@@ -115,10 +123,10 @@ export const AdminUnassignedPage: React.FC = () => {
                   {ticket.complaint_id}
                 </TableCell>
                 <TableCell>
-                  <p className="font-semibold text-xs text-[#172D28] max-w-xs truncate">{ticket.title}</p>
-                  <p className="text-[11px] text-[#52605B]">{ticket.category}</p>
+                  <p className="font-semibold text-xs text-[#172D28] max-w-[200px] truncate">{ticket.title}</p>
+                  <p className="text-[11px] text-[#52605B] max-w-[200px] truncate">{ticket.category}</p>
                 </TableCell>
-                <TableCell className="text-xs text-[#52605B] max-w-xs truncate">
+                <TableCell className="text-xs text-[#52605B] max-w-[160px] truncate">
                   {ticket.location}
                 </TableCell>
                 <TableCell>
@@ -149,6 +157,33 @@ export const AdminUnassignedPage: React.FC = () => {
         </Table>
       )}
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-xs text-[#52605B] pt-2">
+          <span>Page {page + 1} of {totalPages}</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              leftIcon={<ChevronLeft className="w-3.5 h-3.5" />}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+              rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Assignment & Triage Drawer */}
       <ComplaintDetailsDrawer
         isOpen={!!selectedTicket}
@@ -157,7 +192,7 @@ export const AdminUnassignedPage: React.FC = () => {
         onTicketUpdated={(updated) => {
           setSelectedTicket(updated);
           setSuccessMsg(`Ticket ${updated.complaint_id} updated/assigned to "${updated.status}".`);
-          fetchUnassigned();
+          fetchUnassigned(true);
         }}
       />
     </div>

@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 
 from app.api.deps import get_current_user
 from app.core.config import UPLOAD_DIR
+from app.services.complaint_service import complaint_service
 from app.services.upload_service import upload_service
 
 router = APIRouter(prefix="/api/uploads", tags=["Uploads"])
@@ -52,7 +53,8 @@ def get_uploaded_photo(
     current_user: dict = Depends(get_current_user),
 ):
     """
-    Retrieves an authenticated attachment file safely, preventing directory traversal.
+    Retrieves an authenticated attachment file safely, preventing directory traversal
+    and enforcing student ownership isolation for non-admin callers.
     """
     safe_name = Path(filename).name
     file_path = UPLOAD_DIR / safe_name
@@ -62,6 +64,23 @@ def get_uploaded_photo(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Requested attachment does not exist.",
         )
+
+    # Enforce ownership boundary for student callers
+    if current_user.get("role") != "admin":
+        records = complaint_service._load_records()
+        matching = [r for r in records if r.get("photo_stored_filename") == safe_name]
+        if matching:
+            is_owner = any(r.get("student_id") == current_user.get("id") for r in matching)
+            if not is_owner:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access forbidden: You do not own this complaint attachment.",
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access forbidden: Attachment is not linked to an accessible complaint record.",
+            )
 
     ext = safe_name.lower().split(".")[-1]
     media_type = "image/png" if ext == "png" else "image/jpeg"

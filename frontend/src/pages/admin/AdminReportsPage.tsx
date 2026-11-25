@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { complaintService } from '../../services/complaintService';
 import { taxonomyService } from '../../services/taxonomyService';
+import { TokenManager } from '../../services/apiClient';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -35,7 +36,7 @@ export const AdminReportsPage: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('All Categories');
   const [locationFilter, setLocationFilter] = useState<string>('All Locations');
   const [statusFilter, setStatusFilter] = useState<string>('All Statuses');
-  const [trendAgg, setTrendAgg] = useState<'day' | 'week' | 'month'>('day');
+  const [trendAgg, setTrendAgg] = useState<'Daily' | 'Weekly' | 'Monthly'>('Daily');
 
   // Taxonomy
   const [taxonomy, setTaxonomy] = useState<TaxonomyHierarchyResponse | null>(null);
@@ -77,17 +78,24 @@ export const AdminReportsPage: React.FC = () => {
     setCategoryFilter('All Categories');
     setLocationFilter('All Locations');
     setStatusFilter('All Statuses');
-    setTrendAgg('day');
+    setTrendAgg('Daily');
   };
 
-  // PII-Redacted Export Handler
+  // Masked-Identifier Export Handler respecting active filters
   const handleExportCSV = async () => {
     setExporting(true);
     setErrorMsg(null);
     try {
       const base = import.meta.env.VITE_API_BASE_URL || '';
-      const token = sessionStorage.getItem('fipp_access_token');
-      const res = await fetch(`${base}/api/admin/reports/export?redact_pii=true`, {
+      const token = TokenManager.getAccessToken();
+      const q = new URLSearchParams({ redact_pii: 'true' });
+      if (startDate) q.append('start_date', startDate);
+      if (endDate) q.append('end_date', endDate);
+      if (categoryFilter !== 'All Categories') q.append('category', categoryFilter);
+      if (locationFilter !== 'All Locations') q.append('location', locationFilter);
+      if (statusFilter !== 'All Statuses') q.append('status', statusFilter);
+
+      const res = await fetch(`${base}/api/admin/reports/export?${q.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
@@ -208,11 +216,11 @@ export const AdminReportsPage: React.FC = () => {
           <Select
             label="Trend Grouping"
             value={trendAgg}
-            onChange={(e) => setTrendAgg(e.target.value as any)}
+            onChange={(e) => setTrendAgg(e.target.value as 'Daily' | 'Weekly' | 'Monthly')}
             options={[
-              { value: 'day', label: 'Daily Trends' },
-              { value: 'week', label: 'Weekly Summary' },
-              { value: 'month', label: 'Monthly Aggregate' },
+              { value: 'Daily', label: 'Daily Trends' },
+              { value: 'Weekly', label: 'Weekly Summary' },
+              { value: 'Monthly', label: 'Monthly Aggregate' },
             ]}
           />
         </div>
@@ -220,7 +228,7 @@ export const AdminReportsPage: React.FC = () => {
         <div className="flex justify-between items-center pt-3 mt-3 border-t border-[#DCE5D8]/60 text-xs">
           <span className="text-[#52605B] flex items-center gap-1.5">
             <Shield className="w-3.5 h-3.5 text-[#203A32]" />
-            DPDP Act 2023 Masking Active (Student PII redacted on export)
+            Direct student identifiers (ID, name, phone) masked on CSV export
           </span>
 
           <button
@@ -245,13 +253,21 @@ export const AdminReportsPage: React.FC = () => {
           <p className="text-3xl font-bold text-emerald-700 mt-1">
             {report?.kpis.resolution_rate_percent ?? 0}%
           </p>
-          <span className="text-[11px] text-[#52605B] mt-1 block">{report?.kpis.resolved ?? 0} resolved records</span>
+          <span className="text-[11px] text-[#52605B] mt-1 block">
+            {report?.kpis.resolved ?? 0} resolved
+            {(report?.kpis.withdrawn ?? 0) > 0
+              ? ` (${report?.kpis.withdrawn} withdrawn excluded)`
+              : ' records'}
+          </span>
         </Card>
 
         <Card className="p-4 bg-white border-[#DCE5D8]">
           <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">Average Turnaround</span>
           <p className="text-3xl font-bold text-[#203A32] mt-1">
-            {report?.kpis.average_turnaround_days ? `${report.kpis.average_turnaround_days} Days` : '1.8 Days'}
+            {report?.kpis.average_turnaround_days !== null &&
+            report?.kpis.average_turnaround_days !== undefined
+              ? `${report.kpis.average_turnaround_days} Days`
+              : 'Unavailable'}
           </p>
           <span className="text-[11px] text-[#52605B] mt-1 block">From report to resolution</span>
         </Card>
@@ -315,7 +331,7 @@ export const AdminReportsPage: React.FC = () => {
                             />
                           </div>
                           <span className="text-[10px] font-mono text-[#52605B] truncate w-full text-center">
-                            {t.period.slice(-5)}
+                            {trendAgg === 'Daily' ? t.period.slice(5) : t.period}
                           </span>
                         </div>
                       );
@@ -421,7 +437,7 @@ export const AdminReportsPage: React.FC = () => {
                         <div className="w-full h-2 rounded-full bg-[#EAEFE6] overflow-hidden">
                           <div
                             className={`h-full ${colorScheme.bar} rounded-full transition-all duration-500`}
-                            style={{ width: `${Math.min(100, Math.max(pct, 4))}%` }}
+                            style={{ width: `${Number(count) > 0 ? Math.min(100, Math.max(pct, 4)) : 0}%` }}
                           />
                         </div>
                       </div>
@@ -454,7 +470,7 @@ export const AdminReportsPage: React.FC = () => {
                         <div className="w-full h-2 rounded-full bg-[#EAEFE6] overflow-hidden">
                           <div
                             className="h-full bg-[#A8B9A3] rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min(100, Math.max(pct, 5))}%` }}
+                            style={{ width: `${Number(count) > 0 ? Math.min(100, Math.max(pct, 5)) : 0}%` }}
                           />
                         </div>
                       </div>

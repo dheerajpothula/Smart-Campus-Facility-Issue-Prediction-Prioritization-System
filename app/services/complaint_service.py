@@ -39,6 +39,53 @@ CANONICAL_PROGRESS_STAGES = [
     "Withdrawn",
 ]
 
+LOCATION_CRITICALITY_MAP = {
+    "Server Room": 1.0,
+    "Data Center": 1.0,
+    "Exam Hall": 0.95,
+    "Chemistry Lab": 0.90,
+    "Computer Lab": 0.85,
+    "Lecture Hall": 0.80,
+    "Hostel Mess / Kitchen": 0.80,
+    "Hostel Washroom": 0.75,
+    "Central Library": 0.70,
+    "Hostel Room": 0.60,
+    "Faculty Office": 0.55,
+    "Administrative Office": 0.50,
+    "Corridor / Common Area": 0.35,
+    "Campus Grounds": 0.25,
+}
+
+SEVERITY_SCORE_MAP = {
+    "Critical": 1.0,
+    "High": 0.75,
+    "Medium": 0.45,
+    "Low": 0.20,
+}
+
+
+def parse_timestamp(ts_str: Optional[str]) -> Optional[datetime]:
+    """Parses canonical and legacy complaint timestamps without inventing values."""
+    if not ts_str or not isinstance(ts_str, str):
+        return None
+    cleaned = ts_str.strip()
+    if not cleaned:
+        return None
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%m/%d/%Y %I:%M:%S %p",
+        "%Y-%m-%d",
+    ):
+        try:
+            return datetime.strptime(cleaned, fmt)
+        except ValueError:
+            continue
+    try:
+        return datetime.fromisoformat(cleaned)
+    except ValueError:
+        return None
+
 
 class ComplaintService:
     """Core domain service for managing campus facility complaints."""
@@ -105,27 +152,34 @@ class ComplaintService:
         weights: Optional[PriorityWeights] = None
     ) -> Tuple[float, str, Dict[str, float]]:
         """Computes multi-criteria priority score (0-100), tier, and breakdown."""
-        try:
-            from src.prediction.priority_scoring import calculate_priority_score, PriorityWeights as SrcWeights
-            w = SrcWeights(
-                severity=weights.severity if weights else 0.35,
-                location_criticality=weights.location_criticality if weights else 0.25,
-                recurrence_probability=weights.recurrence_probability if weights else 0.25,
-                impact_population=weights.impact_population if weights else 0.15,
-            )
-            return calculate_priority_score(
-                severity=severity,
-                location_type=location_type,
-                recurrence_risk=recurrence_risk,
-                impact_scale=impact_scale,
-                weights=w,
-            )
-        except Exception:
-            # Fallback heuristic
-            score = 50.0
+        w = weights or PriorityWeights()
+        s_val = SEVERITY_SCORE_MAP.get(severity, 0.4)
+        c_val = LOCATION_CRITICALITY_MAP.get(location_type, 0.5)
+        r_val = max(0.0, min(1.0, float(recurrence_risk)))
+        i_val = max(0.0, min(1.0, float(impact_scale)))
+
+        contrib_s = w.severity * s_val * 100.0
+        contrib_c = w.location_criticality * c_val * 100.0
+        contrib_r = w.recurrence_probability * r_val * 100.0
+        contrib_i = w.impact_population * i_val * 100.0
+
+        score = round(max(0.0, min(100.0, contrib_s + contrib_c + contrib_r + contrib_i)), 1)
+        if score >= 75.0:
+            tier = "Critical"
+        elif score >= 50.0:
+            tier = "High"
+        elif score >= 28.0:
             tier = "Medium"
-            breakdown = {"Severity": 17.5, "Location": 12.5, "Recurrence": 10.0, "Impact": 10.0}
-            return score, tier, breakdown
+        else:
+            tier = "Low"
+
+        breakdown = {
+            "Severity Contribution": round(contrib_s, 1),
+            "Location Criticality Contribution": round(contrib_c, 1),
+            "Recurrence Risk Contribution": round(contrib_r, 1),
+            "Impact Population Contribution": round(contrib_i, 1),
+        }
+        return score, tier, breakdown
 
     def predict_issue_attributes(self, category: str, title: str, description: str, building: str) -> Dict[str, Any]:
         """Heuristic attribute inference matching existing Streamlit logic."""
@@ -414,7 +468,7 @@ class ComplaintService:
                     })
 
                     if new_status == "Resolved":
-                        r["resolved_at"] = now_str
+                        r["resolved_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         r["resolved_by"] = admin_id or "Administrator"
 
                     self._save_records(records)
@@ -434,12 +488,16 @@ class ComplaintService:
             for r in records:
                 if r.get("complaint_id") == complaint_id:
                     old_status = r.get("status")
+                    if old_status != "Resolved":
+                        raise ValueError(f"Only complaints with 'Resolved' status can be reopened (current status: '{old_status}').")
                     r["status"] = "Under Review"
                     r["is_reopened"] = True
                     r["reopened_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                     if "resolved_at" in r and "original_resolved_at" not in r:
                         r["original_resolved_at"] = r["resolved_at"]
+                    if "resolved_by" in r and "original_resolved_by" not in r:
+                        r["original_resolved_by"] = r["resolved_by"]
                     if "closing_remarks" in r and "previous_closing_remarks" not in r:
                         r["previous_closing_remarks"] = r["closing_remarks"]
 
@@ -515,30 +573,26 @@ class ComplaintService:
             return False
 
     def get_kpis(self) -> Dict[str, Any]:
-        """Calculates 4 real-time Control Centre KPI metrics."""
+        """Calculates real-time Control Centre KPI metrics from genuine persisted records."""
         records = self._load_records()
         total = len(records)
         new_count = sum(1 for r in records if r.get("status") == "Submitted")
         in_prog_count = sum(1 for r in records if r.get("status") in ["Under Review", "Assigned", "In Progress"])
         resolved_count = sum(1 for r in records if r.get("status") == "Resolved")
         withdrawn_count = sum(1 for r in records if r.get("status") == "Withdrawn")
-        rate = round((resolved_count / total * 100), 1) if total > 0 else 0.0
+        eligible_total = total - withdrawn_count
+        rate = round((resolved_count / eligible_total * 100), 1) if eligible_total > 0 else 0.0
 
-        # Calculate average turnaround time
+        # Calculate average turnaround time strictly from genuine submission and resolution timestamps
         turnaround_days = []
         for r in records:
             if r.get("status") == "Resolved":
-                res_time = r.get("resolved_at") or r.get("estimated_resolution")
-                rep_time = r.get("date_reported")
-                if res_time and rep_time:
-                    try:
-                        t_res = datetime.strptime(res_time[:16], "%Y-%m-%d %H:%M")
-                        t_rep = datetime.strptime(rep_time[:16], "%Y-%m-%d %H:%M")
-                        diff = (t_res - t_rep).total_seconds() / 86400.0
-                        if diff >= 0:
-                            turnaround_days.append(diff)
-                    except Exception:
-                        pass
+                t_res = parse_timestamp(r.get("resolved_at"))
+                t_rep = parse_timestamp(r.get("date_reported"))
+                if t_res and t_rep:
+                    diff = (t_res - t_rep).total_seconds() / 86400.0
+                    if diff >= 0:
+                        turnaround_days.append(diff)
 
         avg_turnaround = round(sum(turnaround_days) / len(turnaround_days), 1) if turnaround_days else None
 
@@ -552,8 +606,8 @@ class ComplaintService:
             "average_turnaround_days": avg_turnaround,
         }
 
-    @staticmethod
-    def normalize_record(r: Dict[str, Any]) -> Dict[str, Any]:
+    @classmethod
+    def normalize_record(cls, r: Dict[str, Any]) -> Dict[str, Any]:
         """Ensures a complaint record adheres strictly to the target API contract."""
         rec = dict(r)
         cat = rec.get("category") or rec.get("facility_type") or "General"
@@ -562,8 +616,21 @@ class ComplaintService:
         bld = rec.get("building") or (loc.split(" - ")[0] if " - " in loc else "Campus Main Complex")
         title = rec.get("title") or rec.get("subject") or f"Facility Issue: {cat}"
         sev = rec.get("severity", "Medium")
-        tier = rec.get("priority_tier") or ("Critical" if sev == "Critical" else "High" if sev == "High" else "Medium")
-        score = float(rec.get("priority_score", 65.0 if tier == "High" else 85.0 if tier == "Critical" else 45.0))
+
+        if rec.get("priority_tier") and rec.get("priority_score") is not None and rec.get("score_breakdown"):
+            tier = rec["priority_tier"]
+            score = float(rec["priority_score"])
+            bdown = rec["score_breakdown"]
+        else:
+            calc_score, calc_tier, calc_bdown = complaint_service.compute_mcpi(
+                severity=sev,
+                location_type=rec.get("location_type", "Corridor / Common Area"),
+                recurrence_risk=float(rec.get("recurrence_risk", 0.35)),
+                impact_scale=float(rec.get("impact_scale", 0.50)),
+            )
+            tier = rec.get("priority_tier") or calc_tier
+            score = float(rec["priority_score"]) if rec.get("priority_score") is not None else calc_score
+            bdown = rec.get("score_breakdown") or calc_bdown
 
         rec["category"] = cat
         rec["facility_type"] = fac
@@ -572,6 +639,7 @@ class ComplaintService:
         rec["title"] = title
         rec["priority_tier"] = tier
         rec["priority_score"] = score
+        rec["score_breakdown"] = bdown
         rec["category_type"] = rec.get("category_type", "Maintenance / Electrical Complaints")
         rec["message_type"] = rec.get("message_type", "Grievance")
         rec["specific_categories"] = rec.get("specific_categories") or []

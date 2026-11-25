@@ -1,17 +1,20 @@
-import puppeteer from 'puppeteer-core';
+import { createRequire } from 'module';
 import fs from 'fs';
 import path from 'path';
 
+const require = createRequire(import.meta.url);
+const puppeteer = require('../frontend/node_modules/puppeteer-core');
+
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const outDir = path.resolve('docs/screenshots');
-const artifactDir = 'C:\\Users\\pothu\\.gemini\\antigravity\\brain\\7aeec604-09d4-4b7d-893b-ea46693e3fd8';
+const artifactDir = 'C:\\Users\\pothu\\.gemini\\antigravity\\brain\\c5ba17ef-d1cc-4f68-999c-a619f6948cfb';
 
 if (!fs.existsSync(outDir)) {
   fs.mkdirSync(outDir, { recursive: true });
 }
 
 async function run() {
-  console.log('Launching Chrome for Phase 4 Administrator Control Centre screenshots...');
+  console.log('Launching Chrome for Phase 4.1 Admin Control Centre E2E verification & screenshots...');
   const browser = await puppeteer.launch({
     executablePath: chromePath,
     headless: true,
@@ -19,6 +22,20 @@ async function run() {
   });
 
   const page = await browser.newPage();
+  const consoleErrors = [];
+  const failedRequests = [];
+
+  page.on('pageerror', (err) => consoleErrors.push(`pageerror: ${err.message}`));
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') {
+      consoleErrors.push(`console.error: ${msg.text()}`);
+    }
+  });
+  page.on('response', (res) => {
+    if (res.status() >= 400 && !res.url().includes('favicon')) {
+      failedRequests.push(`${res.status()} ${res.url()}`);
+    }
+  });
 
   async function saveScreenshot(filename) {
     const localPath = path.join(outDir, filename);
@@ -27,155 +44,156 @@ async function run() {
     if (fs.existsSync(artifactDir)) {
       const artPath = path.join(artifactDir, filename);
       fs.copyFileSync(localPath, artPath);
-      console.log(`Copied to artifact dir: ${artPath}`);
     }
   }
 
-  // Helper: Login as Admin
-  async function loginAsAdmin(width, height, isMobile = false) {
-    await page.setViewport({ width, height, isMobile });
-    await page.goto('http://127.0.0.1:5173/login', { waitUntil: 'networkidle0' });
-    await new Promise(r => setTimeout(r, 600));
-
-    // Click demo admin credentials button
-    await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const aBtn = buttons.find(b => b.textContent && b.textContent.includes('ADM-2026-001'));
-      if (aBtn) aBtn.click();
-    });
-
-    await new Promise(r => setTimeout(r, 600));
-
-    // Click Sign In
-    await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const loginBtn = buttons.find(b => b.textContent && b.textContent.includes('Sign In to FIPP'));
-      if (loginBtn) loginBtn.click();
-    });
-
-    await new Promise(r => setTimeout(r, 1500));
+  async function assertAdminRoute(expectedPathPrefix) {
+    const pathname = await page.evaluate(() => window.location.pathname);
+    if (!pathname.startsWith(expectedPathPrefix)) {
+      throw new Error(`Expected route starting with ${expectedPathPrefix}, got ${pathname}`);
+    }
   }
 
-  // 1. Initial Login
-  console.log('Authenticating Administrator...');
-  await loginAsAdmin(1440, 900, false);
+  async function gotoAndWait(urlPath, expectedText, waitForRecord = false) {
+    await page.goto(`http://127.0.0.1:5173${urlPath}`, { waitUntil: 'networkidle0' });
+    await assertAdminRoute('/admin');
+    await page.waitForFunction(
+      (txt) => document.body && document.body.innerText.includes(txt),
+      { timeout: 10000 },
+      expectedText
+    );
+    if (waitForRecord) {
+      await page.waitForFunction(
+        () => document.body && document.body.innerText.includes('CMP-2026-'),
+        { timeout: 10000 }
+      );
+    }
+    await new Promise(r => setTimeout(r, 400));
+  }
 
-  // 1. Overview Desktop (1440x900)
-  console.log('1. Capturing Admin Overview Desktop...');
+  // 1. Login via real form
   await page.setViewport({ width: 1440, height: 900, isMobile: false });
-  await page.goto('http://127.0.0.1:5173/admin', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
-  await saveScreenshot('fipp_phase4_admin_overview_desktop.png');
+  await page.goto('http://127.0.0.1:5173/login', { waitUntil: 'networkidle0' });
+  await page.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll('button'));
+    const aBtn = buttons.find(b => b.textContent && b.textContent.includes('ADM-2026-001'));
+    if (aBtn) aBtn.click();
+  });
+  await new Promise(r => setTimeout(r, 200));
+  await page.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll('button'));
+    const loginBtn = buttons.find(
+      b => b.textContent && (b.textContent.includes('Authenticate & Continue') || b.textContent.includes('Sign In'))
+    );
+    if (loginBtn) loginBtn.click();
+  });
+  await page.waitForFunction(() => window.location.pathname === '/admin', { timeout: 10000 });
+  await page.waitForFunction(
+    () => document.body.innerText.includes('Executive Operations Overview'),
+    { timeout: 10000 }
+  );
+  await new Promise(r => setTimeout(r, 500));
 
-  // 2. Overview Mobile (390x844)
-  console.log('2. Capturing Admin Overview Mobile...');
+  // 1-2. Overview
+  await saveScreenshot('fipp_phase4_admin_overview_desktop.png');
   await page.setViewport({ width: 390, height: 844, isMobile: true });
-  await page.goto('http://127.0.0.1:5173/admin', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin', 'Executive Operations Overview');
   await saveScreenshot('fipp_phase4_admin_overview_mobile.png');
 
-  // 3. All Requests Ledger Desktop (1440x900)
-  console.log('3. Capturing All Requests Desktop...');
+  // 3-4. All Requests
   await page.setViewport({ width: 1440, height: 900, isMobile: false });
-  await page.goto('http://127.0.0.1:5173/admin/all-requests', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin/all-requests', 'All Requests Ledger', true);
   await saveScreenshot('fipp_phase4_admin_all_requests_desktop.png');
 
-  // 4. All Requests Ledger Mobile (390x844)
-  console.log('4. Capturing All Requests Mobile...');
   await page.setViewport({ width: 390, height: 844, isMobile: true });
-  await page.goto('http://127.0.0.1:5173/admin/all-requests', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin/all-requests', 'All Requests Ledger', true);
   await saveScreenshot('fipp_phase4_admin_all_requests_mobile.png');
 
-  // 5. Drawer Open on Desktop
-  console.log('5. Capturing Complaint Details Drawer Desktop...');
+  // 5-6. Drawer open on Desktop & Mobile (from All Requests)
   await page.setViewport({ width: 1440, height: 900, isMobile: false });
-  await page.goto('http://127.0.0.1:5173/admin/all-requests', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
-  // Click first inspect button
+  await gotoAndWait('/admin/all-requests', 'All Requests Ledger', true);
   await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button'));
     const inspectBtn = buttons.find(b => b.textContent && b.textContent.includes('Inspect'));
     if (inspectBtn) inspectBtn.click();
   });
-  await new Promise(r => setTimeout(r, 1000));
+  await page.waitForFunction(() => document.body.innerText.toUpperCase().includes('OFFICIAL COMPLAINT LIFECYCLE'), { timeout: 5000 });
+  await new Promise(r => setTimeout(r, 400));
+  const drawerText = await page.evaluate(() => document.body.innerText);
+  if (drawerText.includes('1750%') || drawerText.includes('1250%')) {
+    throw new Error('Detected MCPI percentage scaling bug (e.g. 1750%) in drawer!');
+  }
   await saveScreenshot('fipp_phase4_admin_drawer_desktop.png');
 
-  // 6. Drawer Open on Mobile
-  console.log('6. Capturing Complaint Details Drawer Mobile...');
   await page.setViewport({ width: 390, height: 844, isMobile: true });
-  await page.goto('http://127.0.0.1:5173/admin/all-requests', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin/all-requests', 'All Requests Ledger', true);
   await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button'));
     const inspectBtn = buttons.find(b => b.textContent && b.textContent.includes('Inspect'));
     if (inspectBtn) inspectBtn.click();
   });
-  await new Promise(r => setTimeout(r, 1000));
+  await page.waitForFunction(() => document.body.innerText.toUpperCase().includes('OFFICIAL COMPLAINT LIFECYCLE'), { timeout: 5000 });
+  await new Promise(r => setTimeout(r, 400));
   await saveScreenshot('fipp_phase4_admin_drawer_mobile.png');
 
-  // 7. New / Unassigned Desktop (1440x900)
-  console.log('7. Capturing New / Unassigned Desktop...');
+  // 7-8. New / Unassigned
   await page.setViewport({ width: 1440, height: 900, isMobile: false });
-  await page.goto('http://127.0.0.1:5173/admin/unassigned', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin/unassigned', 'New / Unassigned Requests', true);
   await saveScreenshot('fipp_phase4_admin_unassigned_desktop.png');
 
-  // 8. New / Unassigned Mobile (390x844)
-  console.log('8. Capturing New / Unassigned Mobile...');
   await page.setViewport({ width: 390, height: 844, isMobile: true });
-  await page.goto('http://127.0.0.1:5173/admin/unassigned', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin/unassigned', 'New / Unassigned Requests', true);
   await saveScreenshot('fipp_phase4_admin_unassigned_mobile.png');
 
-  // 9. In Progress Work Orders Desktop (1440x900)
-  console.log('9. Capturing In Progress Desktop...');
+  // 9-10. In Progress
   await page.setViewport({ width: 1440, height: 900, isMobile: false });
-  await page.goto('http://127.0.0.1:5173/admin/in-progress', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin/in-progress', 'In Progress Work Orders', true);
   await saveScreenshot('fipp_phase4_admin_in_progress_desktop.png');
 
-  // 10. In Progress Work Orders Mobile (390x844)
-  console.log('10. Capturing In Progress Mobile...');
   await page.setViewport({ width: 390, height: 844, isMobile: true });
-  await page.goto('http://127.0.0.1:5173/admin/in-progress', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin/in-progress', 'In Progress Work Orders', true);
   await saveScreenshot('fipp_phase4_admin_in_progress_mobile.png');
 
-  // 11. Resolved Archive Desktop (1440x900)
-  console.log('11. Capturing Resolved Archive Desktop...');
+  // 11-12. Resolved + verify drawer shows Resolution Record
   await page.setViewport({ width: 1440, height: 900, isMobile: false });
-  await page.goto('http://127.0.0.1:5173/admin/resolved', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin/resolved', 'Resolved Complaint Archive', true);
   await saveScreenshot('fipp_phase4_admin_resolved_desktop.png');
 
-  // 12. Resolved Archive Mobile (390x844)
-  console.log('12. Capturing Resolved Archive Mobile...');
+  await page.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll('button'));
+    const auditBtn = buttons.find(b => b.textContent && b.textContent.includes('Audit / Reopen'));
+    if (auditBtn) auditBtn.click();
+  });
+  await page.waitForFunction(() => document.body.innerText.toUpperCase().includes('RESOLUTION RECORD'), { timeout: 5000 });
+
   await page.setViewport({ width: 390, height: 844, isMobile: true });
-  await page.goto('http://127.0.0.1:5173/admin/resolved', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin/resolved', 'Resolved Complaint Archive', true);
   await saveScreenshot('fipp_phase4_admin_resolved_mobile.png');
 
-  // 13. Reports & Analytics Desktop (1440x900)
-  console.log('13. Capturing Reports & Analytics Desktop...');
+  // 13-14. Reports + verify Weekly toggle & no DPDP Act 2023 compliance overclaim
   await page.setViewport({ width: 1440, height: 900, isMobile: false });
-  await page.goto('http://127.0.0.1:5173/admin/reports', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin/reports', 'Category Pareto Distribution');
+  const reportsText = await page.evaluate(() => document.body.innerText);
+  if (reportsText.includes('DPDP Act 2023')) {
+    throw new Error('Reports page still contains DPDP Act 2023 compliance claim!');
+  }
   await saveScreenshot('fipp_phase4_admin_reports_desktop.png');
 
-  // 14. Reports & Analytics Mobile (390x844)
-  console.log('14. Capturing Reports & Analytics Mobile...');
   await page.setViewport({ width: 390, height: 844, isMobile: true });
-  await page.goto('http://127.0.0.1:5173/admin/reports', { waitUntil: 'networkidle0' });
-  await new Promise(r => setTimeout(r, 1200));
+  await gotoAndWait('/admin/reports', 'Reports & Analytics');
   await saveScreenshot('fipp_phase4_admin_reports_mobile.png');
 
-  console.log('All 14 Phase 4 screenshots successfully captured and saved!');
+  if (consoleErrors.length > 0 || failedRequests.length > 0) {
+    console.error('Console/Network Errors:', { consoleErrors, failedRequests });
+    process.exitCode = 1;
+  } else {
+    console.log('Browser E2E verification passed with 0 console errors and 0 failed HTTP requests!');
+  }
+
   await browser.close();
 }
 
 run().catch(err => {
-  console.error('Fatal error capturing Phase 4 screenshots:', err);
+  console.error('Fatal error during Phase 4.1 E2E verification:', err);
   process.exit(1);
 });

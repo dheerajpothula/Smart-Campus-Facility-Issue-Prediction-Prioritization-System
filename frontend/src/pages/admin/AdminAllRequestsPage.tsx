@@ -30,6 +30,7 @@ export const AdminAllRequestsPage: React.FC = () => {
 
   // Filters & Pagination
   const [search, setSearch] = useState<string>('');
+  const [appliedSearch, setAppliedSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('All Statuses');
   const [categoryFilter, setCategoryFilter] = useState<string>('All Categories');
   const [locationFilter, setLocationFilter] = useState<string>('All Locations');
@@ -44,12 +45,12 @@ export const AdminAllRequestsPage: React.FC = () => {
   // Inspector Drawer
   const [selectedTicket, setSelectedTicket] = useState<ComplaintDetail | null>(null);
 
-  const fetchComplaints = async () => {
-    setLoading(true);
+  const fetchComplaints = async (silent = false) => {
+    if (!silent) setLoading(true);
     setErrorMsg(null);
     try {
       const res = await complaintService.getAllAdminComplaints({
-        search: search.trim() || undefined,
+        search: appliedSearch.trim() || undefined,
         status: statusFilter !== 'All Statuses' ? statusFilter : undefined,
         category: categoryFilter !== 'All Categories' ? categoryFilter : undefined,
         location: locationFilter !== 'All Locations' ? locationFilter : undefined,
@@ -63,7 +64,7 @@ export const AdminAllRequestsPage: React.FC = () => {
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to query complaint ledger.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -73,16 +74,17 @@ export const AdminAllRequestsPage: React.FC = () => {
 
   useEffect(() => {
     fetchComplaints();
-  }, [statusFilter, categoryFilter, locationFilter, priorityFilter, sortBy, page]);
+  }, [appliedSearch, statusFilter, categoryFilter, locationFilter, priorityFilter, sortBy, page]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(0);
-    fetchComplaints();
+    setAppliedSearch(search);
   };
 
   const handleResetFilters = () => {
     setSearch('');
+    setAppliedSearch('');
     setStatusFilter('All Statuses');
     setCategoryFilter('All Categories');
     setLocationFilter('All Locations');
@@ -241,10 +243,10 @@ export const AdminAllRequestsPage: React.FC = () => {
                   {ticket.complaint_id}
                 </TableCell>
                 <TableCell>
-                  <p className="font-semibold text-xs text-[#172D28] max-w-xs truncate">{ticket.title}</p>
-                  <p className="text-[11px] text-[#52605B]">{ticket.category}</p>
+                  <p className="font-semibold text-xs text-[#172D28] max-w-[190px] truncate">{ticket.title}</p>
+                  <p className="text-[11px] text-[#52605B] max-w-[190px] truncate">{ticket.category}</p>
                 </TableCell>
-                <TableCell className="text-xs text-[#52605B] max-w-xs truncate">
+                <TableCell className="text-xs text-[#52605B] max-w-[150px] truncate">
                   {ticket.location}
                 </TableCell>
                 <TableCell>
@@ -313,7 +315,7 @@ export const AdminAllRequestsPage: React.FC = () => {
         onTicketUpdated={(updated) => {
           setSelectedTicket(updated);
           setSuccessMsg(`Ticket ${updated.complaint_id} updated successfully.`);
-          fetchComplaints();
+          fetchComplaints(true);
         }}
       />
     </div>

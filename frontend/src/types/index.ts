@@ -82,6 +82,9 @@ export interface ComplaintDetail {
   closing_remarks?: string | null;
   is_reopened: boolean;
   reopened_at?: string | null;
+  original_resolved_at?: string | null;
+  original_resolved_by?: string | null;
+  previous_closing_remarks?: string | null;
   has_photo: boolean;
   photo_name?: string | null;
   photo_stored_filename?: string | null;
