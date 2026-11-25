@@ -210,9 +210,9 @@
               <form id="loginForm" onsubmit="event.preventDefault(); app.handleLogin();">
                 <div style="margin-bottom: 14px;">
                   <label id="loginUserLabel" style="font-size: 0.82rem; font-weight: 600; display: block; margin-bottom: 5px;">
-                    Student ID or Campus Email
+                    Administrator Username / 8-Digit Student ID
                   </label>
-                  <input type="text" id="loginUsername" class="form-input" style="width: 100%;" required placeholder="e.g. STU101 or rahul.sharma@campus.edu">
+                  <input type="text" id="loginUsername" class="form-input" style="width: 100%;" required placeholder="Enter registered ID">
                 </div>
 
                 <div style="margin-bottom: 18px;">
@@ -229,31 +229,6 @@
                   Sign In to System
                 </button>
               </form>
-
-              <!-- 1-Click Quick Demo Accounts -->
-              <div class="quick-accounts-box">
-                <h4>⚡ One-Click Demo Personas</h4>
-                <div class="quick-btn-group">
-                  <button type="button" class="btn-quick-login" onclick="app.quickLogin('STU101', 'student123')">
-                    <div>
-                      <strong>Rahul Sharma</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(Student • CS & Eng)</span>
-                    </div>
-                    <span class="badge badge-open" style="font-size: 0.68rem;">STU101</span>
-                  </button>
-                  <button type="button" class="btn-quick-login" onclick="app.quickLogin('STU102', 'student123')">
-                    <div>
-                      <strong>Priya Patel</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(Student • EE Wing)</span>
-                    </div>
-                    <span class="badge badge-open" style="font-size: 0.68rem;">STU102</span>
-                  </button>
-                  <button type="button" class="btn-quick-login" onclick="app.quickLogin('ADMIN01', 'admin123')">
-                    <div>
-                      <strong>Dr. K. V. Raman</strong> <span style="color: var(--text-muted); font-size: 0.75rem;">(Director • Facilities)</span>
-                    </div>
-                    <span class="badge badge-critical" style="font-size: 0.68rem;">ADMIN01</span>
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -372,7 +347,7 @@
                   </div>
                   <div>
                     <label style="font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 4px;">Student ID</label>
-                    <input type="text" id="stuSubmitId" class="form-input" style="width: 100%; background: var(--bg-card-subtle);" readonly value="STU101">
+                    <input type="text" id="stuSubmitId" class="form-input" style="width: 100%; background: var(--bg-card-subtle);" readonly value="">
                   </div>
                 </div>
 
@@ -487,7 +462,7 @@
             <div class="card-header">
               <div>
                 <h3 class="card-title">My Filed Complaints</h3>
-                <p class="card-subtitle">All facility reports submitted by your account (<span id="stuComplaintsSubtitleId">STU101</span>)</p>
+                <p class="card-subtitle">All facility reports submitted by your account (<span id="stuComplaintsSubtitleId">--</span>)</p>
               </div>
               <div style="display: flex; gap: 8px;">
                 <button class="btn btn-primary" style="font-size: 0.8rem;" onclick="app.navigateTo('student-submit')">
@@ -617,9 +592,9 @@
               </div>
               <div>
                 <h3 style="font-size: 1.2rem; font-weight: 700;" id="profileName">Rahul Sharma</h3>
-                <p style="color: var(--text-muted); font-size: 0.86rem;" id="profileEmail">rahul.sharma@campus.edu</p>
+                <p style="color: var(--text-muted); font-size: 0.86rem;" id="profileEmail"></p>
                 <div style="display: flex; gap: 8px; margin-top: 6px;">
-                  <span class="badge badge-live" id="profileIdBadge">ID: STU101</span>
+                  <span class="badge badge-live" id="profileIdBadge">ID: --</span>
                   <span class="badge badge-open">Status: Active</span>
                 </div>
               </div>
@@ -1891,31 +1866,9 @@
                 </thead>
                 <tbody id="adminUsersTableBody">
                   <tr>
-                    <td><strong>STU101</strong></td>
-                    <td>Rahul Sharma</td>
-                    <td><span class="user-role-tag role-student">Student</span></td>
-                    <td>Computer Science & Engineering</td>
-                    <td>rahul.sharma@campus.edu</td>
-                    <td>Student Portal, Ticket Submission, Own Tickets</td>
-                    <td><span class="badge badge-open">Active</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>STU102</strong></td>
-                    <td>Priya Patel</td>
-                    <td><span class="user-role-tag role-student">Student</span></td>
-                    <td>Electrical & Electronics</td>
-                    <td>priya.patel@campus.edu</td>
-                    <td>Student Portal, Ticket Submission, Own Tickets</td>
-                    <td><span class="badge badge-open">Active</span></td>
-                  </tr>
-                  <tr>
-                    <td><strong>ADMIN01</strong></td>
-                    <td>Dr. K. V. Raman</td>
-                    <td><span class="user-role-tag role-admin">Administrator</span></td>
-                    <td>Director of Campus Facilities & Operations</td>
-                    <td>admin.facilities@campus.edu</td>
-                    <td>Full Master Access, 5,500 Complaints, ML, Weights</td>
-                    <td><span class="badge badge-critical">Active Administrator</span></td>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted);">
+                      Managed dynamically via authorized Administrator and Student registries.
+                    </td>
                   </tr>
                 </tbody>
               </table>

@@ -245,7 +245,7 @@ class TestFinalRefinementRequirements(unittest.TestCase):
         # Check requirements
         self.assertIn("Administrator Name", source)
         self.assertIn("Student Name", source)
-        self.assertIn("Administrator ID", source)
+        self.assertIn("Administrator Username", source)
         self.assertIn("Student ID", source)
         self.assertIn("Back to Role Selection", source)
         self.assertIn("Simulated Authentication", source)

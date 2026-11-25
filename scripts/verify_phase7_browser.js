@@ -82,7 +82,7 @@ async function run() {
   await page.goto('http://127.0.0.1:5173/login', { waitUntil: 'networkidle0' });
   await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button'));
-    const adminPreset = buttons.find((b) => b.textContent && b.textContent.includes('ADM-2026-001'));
+    const adminPreset = buttons.find((b) => b.textContent && b.textContent.includes('fipp.admin'));
     if (adminPreset) adminPreset.click();
   });
   await new Promise((r) => setTimeout(r, 200));
@@ -167,7 +167,7 @@ async function run() {
   await page.goto('http://127.0.0.1:5173/login', { waitUntil: 'networkidle0' });
   await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button'));
-    const stuPreset = buttons.find((b) => b.textContent && b.textContent.includes('STU-2026-001'));
+    const stuPreset = buttons.find((b) => b.textContent && b.textContent.includes('00123456'));
     if (stuPreset) stuPreset.click();
   });
   await new Promise((r) => setTimeout(r, 200));

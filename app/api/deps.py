@@ -1,7 +1,7 @@
 """
 FIPP 2.0 — FastAPI Security Dependencies, Rate Limiting, and RBAC Enforcers.
-Extracts and validates signed Bearer JWT tokens and enforces server-side
-Student and Administrator role boundaries.
+Extracts and validates signed Bearer JWT tokens against live admin and student stores,
+and enforces mandatory first-login password change and server-side RBAC boundaries.
 """
 import threading
 import time
@@ -10,7 +10,12 @@ from typing import Any, Callable, Deque, Dict, Optional
 from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core.security import SYSTEM_USER_STORE, decode_token, is_token_revoked
+from app.core.security import (
+    decode_token,
+    get_admin_account,
+    get_student_record,
+    is_token_revoked,
+)
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -55,8 +60,8 @@ def get_current_user(
     authorization: Optional[str] = Header(None),
 ) -> Dict[str, Any]:
     """
-    Extracts Bearer token from authorization header, decodes and validates signature,
-    and returns verified user claims.
+    Extracts Bearer token from Authorization header, verifies signature & revocation,
+    and checks the caller against the persistent admin store or authorized student registry.
     """
     token: Optional[str] = None
     if credentials:
@@ -90,34 +95,79 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_id = str(payload.get("sub") or payload.get("id"))
-    user = SYSTEM_USER_STORE.get(user_id) or SYSTEM_USER_STORE.get(user_id.upper())
+    user_id = str(payload.get("sub") or payload.get("id") or "").strip()
+    role = str(payload.get("role") or "").strip().lower()
 
-    if user and not user.get("is_active", True):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account has been suspended or deactivated.",
-        )
+    if role == "admin":
+        user = get_admin_account(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Administrator account is no longer provisioned. Please authenticate again.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not user.get("is_active", True):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Administrator account has been suspended or deactivated.",
+            )
+        return {
+            "id": str(user["id"]),
+            "name": str(user["name"]),
+            "role": "admin",
+            "title": str(user.get("title", "System Administrator")),
+            "department": str(user.get("department", "")),
+            "email": str(user.get("email", "")),
+            "block": None,
+            "room_number": None,
+            "must_change_password": bool(user.get("must_change_password", False)),
+            "token": token,
+        }
 
-    return {
-        "id": user_id,
-        "name": payload.get("name", user.get("name", "") if user else ""),
-        "role": payload.get("role", user.get("role", "") if user else ""),
-        "title": payload.get("title", user.get("title", "") if user else ""),
-        "department": payload.get("department", user.get("department", "") if user else ""),
-        "email": payload.get("email", user.get("email", "") if user else ""),
-        "block": payload.get("block", user.get("block") if user else None),
-        "room_number": payload.get("room_number", user.get("room_number") if user else None),
-        "token": token,
-    }
+    if role == "student":
+        student = get_student_record(user_id)
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Student identity is no longer authorized. Please sign in again.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not student.get("is_active", True):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Student account access has been deactivated.",
+            )
+        return {
+            "id": str(student["student_id"]),
+            "name": str(student["name"]),
+            "role": "student",
+            "title": "Enrolled Student",
+            "department": "",
+            "email": "",
+            "block": student.get("block"),
+            "room_number": student.get("room_number"),
+            "must_change_password": False,
+            "token": token,
+        }
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid role claim in session token.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 def require_admin(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
-    """Guards administrator-only operational endpoints."""
+    """Guards administrator-only operational endpoints and enforces first-login password change."""
     if current_user.get("role") != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Administrator access required. Insufficient operational privileges.",
+        )
+    if current_user.get("must_change_password"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Password change required before accessing administrator controls.",
         )
     return current_user
 

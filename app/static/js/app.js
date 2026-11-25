@@ -137,11 +137,8 @@ class SmartCampusApp {
     this.setupModals();
     this.setupFilters();
 
-    // Initialize or restore session
-    if (!this.currentUser) {
-      // Default to Rahul Sharma (Student) for instant preview
-      await this.quickLogin("STU101", "student123", false);
-    } else {
+    // Initialize or restore session (no automatic demo login)
+    if (this.currentUser) {
       this.applyRoleState();
     }
   }
@@ -186,13 +183,13 @@ class SmartCampusApp {
     if (role === "student") {
       tabStudent.classList.add("active");
       tabAdmin.classList.remove("active");
-      userLabel.innerText = "Student ID or Campus Email";
-      userInput.placeholder = "e.g. STU101 or rahul.sharma@campus.edu";
+      userLabel.innerText = "Student 8-Digit ID";
+      userInput.placeholder = "Enter 8-digit Student ID";
     } else {
       tabAdmin.classList.add("active");
       tabStudent.classList.remove("active");
-      userLabel.innerText = "Administrator ID or Official Email";
-      userInput.placeholder = "e.g. ADMIN01 or admin.facilities@campus.edu";
+      userLabel.innerText = "Administrator Username";
+      userInput.placeholder = "Enter administrator username";
     }
   }
 

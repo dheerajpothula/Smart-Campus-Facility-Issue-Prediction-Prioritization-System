@@ -115,4 +115,43 @@ export const complaintService = {
     const queryStr = q.toString() ? `?${q.toString()}` : '';
     return api.get(`/api/admin/reports/analytics${queryStr}`);
   },
+
+  // Admin Student Registry Management
+  getProvisionedStudents: async (): Promise<{ students: any[] }> => {
+    return api.get('/api/admin/students');
+  },
+
+  provisionStudent: async (payload: {
+    student_id: string;
+    name: string;
+    block?: string;
+    room_number?: string;
+  }): Promise<{ success: boolean; student: any }> => {
+    return api.post('/api/admin/students', payload);
+  },
+
+  updateStudentEnrollment: async (
+    studentId: string,
+    payload: { is_active?: boolean; name?: string; block?: string; room_number?: string }
+  ): Promise<{ success: boolean; student: any }> => {
+    return api.patch(`/api/admin/students/${encodeURIComponent(studentId)}`, payload);
+  },
+
+  // Admin Campus Block & Floor Reference Management
+  getCampusBlocksReference: async (): Promise<{ blocks: any[] }> => {
+    return api.get('/api/admin/locations/blocks');
+  },
+
+  upsertCampusBlock: async (
+    blockId: string,
+    payload: {
+      display_name: string;
+      block_category: string;
+      floor_labels: string[];
+      verification_status: 'unverified_external_reference' | 'verified' | 'conflict_flagged';
+      notes?: string;
+    }
+  ): Promise<{ success: boolean; block: any }> => {
+    return api.put(`/api/admin/locations/blocks/${encodeURIComponent(blockId)}`, payload);
+  },
 };

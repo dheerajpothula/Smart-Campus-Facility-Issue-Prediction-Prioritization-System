@@ -114,9 +114,9 @@ def render_admin_login_screen() -> None:
         )
 
         admin_id_input = st.text_input(
-            "Administrator ID",
-            placeholder="e.g. ADM-2026-001",
-            help="Enter your assigned Administrator identification code.",
+            "Administrator Username",
+            placeholder="Enter administrator username",
+            help="Enter your assigned Administrator username.",
             key="input_admin_id",
         )
 

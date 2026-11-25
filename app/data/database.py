@@ -153,19 +153,11 @@ class CampusDatabase:
 
         df["priority"] = df["priority_score"].apply(assign_priority_tier)
 
-        # Assign initial student_id for student demo experience
-        # Assign first 8 complaints to STU101 (Rahul) and next 6 to STU102 (Priya)
-        df["student_id"] = "STU_ANON"
-        if len(df) >= 14:
-            df.loc[:7, "student_id"] = "STU101"
-            df.loc[8:13, "student_id"] = "STU102"
-
-        # Reporter metadata
-        df["reporter_name"] = "Campus Student"
-        df.loc[df["student_id"] == "STU101", "reporter_name"] = "Rahul Sharma"
-        df.loc[df["student_id"] == "STU102", "reporter_name"] = "Priya Patel"
+        # Assign neutral anonymized student identifier on historical CSV records
+        df["student_id"] = "LEGACY_ANON"
+        df["reporter_name"] = "Historical Archive"
         df["reporter_role"] = "Student"
-        df["is_demo"] = True
+        df["is_demo"] = False
 
         return df
 

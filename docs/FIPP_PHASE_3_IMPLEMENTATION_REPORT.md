@@ -11,7 +11,7 @@ Phase 3 of the **FIPP 2.0** initiative has successfully transformed the universi
 - **Public Landing Page**: Deployed an institutional landing interface featuring campus facility metrics, operational announcements, a feature matrix, and dedicated portal access cards.
 - **Student Authentication & Isolation**: Integrated PBKDF2-HMAC-SHA256 authenticated sessions with JWT tokens persisted in `sessionStorage` and automatic session purging on logout.
 - **Dedicated Agreement Screen**: Enforced statutory student undertakings (content responsibility, disciplinary compliance, truthfulness) prior to unlocking the submission workflow, persisted per session.
-- **Hierarchical Raise a Query Engine**: Implemented strict 4-tier cascading classification (Message Type → Primary Category [19 LPU RMS categories] → Subcategory → Specific Category checklist) with automated downstream state resets.
+- **Hierarchical Raise a Query Engine**: Implemented strict 4-tier cascading classification (Message Type → Primary Category [19 Campus Facility Taxonomy categories] → Subcategory → Specific Category checklist) with automated downstream state resets.
 - **Inspection Scheduling & Form Controls**: Integrated 5 approved time slots, 500-character counter with live visual thresholds, 10-digit Indian phone validation, and secure 10MB raster photo uploads.
 - **Submission Confirmation**: Implemented an in-page confirmation card displaying the official token (e.g., `CMP-2026-012`) with quick actions to submit another query or review the ledger.
 - **Complaint History Ledger**: Structured a searchable, status-filtered history ledger with KPI summary cards.
@@ -33,7 +33,7 @@ Phase 3 of the **FIPP 2.0** initiative has successfully transformed the universi
 ### 2.2 Student Authentication & Identity (`LoginPage.tsx`, `AuthContext.tsx`, `apiClient.ts`)
 - **Secure Token Management**: Access tokens stored exclusively in `sessionStorage` (`fipp_access_token`, `fipp_user_profile`), preventing cross-tab token pollution and automatically invalidating on tab closure.
 - **Role Isolation**: Strict verification ensures student tokens (`role === 'student'`) route exclusively to `/student`, prohibiting unauthorized access to `/admin`.
-- **Identity Banner**: Fixed student locker banner on all portal pages displaying student ID (e.g., `STU-2026-001`), full name, hostel block, and accepted statutory undertaking badge.
+- **Identity Banner**: Fixed student locker banner on all portal pages displaying student ID (e.g., `legacy-student-id`), full name, hostel block, and accepted statutory undertaking badge.
 - **Session Purge on Logout**: Explicit clearing of authentication tokens, agreement states (`fipp_student_agreed`), and in-progress form drafts (`fipp_query_draft`).
 
 ### 2.3 Student Portal Layout (`StudentPortalLayout.tsx`)
@@ -96,13 +96,13 @@ Phase 3 of the **FIPP 2.0** initiative has successfully transformed the universi
 
 ## 3. Cascading Hierarchy Implementation
 
-The classification engine enforces strict cascading dependencies aligned with the official 19-category LPU RMS taxonomy:
+The classification engine enforces strict cascading dependencies aligned with the official 19-category Campus Facility Taxonomy taxonomy:
 
 ```
 [Message Type] (Grievance, Complaint, Request, Suggestion)
       │
       ▼
-[Primary Category] (19 LPU RMS Categories, e.g., Hostel Maintenance, Air Conditioner)
+[Primary Category] (19 Campus Facility Taxonomy Categories, e.g., Hostel Maintenance, Air Conditioner)
       │  (Disabled until Message Type is selected)
       ▼
 [Subcategory] (e.g., Electrical, Plumbing, Carpentry, Masonry)

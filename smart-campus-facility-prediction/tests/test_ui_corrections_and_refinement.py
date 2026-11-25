@@ -21,10 +21,7 @@ Validates:
    - Overflow visible / no fixed height truncation
    - Streamlit native header transparency and pointer event pass-through
    - Adequate column spacing
-5. Strict preservation of Administrator credentials and authentication logic:
-   - ADM-2026-001 / Admin@001 -> Facility Operations Lead
-   - ADM-2026-002 / Admin@002 -> Campus Infrastructure Admin
-   - ADM-2026-003 / Admin@003 -> Maintenance Dispatcher
+5. Isolated bootstrapped administrator verification (`fipp.admin`).
 """
 import inspect
 import sys
@@ -90,19 +87,27 @@ class TestUICorrectionsAndRefinement(unittest.TestCase):
                 )
 
     def test_3_strict_preservation_of_admin_credentials_and_roles(self):
-        """Preserves exact Administrator credentials and assigned operational titles."""
-        expected_accounts = [
-            ("ADM-2026-001", "Admin@001", "Facility Operations Lead"),
-            ("ADM-2026-002", "Admin@002", "Campus Infrastructure Admin"),
-            ("ADM-2026-003", "Admin@003", "Maintenance Dispatcher"),
-        ]
-        for aid, pwd, title in expected_accounts:
-            user = authenticate_admin(aid, pwd)
-            self.assertIsNotNone(user, f"Authentication failed for {aid}")
-            self.assertEqual(user["id"], aid)
-            self.assertEqual(user["name"], "Administrator")
-            self.assertEqual(user["title"], title)
-            self.assertEqual(user["role_title"], title)
+        """Verifies isolated bootstrapped administrator credential verification without hardcoded literals."""
+        import tempfile, json, os, secrets
+        from pathlib import Path
+        from src.auth.admin_auth import hash_password
+        sample_pwd = f"UiTest!{secrets.token_hex(5)}K3"
+        with tempfile.TemporaryDirectory() as tmp:
+            store_path = Path(tmp) / "admin_accounts.json"
+            store_path.write_text(json.dumps({
+                "bootstrapped": True,
+                "accounts": {"fipp.admin": {"id": "fipp.admin", "username": "fipp.admin", "name": "FIPP System Administrator", "title": "System Administrator", "password_hash": hash_password(sample_pwd), "is_active": True}}
+            }), encoding="utf-8")
+            prev = os.environ.get("FIPP_ADMIN_STORE_FILE")
+            os.environ["FIPP_ADMIN_STORE_FILE"] = str(store_path)
+            try:
+                user = authenticate_admin("fipp.admin", sample_pwd)
+                self.assertIsNotNone(user)
+                self.assertEqual(user["id"], "fipp.admin")
+                self.assertEqual(user["name"], "FIPP System Administrator")
+            finally:
+                if prev is None: os.environ.pop("FIPP_ADMIN_STORE_FILE", None)
+                else: os.environ["FIPP_ADMIN_STORE_FILE"] = prev
 
     def test_4_admin_navigation_options_clean_labels(self):
         """Validates that all 6 admin navigation options have clean professional labels with zero emojis."""

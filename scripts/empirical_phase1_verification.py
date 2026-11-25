@@ -68,20 +68,20 @@ def test_health():
 # 2. Authentication & Persistence
 def test_auth_and_persistence():
     # Admin valid login
-    res_adm = client.post("/api/auth/login", json={"username": "ADM-2026-001", "password": "Admin@001"})
+    res_adm = client.post("/api/auth/login", json={"username": "fipp.admin", "password": "REDACTED_TEST_ENV_CRED"})
     assert res_adm.status_code == 200, f"Admin login failed: {res_adm.text}"
     adm_data = res_adm.json()
     assert adm_data["success"] is True
     adm_token = adm_data["access_token"]
     assert adm_data["user"]["role"] == "admin"
-    assert adm_data["user"]["id"] == "ADM-2026-001"
+    assert adm_data["user"]["id"] == "fipp.admin"
 
     # Admin invalid login
-    res_bad = client.post("/api/auth/login", json={"username": "ADM-2026-001", "password": "WrongPassword#999"})
+    res_bad = client.post("/api/auth/login", json={"username": "fipp.admin", "password": "WrongPassword#999"})
     assert res_bad.status_code == 401
 
     # Student valid login
-    res_stu = client.post("/api/auth/login", json={"username": "STU-2026-001", "password": "student123"})
+    res_stu = client.post("/api/auth/login", json={"username": "00123456", "password": "REDACTED_TEST_ENV_CRED"})
     assert res_stu.status_code == 200
     stu_data = res_stu.json()
     assert stu_data["success"] is True
@@ -91,7 +91,7 @@ def test_auth_and_persistence():
     # Profile me
     res_me = client.get("/api/auth/me", headers={"Authorization": f"Bearer {adm_token}"})
     assert res_me.status_code == 200
-    assert res_me.json()["user"]["id"] == "ADM-2026-001"
+    assert res_me.json()["user"]["id"] == "fipp.admin"
 
     # Refresh
     res_ref = client.post("/api/auth/refresh", json={"refresh_token": adm_data["refresh_token"]})
@@ -109,30 +109,30 @@ def test_auth_and_persistence():
     assert _PERSISTENT_CREDENTIALS_FILE.is_file(), "Persistent credentials file missing"
     with open(_PERSISTENT_CREDENTIALS_FILE, "r", encoding="utf-8") as f:
         creds = json.load(f)
-    assert "ADM-2026-001" in creds
-    assert creds["ADM-2026-001"].startswith("pbkdf2_sha256$600000$")
+    assert "fipp.admin" in creds
+    assert creds["fipp.admin"].startswith("pbkdf2_sha256$600000$")
 
     # Verify simulation of server restart: reload from credentials_store.json
-    fresh_user = authenticate_user("ADM-2026-001", "Admin@001")
+    fresh_user = authenticate_user("fipp.admin", "REDACTED_TEST_ENV_CRED")
     assert fresh_user is not None
-    assert fresh_user["id"] == "ADM-2026-001"
+    assert fresh_user["id"] == "fipp.admin"
 
     return {"admin_authenticated": True, "student_authenticated": True, "token_revoked": True, "rehash_persisted": True}
 
 # 3. RBAC & Student Isolation
 def test_rbac_and_isolation():
     # Login fresh admin
-    adm_login = client.post("/api/auth/login", json={"username": "ADM-2026-001", "password": "Admin@001"})
+    adm_login = client.post("/api/auth/login", json={"username": "fipp.admin", "password": "REDACTED_TEST_ENV_CRED"})
     adm_token = adm_login.json()["access_token"]
     adm_headers = {"Authorization": f"Bearer {adm_token}"}
 
     # Login Student 1
-    stu1_login = client.post("/api/auth/login", json={"username": "STU-2026-001", "password": "student123"})
+    stu1_login = client.post("/api/auth/login", json={"username": "00123456", "password": "REDACTED_TEST_ENV_CRED"})
     stu1_token = stu1_login.json()["access_token"]
     stu1_headers = {"Authorization": f"Bearer {stu1_token}"}
 
     # Login Student 2
-    stu2_login = client.post("/api/auth/login", json={"username": "STU101", "password": "student123"})
+    stu2_login = client.post("/api/auth/login", json={"username": "00123456", "password": "REDACTED_TEST_ENV_CRED"})
     stu2_token = stu2_login.json()["access_token"]
     stu2_headers = {"Authorization": f"Bearer {stu2_token}"}
 
@@ -194,7 +194,7 @@ def test_taxonomy():
     assert "maintenance_categories" in tax
     categories = tax["maintenance_categories"]
     assert len(categories) == 19, f"Expected 19 categories, got {len(categories)}"
-    # Check that it starts with Electrical Maintenance (matching LPU RMS canonical hierarchy)
+    # Check that it starts with Electrical Maintenance (matching Campus Facility canonical hierarchy)
     assert categories[0] == "Air Conditioner"
     assert "campus_blocks" in tax
     assert "time_slots" in tax
@@ -204,7 +204,7 @@ def test_taxonomy():
 
 # 5. File Upload Verification
 def test_file_upload():
-    adm_login = client.post("/api/auth/login", json={"username": "ADM-2026-001", "password": "Admin@001"})
+    adm_login = client.post("/api/auth/login", json={"username": "fipp.admin", "password": "REDACTED_TEST_ENV_CRED"})
     adm_headers = {"Authorization": f"Bearer {adm_login.json()['access_token']}"}
 
     # 1. Valid PNG upload
@@ -242,7 +242,7 @@ def test_file_upload():
 
 # 6. Admin Control Centre & Complaint Lifecycle
 def test_admin_workflows():
-    adm_login = client.post("/api/auth/login", json={"username": "ADM-2026-001", "password": "Admin@001"})
+    adm_login = client.post("/api/auth/login", json={"username": "fipp.admin", "password": "REDACTED_TEST_ENV_CRED"})
     adm_headers = {"Authorization": f"Bearer {adm_login.json()['access_token']}"}
 
     # KPIs
@@ -270,7 +270,7 @@ def test_admin_workflows():
         assert r["status"] == "Resolved"
 
     # Student submits a ticket to test lifecycle
-    stu_login = client.post("/api/auth/login", json={"username": "STU-2026-001", "password": "student123"})
+    stu_login = client.post("/api/auth/login", json={"username": "00123456", "password": "REDACTED_TEST_ENV_CRED"})
     stu_headers = {"Authorization": f"Bearer {stu_login.json()['access_token']}"}
     tomorrow = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
 
@@ -350,7 +350,7 @@ def test_admin_workflows():
 
 # 7. Student Withdrawal
 def test_student_withdrawal():
-    stu_login = client.post("/api/auth/login", json={"username": "STU-2026-001", "password": "student123"})
+    stu_login = client.post("/api/auth/login", json={"username": "00123456", "password": "REDACTED_TEST_ENV_CRED"})
     stu_headers = {"Authorization": f"Bearer {stu_login.json()['access_token']}"}
     tomorrow = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
 
@@ -397,7 +397,7 @@ def test_student_withdrawal():
 
 # 8. Reports & PII Export
 def test_reports_and_export():
-    adm_login = client.post("/api/auth/login", json={"username": "ADM-2026-001", "password": "Admin@001"})
+    adm_login = client.post("/api/auth/login", json={"username": "fipp.admin", "password": "REDACTED_TEST_ENV_CRED"})
     adm_headers = {"Authorization": f"Bearer {adm_login.json()['access_token']}"}
 
     # Analytics
@@ -417,7 +417,7 @@ def test_reports_and_export():
 
 # 9. ML & Predictions
 def test_ml_endpoints():
-    adm_login = client.post("/api/auth/login", json={"username": "ADM-2026-001", "password": "Admin@001"})
+    adm_login = client.post("/api/auth/login", json={"username": "fipp.admin", "password": "REDACTED_TEST_ENV_CRED"})
     adm_headers = {"Authorization": f"Bearer {adm_login.json()['access_token']}"}
 
     # Analyze
@@ -467,7 +467,7 @@ def test_ml_endpoints():
 
 # 10. Migration Safety
 def test_migration_safety():
-    adm_login = client.post("/api/auth/login", json={"username": "ADM-2026-001", "password": "Admin@001"})
+    adm_login = client.post("/api/auth/login", json={"username": "fipp.admin", "password": "REDACTED_TEST_ENV_CRED"})
     adm_headers = {"Authorization": f"Bearer {adm_login.json()['access_token']}"}
 
     # Inspect

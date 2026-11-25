@@ -2,7 +2,7 @@
 FastAPI Application for FIPP 2.0 — Facility Issue Prediction & Prioritization.
 Provides RESTful APIs with strict Role-Based Access Control (RBAC):
 - Secure Authentication with OWASP PBKDF2-HMAC-SHA256 & signed JWTs
-- 19-Category LPU RMS Taxonomy Hierarchy API
+- 19-Category Campus Facility Taxonomy Hierarchy API
 - Student Portal APIs (strictly isolated to authenticated student identity)
 - Administrator Control Centre APIs (All 6 approved sections, remarks audit trail, reopening)
 - Secure File Upload validation (magic bytes, 10MB limit, raster check)

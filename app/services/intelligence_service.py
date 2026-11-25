@@ -101,7 +101,7 @@ class IntelligenceService:
                     "has_shap_explainer": False,
                     "limitation": (
                         "In-memory 7-class legacy baseline trained on 70 sample phrases; "
-                        "not aligned with the 19-category LPU RMS taxonomy."
+                        "not aligned with the 19-category campus facility taxonomy."
                     ),
                 },
                 "severity_model": {
@@ -235,7 +235,7 @@ class IntelligenceService:
         shap_cap = caps["shap_explainability"]
         if not shap_cap["available"]:
             return None
-        # No serialized LPU RMS model artifacts currently ship in models/
+        # No serialized campus facility model artifacts currently ship in models/
         return None
 
     def get_shap_status_for_complaint(self, record_or_id: Any) -> Dict[str, Any]:
@@ -290,7 +290,7 @@ class IntelligenceService:
             "features": [],
             "summary": (
                 "SHAP feature attribution is unavailable because no compatible trained ML model "
-                "artifact and SHAP explainer exist for persisted LPU RMS complaints."
+                "artifact and SHAP explainer exist for persisted campus complaints."
             ),
         }
 

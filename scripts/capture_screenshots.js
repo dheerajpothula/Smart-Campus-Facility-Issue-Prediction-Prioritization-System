@@ -48,11 +48,11 @@ async function run() {
   await page.goto('http://127.0.0.1:5173/login', { waitUntil: 'networkidle0' });
   await new Promise(r => setTimeout(r, 500));
   // Click student demo button
-  const studentBtn = await page.waitForSelector('button:has-text("STU-2026-001"), button');
+  const studentBtn = await page.waitForSelector('button:has-text("00123456"), button');
   // Fill student credentials via evaluate or clicks
   await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button'));
-    const sBtn = buttons.find(b => b.textContent && b.textContent.includes('STU-2026-001'));
+    const sBtn = buttons.find(b => b.textContent && b.textContent.includes('00123456'));
     if (sBtn) sBtn.click();
   });
   await new Promise(r => setTimeout(r, 500));
@@ -80,7 +80,7 @@ async function run() {
   // Click admin demo button
   await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button'));
-    const aBtn = buttons.find(b => b.textContent && b.textContent.includes('ADM-2026-001'));
+    const aBtn = buttons.find(b => b.textContent && b.textContent.includes('fipp.admin'));
     if (aBtn) aBtn.click();
   });
   await new Promise(r => setTimeout(r, 500));

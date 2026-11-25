@@ -3,7 +3,7 @@ Facility Operations Control Centre — Top Header Component.
 Renders the unified administrative header across all Control Centre views:
 - System Identification: FIPP ADMINISTRATION • Control Centre
 - Page Title and Operational Subtitle
-- Authenticated Administrator Identity & Role Badge (e.g. Administrator • ADM-2026-001 • Facility Operations Lead)
+- Authenticated Administrator Identity & Role Badge (e.g. Administrator • fipp.admin • System Administrator)
 - High contrast, responsive Modern Sage & Forest styling with zero vertical/horizontal clipping.
 """
 import streamlit as st
@@ -23,8 +23,8 @@ def render_admin_header(
         kicker: Uppercase eyebrow identifying the Control Centre scope.
     """
     auth = st.session_state.get("auth_user") or {}
-    admin_id = auth.get("id", "ADM-2026-001")
-    admin_title = auth.get("title") or auth.get("role_title", "Facility Operations Lead")
+    admin_id = auth.get("id", "fipp.admin")
+    admin_title = auth.get("title") or auth.get("role_title", "System Administrator")
 
     st.markdown(
         f"""

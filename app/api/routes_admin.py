@@ -12,18 +12,25 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from app.api.deps import rate_limit_admin_intelligence, require_admin
+from app.core.security import list_students, provision_student, update_student_enrollment
 from app.models.data_models import (
     AdminComplaintListResponse,
     AdminReopenRequest,
     AdminStatusUpdateRequest,
     AnalyticsReportResponse,
+    CampusBlockReference,
+    CampusBlocksImportRequest,
+    CampusBlockUpsertRequest,
     ComplaintDetail,
     ComplaintIntelligenceResponse,
     DashboardKPIs,
+    StudentEnrollmentUpdateRequest,
+    StudentProvisionRequest,
 )
 from app.services.analytics_service import analytics_service
 from app.services.complaint_service import complaint_service
 from app.services.intelligence_service import intelligence_service
+from app.services.location_service import location_service
 from app.services.migration_service import migration_service
 
 router = APIRouter(prefix="/api/admin", tags=["Administrator Operations"])
@@ -340,4 +347,107 @@ def get_complaint_intelligence(
             detail=f"Complaint '{complaint_id}' was not found.",
         )
     return ComplaintIntelligenceResponse(**intelligence_service.get_complaint_intelligence(record))
+
+
+# ============================================================================
+# 9. AUTHORIZED STUDENT REGISTRY PROVISIONING (ADMIN ONLY)
+# ============================================================================
+
+@router.get("/students")
+def get_provisioned_students(current_user: Dict[str, Any] = Depends(require_admin)):
+    """Lists administrator-provisioned student enrollment records."""
+    return {"students": list_students()}
+
+
+@router.post("/students", status_code=status.HTTP_201_CREATED)
+def create_provisioned_student(
+    payload: StudentProvisionRequest,
+    current_user: Dict[str, Any] = Depends(require_admin),
+):
+    """Enrolls a verified student record with exact 8-digit string ID and full name."""
+    try:
+        record = provision_student(
+            student_id=payload.student_id,
+            name=payload.name,
+            block=payload.block,
+            room_number=payload.room_number,
+            provisioned_by=current_user["id"],
+        )
+        return {"success": True, "student": record}
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except RuntimeError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to persist student registry.")
+
+
+@router.patch("/students/{student_id}")
+def patch_provisioned_student(
+    student_id: str,
+    payload: StudentEnrollmentUpdateRequest,
+    current_user: Dict[str, Any] = Depends(require_admin),
+):
+    """Activates, deactivates, or updates an enrolled student's details."""
+    try:
+        updated = update_student_enrollment(
+            student_id=student_id,
+            is_active=payload.is_active,
+            name=payload.name,
+            block=payload.block,
+            room_number=payload.room_number,
+        )
+        return {"success": True, "student": updated}
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except RuntimeError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update student registry.")
+
+
+# ============================================================================
+# 10. CAMPUS BLOCK & FLOOR REFERENCE MANAGEMENT (ADMIN ONLY)
+# ============================================================================
+
+@router.get("/locations/blocks")
+def list_campus_blocks(current_user: Dict[str, Any] = Depends(require_admin)):
+    """Returns all structured campus block and floor reference entries."""
+    blocks = location_service.load_blocks()
+    return {"blocks": [CampusBlockReference(**b).model_dump() for b in blocks]}
+
+
+@router.put("/locations/blocks/{block_id}")
+def upsert_campus_block(
+    block_id: str,
+    payload: CampusBlockUpsertRequest,
+    current_user: Dict[str, Any] = Depends(require_admin),
+):
+    """Configures or verifies floor definitions for a campus block."""
+    try:
+        updated = location_service.upsert_block(
+            block_id=block_id,
+            display_name=payload.display_name,
+            block_category=payload.block_category,
+            floor_labels=payload.floor_labels,
+            verification_status=payload.verification_status,
+            notes=payload.notes,
+        )
+        return {"success": True, "block": updated}
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except RuntimeError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to persist block configuration.")
+
+
+@router.post("/locations/blocks/import")
+def import_campus_blocks_reference(
+    payload: CampusBlocksImportRequest,
+    current_user: Dict[str, Any] = Depends(require_admin),
+):
+    """Imports or replaces campus block and floor reference definitions."""
+    try:
+        imported = location_service.import_blocks(payload.blocks)
+        return {"success": True, "count": len(imported), "blocks": imported}
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except RuntimeError:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to import block reference dataset.")
+
 

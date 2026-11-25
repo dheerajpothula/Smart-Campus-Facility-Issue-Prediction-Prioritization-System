@@ -47,8 +47,8 @@ def render_admin_sidebar(
         The selected page title string.
     """
     auth = st.session_state.get("auth_user") or {}
-    admin_id = admin_id or auth.get("id") or "ADM-2026-001"
-    admin_title = admin_title or auth.get("title") or auth.get("role_title") or "Facility Operations Lead"
+    admin_id = admin_id or auth.get("id") or "fipp.admin"
+    admin_title = admin_title or auth.get("title") or auth.get("role_title") or "System Administrator"
 
     # Dark forest-green sidebar styling with pale sage highlights and clean text navigation
     st.markdown(

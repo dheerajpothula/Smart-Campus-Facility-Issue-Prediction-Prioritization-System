@@ -162,6 +162,13 @@ export const api = {
       ...options,
     }),
 
+  put: <T>(url: string, body?: any, options?: RequestInit) =>
+    request<T>(url, {
+      method: 'PUT',
+      body: body ? JSON.stringify(body) : undefined,
+      ...options,
+    }),
+
   upload: async <T>(url: string, file: File): Promise<T> => {
     const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
     const token = TokenManager.getAccessToken();

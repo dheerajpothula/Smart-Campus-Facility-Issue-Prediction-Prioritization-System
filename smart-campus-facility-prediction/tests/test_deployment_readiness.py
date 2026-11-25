@@ -113,29 +113,28 @@ class TestFIPPDeploymentReadiness(unittest.TestCase):
     # -------------------------------------------------------------------------
     # 2. Multiple Administrator Accounts Authentication
     # -------------------------------------------------------------------------
-    def test_02_multiple_admin_accounts_authentication(self):
-        """Validates all configured administrators authenticate and invalid credentials fail."""
-        # Using default password hashes with matching test credentials
-        admins = ["ADM-2026-001", "ADM-2026-002", "ADM-2026-003"]
-
-        # Configure deterministic test password hashes for all 3 admins via env vars (hash-only, no plaintext)
-        for adm_id in admins:
-            safe_id = adm_id.replace("-", "_").upper()
-            pwd = f"CampusAdminSecure2026!_{adm_id}"
-            os.environ[f"FIPP_ADMIN_HASH_{safe_id}"] = admin_auth.hash_password_v2(pwd)
-
-            # Valid authentication
-            auth = admin_auth.authenticate_admin(adm_id, pwd)
-            self.assertIsNotNone(auth, f"Failed authenticating {adm_id}")
-            self.assertEqual(auth["id"], adm_id)
-            self.assertEqual(auth["role"], "admin")
-
-            # Invalid password
-            bad_auth = admin_auth.authenticate_admin(adm_id, "WrongPassword123!")
-            self.assertIsNone(bad_auth)
-
-            # Cleanup
-            del os.environ[f"FIPP_ADMIN_HASH_{safe_id}"]
+    def test_02_admin_account_authentication(self):
+        """Validates isolated bootstrapped administrator authenticates and invalid credentials fail."""
+        import tempfile, json, os, secrets
+        from pathlib import Path
+        pwd = f"DeployTest!{secrets.token_hex(5)}D8"
+        with tempfile.TemporaryDirectory() as tmp:
+            store_path = Path(tmp) / "admin_accounts.json"
+            store_path.write_text(json.dumps({
+                "bootstrapped": True,
+                "accounts": {"fipp.admin": {"id": "fipp.admin", "username": "fipp.admin", "name": "FIPP System Administrator", "password_hash": admin_auth.hash_password_v2(pwd), "is_active": True}}
+            }), encoding="utf-8")
+            prev = os.environ.get("FIPP_ADMIN_STORE_FILE")
+            os.environ["FIPP_ADMIN_STORE_FILE"] = str(store_path)
+            try:
+                auth = admin_auth.authenticate_admin("fipp.admin", pwd)
+                self.assertIsNotNone(auth)
+                self.assertEqual(auth["id"], "fipp.admin")
+                self.assertEqual(auth["role"], "admin")
+                self.assertIsNone(admin_auth.authenticate_admin("fipp.admin", "WrongPassword123!"))
+            finally:
+                if prev is None: os.environ.pop("FIPP_ADMIN_STORE_FILE", None)
+                else: os.environ["FIPP_ADMIN_STORE_FILE"] = prev
 
     # -------------------------------------------------------------------------
     # 3. Simultaneous Concurrent Complaint Submissions (Thread Safety)

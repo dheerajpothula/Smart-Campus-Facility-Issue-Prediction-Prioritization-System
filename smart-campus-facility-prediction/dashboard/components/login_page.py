@@ -27,8 +27,8 @@ def render_login_screen(role: str) -> None:
     name_label = "Administrator Name" if is_admin else "Student Name"
     name_placeholder = "Enter Administrator Name" if is_admin else "Enter Student Name"
 
-    id_label = "Administrator ID" if is_admin else "Student ID"
-    id_placeholder = "e.g. ADM-2026-001" if is_admin else "e.g. STU-2026-001"
+    id_label = "Administrator Username" if is_admin else "8-Digit Student ID"
+    id_placeholder = "Enter administrator username" if is_admin else "Enter 8-digit Student ID"
 
     # Hide sidebar when on login screen
     st.markdown(

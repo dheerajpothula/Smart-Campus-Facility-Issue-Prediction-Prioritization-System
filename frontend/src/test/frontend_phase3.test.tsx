@@ -59,7 +59,7 @@ vi.mock('../services/complaintService', () => ({
       message: 'Complaint CMP-2026-999 has been registered successfully.',
     }),
     getStudentComplaints: vi.fn().mockResolvedValue({
-      student_id: 'STU-2026-001',
+      student_id: '00123456',
       student_name: 'Aarav Sharma',
       total_complaints: 2,
       open_complaints: 1,
@@ -144,14 +144,14 @@ describe('FIPP 2.0 Phase 3 — Student Portal Unit Tests', () => {
   describe('1. Student Authentication & Session Persistence', () => {
     it('stores authenticated student tokens in sessionStorage and isolates tab lifecycle', () => {
       TokenManager.setSession('test_access_jwt', 'test_refresh_jwt', {
-        id: 'STU-2026-001',
+        id: '00123456',
         name: 'Aarav Sharma',
         role: 'student',
         block: 'Block 38',
       });
 
       expect(TokenManager.getAccessToken()).toBe('test_access_jwt');
-      expect(TokenManager.getUser()?.id).toBe('STU-2026-001');
+      expect(TokenManager.getUser()?.id).toBe('00123456');
       expect(TokenManager.getUser()?.role).toBe('student');
 
       TokenManager.clearSession();

@@ -76,7 +76,7 @@ async function run() {
   await page.goto('http://127.0.0.1:5173/login', { waitUntil: 'networkidle0' });
   await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button'));
-    const aBtn = buttons.find(b => b.textContent && b.textContent.includes('ADM-2026-001'));
+    const aBtn = buttons.find(b => b.textContent && b.textContent.includes('fipp.admin'));
     if (aBtn) aBtn.click();
   });
   await new Promise(r => setTimeout(r, 200));

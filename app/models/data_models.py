@@ -14,8 +14,68 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 # ============================================================================
 
 class LoginRequest(BaseModel):
-    username: str = Field(..., description="Administrator ID (e.g. ADM-2026-001) or Student ID (e.g. STU-2026-001 / STU101)")
-    password: str = Field(..., min_length=1, description="Confidential user password")
+    username: str = Field(..., description="Administrator username (e.g. fipp.admin)")
+    password: str = Field(..., min_length=1, description="Confidential administrator password")
+
+
+class StudentLoginRequest(BaseModel):
+    student_name: str = Field(..., min_length=2, max_length=100, description="Authorized student full name")
+    student_id: str = Field(..., min_length=8, max_length=8, description="Exact eight-digit numeric Student ID preserving leading zeroes")
+
+    @field_validator("student_id", mode="before")
+    @classmethod
+    def validate_eight_digit_string_id(cls, v: Any) -> str:
+        if not isinstance(v, str):
+            raise ValueError("Student ID must be provided as an eight-digit numeric string.")
+        cleaned = v.strip()
+        if not re.fullmatch(r"\d{8}", cleaned):
+            raise ValueError("Student ID must consist of exactly eight numeric digits (0-9).")
+        return cleaned
+
+    @field_validator("student_name")
+    @classmethod
+    def validate_trimmed_name(cls, v: str) -> str:
+        cleaned = " ".join((v or "").strip().split())
+        if len(cleaned) < 2 or not any(ch.isalpha() for ch in cleaned):
+            raise ValueError("Student name must contain at least 2 characters and alphabetic text.")
+        return cleaned
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=1, description="Current temporary or active administrator password")
+    new_password: str = Field(..., min_length=12, description="New strong administrator password")
+
+
+class StudentProvisionRequest(BaseModel):
+    student_id: str = Field(..., min_length=8, max_length=8, description="Exact eight-digit numeric Student ID string")
+    name: str = Field(..., min_length=2, max_length=100, description="Full registered name of student")
+    block: Optional[str] = Field(None, description="Assigned campus block (optional)")
+    room_number: Optional[str] = Field(None, description="Assigned room number (optional)")
+
+    @field_validator("student_id", mode="before")
+    @classmethod
+    def validate_id(cls, v: Any) -> str:
+        if not isinstance(v, str):
+            raise ValueError("Student ID must be an eight-digit numeric string preserving leading zeroes.")
+        cleaned = v.strip()
+        if not re.fullmatch(r"\d{8}", cleaned):
+            raise ValueError("Student ID must consist of exactly eight numeric digits (0-9).")
+        return cleaned
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        cleaned = " ".join((v or "").strip().split())
+        if len(cleaned) < 2 or not any(ch.isalpha() for ch in cleaned):
+            raise ValueError("Student name must contain at least 2 characters and alphabetic text.")
+        return cleaned
+
+
+class StudentEnrollmentUpdateRequest(BaseModel):
+    is_active: Optional[bool] = None
+    name: Optional[str] = Field(None, min_length=2, max_length=100)
+    block: Optional[str] = None
+    room_number: Optional[str] = None
 
 
 class UserProfile(BaseModel):
@@ -27,6 +87,7 @@ class UserProfile(BaseModel):
     email: Optional[str] = ""
     block: Optional[str] = None
     room_number: Optional[str] = None
+    must_change_password: bool = False
 
 
 class TokenResponse(BaseModel):
@@ -54,17 +115,48 @@ class RefreshTokenRequest(BaseModel):
 class ComplaintSubmission(BaseModel):
     reporter_name: Optional[str] = "Student"
     reporter_role: Optional[str] = "Student"
-    student_id: Optional[str] = "STU101"
+    student_id: Optional[str] = None
     facility_type: str = Field(..., description="Facility category e.g. Drinking Water / Coolers, Washroom / Plumbing, etc.")
-    location: str = Field(..., description="Location e.g. Academic Block C, Student Center & Central Cafeteria")
+    location: str = Field(..., description="Location e.g. Block 57, Central Library")
     description: str = Field(..., min_length=5, max_length=1000)
     image_url: Optional[str] = None
     additional_notes: Optional[str] = None
 
 
 # ============================================================================
-# 2. TAXONOMY SCHEMAS (LPU RMS 19-CATEGORY HIERARCHY)
+# 2. TAXONOMY & CAMPUS BLOCK/FLOOR REFERENCE SCHEMAS
 # ============================================================================
+
+class CampusFloorReference(BaseModel):
+    floor_id: str
+    block_id: str
+    floor_label: str
+    sort_order: int = 0
+    verification_status: str = "unverified_external_reference"
+
+
+class CampusBlockReference(BaseModel):
+    block_id: str
+    display_name: str
+    block_category: str
+    floor_count: Optional[int] = None
+    floor_status: str = "unknown"
+    verification_status: str = "unverified_external_reference"
+    notes: Optional[str] = None
+    floors: List[CampusFloorReference] = Field(default_factory=list)
+
+
+class CampusBlockUpsertRequest(BaseModel):
+    display_name: str = Field(..., min_length=2, max_length=120)
+    block_category: str = Field("Academic", min_length=2, max_length=60)
+    floor_labels: List[str] = Field(default_factory=list)
+    verification_status: str = Field("verified", pattern="^(unverified_external_reference|verified|conflict_flagged)$")
+    notes: Optional[str] = Field(None, max_length=400)
+
+
+class CampusBlocksImportRequest(BaseModel):
+    blocks: List[Dict[str, Any]] = Field(..., min_length=1)
+
 
 class TaxonomyHierarchyResponse(BaseModel):
     category_types: List[str]
@@ -72,6 +164,7 @@ class TaxonomyHierarchyResponse(BaseModel):
     maintenance_categories: List[str]
     hierarchy: Dict[str, Dict[str, Dict[str, List[str]]]]
     campus_blocks: List[str]
+    blocks_reference: List[CampusBlockReference] = Field(default_factory=list)
     campus_sub_blocks: List[str]
     room_types: List[str]
     time_slots: List[str]
@@ -91,6 +184,9 @@ class StudentComplaintCreate(BaseModel):
     sub_category: Optional[str] = Field(None, description="Subcategory selected under the category")
     specific_categories: List[str] = Field(default_factory=list, description="Specific issue options checked")
     building: str = Field(..., description="Campus Block or Building")
+    block_id: Optional[str] = Field(None, description="Stable Block ID from campus reference")
+    floor_id: Optional[str] = Field(None, description="Stable Floor ID belonging to selected block")
+    floor_label: Optional[str] = Field(None, description="Floor label belonging to selected block")
     sub_block: Optional[str] = Field(None, description="Sub Block or Wing")
     room_type: Optional[str] = Field("Room No", description="Room No vs Any Other")
     room_number: Optional[str] = Field(None, description="Room number if room_type is Room No")
@@ -183,6 +279,9 @@ class ComplaintDetail(BaseModel):
     specific_category: Optional[str] = None
     facility_type: str
     building: str
+    block_id: Optional[str] = None
+    floor_id: Optional[str] = None
+    floor_label: Optional[str] = None
     sub_block: Optional[str] = None
     room_type: Optional[str] = None
     room_number: Optional[str] = None

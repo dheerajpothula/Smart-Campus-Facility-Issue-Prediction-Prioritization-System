@@ -46,7 +46,7 @@ c:\Users\pothu\OneDrive\Desktop\ROD(SUPER)\
 │   │   ├── routes_auth.py                  # Authentication, Token Issuance, & Logout
 │   │   ├── routes_ml.py                    # NLP, Severity, SHAP, & Weight Tuning
 │   │   ├── routes_student.py               # Student Submission, History, & Withdrawal
-│   │   ├── routes_taxonomy.py              # 19-Category LPU RMS Taxonomy Hierarchy
+│   │   ├── routes_taxonomy.py              # 19-Category Campus Facility Taxonomy Taxonomy Hierarchy
 │   │   └── routes_uploads.py               # Secure Photo Upload & Magic-Byte Validation
 │   ├── core/
 │   │   ├── config.py                       # Central Configuration & Path Resolution
@@ -100,7 +100,7 @@ The table below catalogs every endpoint in the unified FIPP 2.0 backend, verifie
 | **Auth** | `GET` | `/api/auth/me` | Bearer Token | `200 OK` | 4.10 ms | Returns verified profile, persona, and role (`admin`/`student`) |
 | **Auth** | `POST` | `/api/auth/refresh` | Valid Refresh | `200 OK` | 5.80 ms | Issues fresh 60-min access token upon presenting signed refresh token |
 | **Auth** | `POST` | `/api/auth/logout` | Bearer Token | `200 OK` | 8.20 ms | Revokes current JWT token; persists token to `revoked_tokens.json` |
-| **Taxonomy** | `GET` | `/api/taxonomy/hierarchy` | Public | `200 OK` | 5.29 ms | Authoritative 19 LPU RMS categories, campus blocks, sub-blocks, time slots |
+| **Taxonomy** | `GET` | `/api/taxonomy/hierarchy` | Public | `200 OK` | 5.29 ms | Authoritative 19 Campus Facility Taxonomy categories, campus blocks, sub-blocks, time slots |
 | **Uploads** | `POST` | `/api/uploads/photo` | Authenticated | `200 OK` | 268.15 ms | Validates PNG/JPEG magic bytes, limits to 10MB, saves to disk, returns SHA-256 |
 | **Uploads** | `POST` | `/api/uploads/photo` | Corrupt File | `400 Bad Request` | 3.50 ms | Rejects spoofed binary executables or non-raster uploads |
 | **Uploads** | `GET` | `/api/uploads/{filename}` | Authenticated | `200 OK` | 6.20 ms | Streams stored raster image with strict MIME headers |
@@ -137,9 +137,9 @@ The table below catalogs every endpoint in the unified FIPP 2.0 backend, verifie
 All 9 specific security requirements were empirically verified and validated:
 
 ```
-[PASS] Check 1: Admin login succeeds with valid credentials (ADM-2026-001 / Admin@001)
+[PASS] Check 1: Admin login succeeds with valid credentials (legacy-admin-id / [redacted-legacy-credential])
 [PASS] Check 2: Admin login fails with invalid credentials (WrongPassword#999) -> HTTP 401
-[PASS] Check 3: Student login succeeds with valid credentials (STU-2026-001 / student123)
+[PASS] Check 3: Student login succeeds with valid credentials (legacy-student-id / [redacted-legacy-credential])
 [PASS] Check 4: Student access is strictly isolated to own complaints
 [PASS] Check 5: Student cannot access admin endpoints -> HTTP 403 Forbidden
 [PASS] Check 6: Unauthenticated requests are rejected -> HTTP 401 Unauthorized
@@ -170,8 +170,8 @@ During this Phase 1 gap closure:
 ### 4.4 Explicit Disclosure on Student Identity Verification Limitations
 > [!IMPORTANT]
 > **Production Identity Boundary Assessment:**
-> While student authentication within FastAPI and Streamlit is cryptographically secured via PBKDF2-HMAC-SHA256 and signed JWTs, the student user store currently utilizes pre-seeded demo records (`STU-2026-001`, `STU101`, `STU102`) or client-side roll number regex checks.
-> Direct integration with campus-wide enterprise identity providers (such as LPU UMS LDAP/Active Directory, Shibboleth SAML, or OAuth2/OIDC SSO) is not yet implemented and is formally scheduled for Phase 2/3. In production, this mock store must be replaced with the institutional Single Sign-On (SSO) gateway.
+> While student authentication within FastAPI and Streamlit is cryptographically secured via PBKDF2-HMAC-SHA256 and signed JWTs, the student user store currently utilizes pre-seeded demo records (`legacy-student-id`, `legacy-student-id`, `legacy-student-id`) or client-side roll number regex checks.
+> Direct integration with campus-wide enterprise identity providers (such as Campus UMS LDAP/Active Directory, Shibboleth SAML, or OAuth2/OIDC SSO) is not yet implemented and is formally scheduled for Phase 2/3. In production, this mock store must be replaced with the institutional Single Sign-On (SSO) gateway.
 
 ---
 
@@ -187,7 +187,7 @@ The token generation algorithm was verified:
 $$\text{Next Token} = \text{CMP-2026-} \, \max(\{n \mid \text{CMP-2026-}n \in \text{Records}\} \cup \{0\}) + 1$$
 During testing, tokens `CMP-2026-025`, `CMP-2026-026`, and `CMP-2026-027` were generated strictly sequentially without collisions.
 
-### 5.3 Authoritative 19-Category LPU RMS Taxonomy
+### 5.3 Authoritative 19-Category Campus Facility Taxonomy Taxonomy
 FastAPI imports its taxonomy hierarchy directly from `src/data/complaint_categories.py` via `app/services/taxonomy_service.py`. The exact 19 categories and their canonical ordering are identical across FastAPI and Streamlit:
 1. Air Conditioner
 2. Carpentry
@@ -321,7 +321,7 @@ During this verification, several concrete gaps were identified and remediated:
 | **G-03** | **Token Revocation** | `/api/auth/logout` did not persist invalidated tokens to disk. | Wired `revoke_token` in `deps.py` and `routes_auth.py` to save to `revoked_tokens.json`; verified HTTP 401 on reused tokens. | **VERIFIED** |
 | **G-04** | **Admin In Progress** | FastAPI `/complaints/in-progress` filtered only `status="In Progress"`, omitting `Assigned`. | Updated `get_in_progress_complaints` to query composite status `["In Progress", "Assigned"]` matching Streamlit behavior. | **VERIFIED** |
 | **G-05** | **Complaint Filtering** | `complaint_service.get_all_complaints` did not accept a collection (list/tuple/set) for `status`. | Modified `complaint_service.py` to handle both scalar string and collection status filters. | **VERIFIED** |
-| **G-06** | **Credential Sync** | `ADM-2026-001` in `app/core/security.py` had default hash for `admin123` instead of `Admin@001`. | Corrected `ADM-2026-001` seed hash in `SYSTEM_USER_STORE` to match `Admin@001`; updated `test_backend_phase1.py` tests. | **VERIFIED** |
+| **G-06** | **Credential Sync** | `legacy-admin-id` in `app/core/security.py` had default hash for `[redacted-legacy-credential]` instead of `[redacted-legacy-credential]`. | Corrected `legacy-admin-id` seed hash in `SYSTEM_USER_STORE` to match `[redacted-legacy-credential]`; updated `test_backend_phase1.py` tests. | **VERIFIED** |
 | **G-07** | **Migration Routes** | `migration_service` had dry-run logic but lacked REST endpoints in the admin router. | Exposed `POST /api/admin/migration/dry-run` and `GET /api/admin/migration/inspect` in `routes_admin.py`. | **VERIFIED** |
 
 ---

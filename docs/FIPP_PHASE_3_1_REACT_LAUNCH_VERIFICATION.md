@@ -93,7 +93,7 @@ All pages were loaded in Chromium and visually verified against the approved **F
 | **Student Sign In** (`/login`) | Card layout, demo credentials prefill, input validation | Centered responsive card, touch-friendly buttons | **Verified Clean** |
 | **Raise a Query** (`/student`) | 4-tier cascading hierarchy, location selectors, 5 time slots, 500-char counter | Adaptive column layout, scrolling checklist | **Verified Clean** |
 | **Student History** (`/student/history`) | KPI cards, status filter, keyword search, detailed complaints table | Stacked KPI cards, responsive search and table | **Verified Clean** |
-| **Admin Sign In Entry** (`/login`) | Administrator prefill (`ADM-2026-001`), secure password mask | Responsive touch layout | **Verified Clean** |
+| **Admin Sign In Entry** (`/login`) | Administrator prefill (`legacy-admin-id`), secure password mask | Responsive touch layout | **Verified Clean** |
 
 ---
 
@@ -116,13 +116,13 @@ FIPP 2.0 API COMMUNICATION & ENDPOINT VERIFICATION
 [PASS] Campus Blocks (16): BH-1 Boys Hostel, BH-2 Boys Hostel, GH-1 Girls Hostel, GH-2 Girls Hostel ...
 [PASS] Time Slots (5): 08:00–10:00 | 10:00–12:00 | 12:00–14:00 | 14:00–16:00 | 16:00–18:00
 
---- 3. Student Authentication (STU-2026-001) ---
+--- 3. Student Authentication (legacy-student-id) ---
 [PASS] Student Login Successful! Status: 200
-       User: Student (STU-2026-001), Role: student
+       User: Student (legacy-student-id), Role: student
        Token Type: bearer, Token Preview: eyJhbGciOiJIUzI1NiIsInR5c...
 
 --- 4. Current User Endpoint (/api/auth/me) ---
-[PASS] Current User Verified: ID=STU-2026-001, Name=Student, Role=student
+[PASS] Current User Verified: ID=legacy-student-id, Name=Student, Role=student
 
 --- 5. Student Complaints Endpoint (/api/student/complaints) ---
 [PASS] Student Complaint Ledger Retrieved: Total=6, Open=4, Closed=2
@@ -131,8 +131,8 @@ FIPP 2.0 API COMMUNICATION & ENDPOINT VERIFICATION
        - Token: CMP-2026-010 | Status: Withdrawn | Title: [Grievance] Housekeeping / Sanitation Maintenance
        - Token: CMP-2026-009 | Status: Under Review | Title: [Grievance] Carpentry / Furniture Maintenance
 
---- 6. Administrator Authentication (ADM-2026-001) ---
-[PASS] Admin Login Successful: Administrator (ADM-2026-001), Role: admin
+--- 6. Administrator Authentication (legacy-admin-id) ---
+[PASS] Admin Login Successful: Administrator (legacy-admin-id), Role: admin
 
 ======================================================================
 ALL API ENDPOINTS TESTED AND 100% OPERATIONAL THROUGH REACT PROXY!

@@ -346,8 +346,8 @@ def render_complaint_details_panel(complaint_record: dict | None) -> None:
     )
 
     auth = st.session_state.get("auth_user") or {}
-    admin_id = auth.get("id", "ADM-2026-001")
-    admin_title = auth.get("title") or auth.get("role_title", "Facility Operations Lead")
+    admin_id = auth.get("id", "fipp.admin")
+    admin_title = auth.get("title") or auth.get("role_title", "System Administrator")
 
     # If ticket is currently Resolved, offer Reopen Action
     if curr_status == "Resolved":

@@ -181,16 +181,16 @@ async function run() {
     assert(!loginText.toUpperCase().includes('STUDENT DEMO'), 'Production build must hide Student Demo autofill');
 
     allowExpectedAuthFailure = true;
-    await fillLogin(page, 'STU-2026-001', 'WrongPassword123');
+    await fillLogin(page, '00123456', 'WrongPassword123');
     await page.waitForFunction(
-      () => document.body.innerText.toUpperCase().includes('INVALID CREDENTIALS'),
+      () => document.body.innerText.toUpperCase().includes('INVALID') || document.body.innerText.toUpperCase().includes('NOT AUTHORIZED'),
       { timeout: 10000 },
     );
     allowExpectedAuthFailure = false;
     summary.checks.authGuardsAndInvalidLogin = 'PASSED';
 
     // 2. Student Login & Raise a Query (Declarations, 4-tier hierarchy, 500-char, Invalid vs Valid upload)
-    await fillLogin(page, 'STU-2026-001', 'student123');
+    await fillLogin(page, process.env.FIPP_E2E_STUDENT_NAME || 'Aarav Sharma', process.env.FIPP_E2E_STUDENT_ID || '00123456');
     await page.waitForFunction(() => window.location.pathname.startsWith('/student'), { timeout: 10000 });
     await page.waitForFunction(
       () => document.body.innerText.toUpperCase().includes('DECLARATION') || document.querySelectorAll('input[type="checkbox"]').length >= 3,
@@ -440,7 +440,7 @@ async function run() {
     summary.checks.studentWorkflow = 'PASSED';
 
     // 5. Admin Login & 6-Section Control Centre E2E + MCPI/SHAP + Lifecycle Transition -> Resolved
-    await fillLogin(page, 'ADM-2026-001', 'Admin@001');
+    await fillLogin(page, 'fipp.admin', process.env.FIPP_E2E_ADMIN_PWD || '');
     await page.waitForFunction(() => window.location.pathname.startsWith('/admin'), { timeout: 10000 });
     await page.waitForFunction(
       () => document.body.innerText.toUpperCase().includes('OVERVIEW') && document.body.innerText.toUpperCase().includes('REPORTS'),
@@ -543,7 +543,7 @@ async function run() {
     summary.checks.adminWorkflow = 'PASSED';
 
     // 7. Student Login to submit 5-star satisfaction feedback on resolved ticket1Id
-    await fillLogin(page, 'STU-2026-001', 'student123');
+    await fillLogin(page, process.env.FIPP_E2E_STUDENT_NAME || 'Aarav Sharma', process.env.FIPP_E2E_STUDENT_ID || '00123456');
     await page.waitForFunction(() => window.location.pathname.startsWith('/student'), { timeout: 10000 });
     await clickButtonByText(page, /My History|View History|History/i);
     await page.waitForFunction((tid) => document.body.innerText.includes(tid), { timeout: 10000 }, ticket1Id);

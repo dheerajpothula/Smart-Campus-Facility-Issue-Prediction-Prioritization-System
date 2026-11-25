@@ -92,7 +92,7 @@ const {
   const tickets = [
     {
       complaint_id: 'CMP-2026-901',
-      student_id: 'STU101',
+      student_id: '00123456',
       student_name: 'Rahul Sharma',
       category: 'Electricity',
       facility_type: 'Electricity',
@@ -266,7 +266,7 @@ vi.mock('../services/complaintService', () => ({
     }),
     getAnalyticsReport: vi.fn().mockResolvedValue(mockAnalytics),
     getStudentComplaints: vi.fn().mockResolvedValue({
-      student_id: 'STU101',
+      student_id: '00123456',
       student_name: 'Rahul Sharma',
       total_complaints: 1,
       open_complaints: 1,
@@ -288,7 +288,7 @@ describe('FIPP 2.0 Phase 7 — Predictive Intelligence Frontend Integration Test
     vi.clearAllMocks();
     sessionStorage.clear();
     TokenManager.setSession('mock-admin-jwt', 'mock-refresh', {
-      id: 'ADM-2026-001',
+      id: 'fipp.admin',
       role: 'admin',
       name: 'Administrator',
     });
@@ -386,7 +386,7 @@ describe('FIPP 2.0 Phase 7 — Predictive Intelligence Frontend Integration Test
 
   it('5. ensures StudentHistoryPage does not expose MCPI scores, SHAP, or admin analytics', async () => {
     TokenManager.setSession('mock-stu-jwt', 'mock-refresh', {
-      id: 'STU101',
+      id: '00123456',
       role: 'student',
       name: 'Rahul Sharma',
     });

@@ -379,39 +379,39 @@ class TestFinalIntegrationPhase7(unittest.TestCase):
         self.assertIn("error code E3", latest_remark["remarks"])
 
     def test_10_authentication_cryptographic_security(self):
-        """10. Verify PBKDF2-HMAC-SHA256 password hashing, salt, constant-time compare, and timing-attack protection."""
-        # Authenticate valid admin credentials
-        auth1 = admin_auth.authenticate_admin("ADM-2026-001", "Admin@001")
-        self.assertIsNotNone(auth1)
-        self.assertEqual(auth1["id"], "ADM-2026-001")
-        self.assertEqual(auth1["role"], "admin")
-        self.assertEqual(auth1["name"], "Administrator")
+        """10. Verify PBKDF2-HMAC-SHA256 password hashing, salt, and constant-time compare against isolated admin store."""
+        import tempfile, json, os, secrets
+        from pathlib import Path
+        sample_pwd = f"IntTest!{secrets.token_hex(5)}V7"
+        hash_val = admin_auth.hash_password(sample_pwd)
+        self.assertTrue(hash_val.startswith("pbkdf2_sha256$600000$"))
 
-        # Wrong password rejection
-        auth_bad = admin_auth.authenticate_admin("ADM-2026-001", "WrongPassword123!")
-        self.assertIsNone(auth_bad)
-
-        # Unknown admin ID rejection
-        auth_unknown = admin_auth.authenticate_admin("ADM-9999-999", "Admin@001")
-        self.assertIsNone(auth_unknown)
-
-        # Hash verify
-        hash_val = admin_auth.hash_password("Admin@001")
-        self.assertEqual(len(hash_val), 64)
-        self.assertEqual(hash_val, admin_auth._ADMIN_CREDENTIALS_STORE["ADM-2026-001"]["password_hash"])
+        with tempfile.TemporaryDirectory() as tmp:
+            store_path = Path(tmp) / "admin_accounts.json"
+            store_path.write_text(json.dumps({
+                "bootstrapped": True,
+                "accounts": {"fipp.admin": {"id": "fipp.admin", "username": "fipp.admin", "name": "FIPP System Administrator", "password_hash": hash_val, "is_active": True}}
+            }), encoding="utf-8")
+            prev = os.environ.get("FIPP_ADMIN_STORE_FILE")
+            os.environ["FIPP_ADMIN_STORE_FILE"] = str(store_path)
+            try:
+                auth1 = admin_auth.authenticate_admin("fipp.admin", sample_pwd)
+                self.assertIsNotNone(auth1)
+                self.assertEqual(auth1["id"], "fipp.admin")
+                self.assertEqual(auth1["role"], "admin")
+                self.assertIsNone(admin_auth.authenticate_admin("fipp.admin", "WrongPassword123!"))
+                self.assertIsNone(admin_auth.authenticate_admin("ADM-9999-999", sample_pwd))
+            finally:
+                if prev is None: os.environ.pop("FIPP_ADMIN_STORE_FILE", None)
+                else: os.environ["FIPP_ADMIN_STORE_FILE"] = prev
 
     def test_11_role_based_access_control_server_guard(self):
         """11. Verify server-side session authorization guards prevent unauthorized access to admin operations."""
-        # None session
         self.assertFalse(admin_auth.verify_admin_session(None))
         self.assertFalse(admin_auth.verify_admin_session({}))
-
-        # Student session cannot access admin functions
-        student_session = {"role": "student", "name": "Student", "id": "STU-2026-001"}
+        student_session = {"role": "student", "name": "Student", "id": "00123456"}
         self.assertFalse(admin_auth.verify_admin_session(student_session))
-
-        # Admin session verified
-        admin_session = {"role": "admin", "name": "Administrator", "id": "ADM-2026-001"}
+        admin_session = {"role": "admin", "name": "FIPP System Administrator", "id": "fipp.admin"}
         self.assertTrue(admin_auth.verify_admin_session(admin_session))
 
     def test_12_mcpi_scoring_and_tier_classification(self):

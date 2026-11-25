@@ -70,6 +70,9 @@ export const RaiseQueryPage: React.FC = () => {
   const [subCategory, setSubCategory] = useState<string>(savedDraft?.subCategory || '');
   const [specificCategories, setSpecificCategories] = useState<string[]>(savedDraft?.specificCategories || []);
   const [building, setBuilding] = useState<string>(savedDraft?.building || '');
+  const [blockId, setBlockId] = useState<string>(savedDraft?.blockId || '');
+  const [floorId, setFloorId] = useState<string>(savedDraft?.floorId || '');
+  const [floorLabel, setFloorLabel] = useState<string>(savedDraft?.floorLabel || '');
   const [subBlock, setSubBlock] = useState<string>(savedDraft?.subBlock || '');
   const [roomType, setRoomType] = useState<string>(savedDraft?.roomType || 'Room No');
   const [roomNumber, setRoomNumber] = useState<string>(savedDraft?.roomNumber || '');
@@ -105,6 +108,9 @@ export const RaiseQueryPage: React.FC = () => {
         subCategory,
         specificCategories,
         building,
+        blockId,
+        floorId,
+        floorLabel,
         subBlock,
         roomType,
         roomNumber,
@@ -128,6 +134,9 @@ export const RaiseQueryPage: React.FC = () => {
     subCategory,
     specificCategories,
     building,
+    blockId,
+    floorId,
+    floorLabel,
     subBlock,
     roomType,
     roomNumber,
@@ -152,8 +161,18 @@ export const RaiseQueryPage: React.FC = () => {
         if (!savedDraft?.category && data.maintenance_categories?.length > 0) {
           setCategory(data.maintenance_categories[0]);
         }
-        if (!savedDraft?.building && data.campus_blocks?.length > 0) {
-          setBuilding(data.campus_blocks[0]);
+        if (!savedDraft?.building) {
+          if (data.blocks_reference && data.blocks_reference.length > 0) {
+            const firstBlock = data.blocks_reference[0];
+            setBuilding(firstBlock.display_name);
+            setBlockId(firstBlock.block_id);
+            if (firstBlock.floors && firstBlock.floors.length > 0) {
+              setFloorId(firstBlock.floors[0].floor_id);
+              setFloorLabel(firstBlock.floors[0].floor_label);
+            }
+          } else if (data.campus_blocks?.length > 0) {
+            setBuilding(data.campus_blocks[0]);
+          }
         }
         if (!savedDraft?.timeSlot && data.time_slots?.length > 0) {
           setTimeSlot(data.time_slots[0]);
@@ -173,6 +192,41 @@ export const RaiseQueryPage: React.FC = () => {
     const catMap = taxonomy.hierarchy?.[category];
     return catMap ? Object.keys(catMap) : [];
   }, [taxonomy, category]);
+
+  // Selected structured Campus Block & Dynamic Floor dependency
+  const selectedBlockRef = useMemo(() => {
+    if (!taxonomy?.blocks_reference?.length) return null;
+    return (
+      taxonomy.blocks_reference.find(
+        (b) => (blockId && b.block_id === blockId) || b.display_name === building
+      ) || null
+    );
+  }, [taxonomy, blockId, building]);
+
+  const availableFloors = useMemo(() => {
+    if (!selectedBlockRef?.floors?.length) return [];
+    return [...selectedBlockRef.floors].sort((a, b) => a.sort_order - b.sort_order);
+  }, [selectedBlockRef]);
+
+  // Reset dependent floor & location fields whenever Campus Block changes
+  const handleBlockChange = (newBuilding: string) => {
+    setBuilding(newBuilding);
+    const matched = taxonomy?.blocks_reference?.find((b) => b.display_name === newBuilding) || null;
+    setBlockId(matched?.block_id || '');
+    setFloorId('');
+    setFloorLabel('');
+    setRoomNumber('');
+    setSpecifiedLocation('');
+  };
+
+  // Reset dependent room / specific location fields whenever Floor changes
+  const handleFloorChange = (newFloorId: string) => {
+    setFloorId(newFloorId);
+    const matchedFloor = availableFloors.find((f) => f.floor_id === newFloorId);
+    setFloorLabel(matchedFloor ? matchedFloor.floor_label : '');
+    setRoomNumber('');
+    setSpecifiedLocation('');
+  };
 
   // Handle Category Change (Resets Subcategory & Specific Categories)
   const handleCategoryChange = (newCat: string) => {
@@ -269,6 +323,11 @@ export const RaiseQueryPage: React.FC = () => {
       return;
     }
 
+    if (selectedBlockRef && availableFloors.length > 0 && !floorId) {
+      setErrorMsg(`Please select a verified floor for ${selectedBlockRef.display_name}.`);
+      return;
+    }
+
     const payload: StudentComplaintCreatePayload = {
       category_type: 'Maintenance / Electrical Complaints',
       message_type: messageType,
@@ -277,6 +336,9 @@ export const RaiseQueryPage: React.FC = () => {
       sub_category: subCategory || undefined,
       specific_categories: specificCategories,
       building,
+      block_id: selectedBlockRef?.block_id || undefined,
+      floor_id: floorId || undefined,
+      floor_label: floorLabel || undefined,
       sub_block: subBlock || undefined,
       room_type: roomType,
       room_number: roomType === 'Room No' ? roomNumber : undefined,
@@ -519,7 +581,7 @@ export const RaiseQueryPage: React.FC = () => {
 
               {/* Step 2: Primary Category (Disabled until Message Type selected) */}
               <Select
-                label="Primary Category (19 LPU RMS Categories)"
+                label="Primary Category (19 Facility Categories)"
                 value={category}
                 onChange={(e) => handleCategoryChange(e.target.value)}
                 disabled={!messageType}
@@ -581,22 +643,51 @@ export const RaiseQueryPage: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Select
-                label="Campus Building / Block"
+                label="Campus Block / Building"
                 value={building}
-                onChange={(e) => setBuilding(e.target.value)}
-                options={taxonomy?.campus_blocks.map((b) => ({ value: b, label: b }))}
+                onChange={(e) => handleBlockChange(e.target.value)}
+                options={
+                  taxonomy?.blocks_reference?.length
+                    ? taxonomy.blocks_reference.map((b) => ({
+                        value: b.display_name,
+                        label: `${b.display_name} (${b.block_category})`,
+                      }))
+                    : taxonomy?.campus_blocks.map((b) => ({ value: b, label: b }))
+                }
                 required
               />
 
-              <Select
-                label="Sub Block / Wing"
-                value={subBlock}
-                onChange={(e) => setSubBlock(e.target.value)}
-                options={[
-                  { value: '', label: 'None / General Wing' },
-                  ...(taxonomy?.campus_sub_blocks.map((s) => ({ value: s, label: `Sub Block ${s}` })) || []),
-                ]}
-              />
+              {selectedBlockRef && availableFloors.length > 0 ? (
+                <Select
+                  label={`Floor (${selectedBlockRef.floor_count ?? availableFloors.length} Referenced)`}
+                  value={floorId}
+                  onChange={(e) => handleFloorChange(e.target.value)}
+                  options={[
+                    { value: '', label: '-- Select Floor --' },
+                    ...availableFloors.map((f) => ({ value: f.floor_id, label: f.floor_label })),
+                  ]}
+                  required
+                />
+              ) : selectedBlockRef ? (
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#172D28]">
+                    Floor Configuration
+                  </label>
+                  <div className="px-3 py-2 rounded-lg border border-[#DCE5D8] bg-[#F5F7F2] text-[11px] text-[#52605B]">
+                    Floor count unverified (Unknown — pending admin setup)
+                  </div>
+                </div>
+              ) : (
+                <Select
+                  label="Sub Block / Wing"
+                  value={subBlock}
+                  onChange={(e) => setSubBlock(e.target.value)}
+                  options={[
+                    { value: '', label: 'None / General Wing' },
+                    ...(taxonomy?.campus_sub_blocks.map((s) => ({ value: s, label: `Sub Block ${s}` })) || []),
+                  ]}
+                />
+              )}
 
               <Select
                 label="Location Type"
@@ -609,6 +700,20 @@ export const RaiseQueryPage: React.FC = () => {
                 required
               />
             </div>
+
+            {selectedBlockRef && (
+              <div className="text-[11px] text-[#52605B] px-3 py-2 rounded-lg bg-[#F5F7F2] border border-[#DCE5D8] flex flex-wrap items-center justify-between gap-2">
+                <span>
+                  Reference Status:{' '}
+                  <strong className="text-[#172D28]">
+                    {selectedBlockRef.verification_status === 'verified'
+                      ? 'Verified Campus Record'
+                      : 'Unverified External Reference (Pending Campus Admin Review)'}
+                  </strong>
+                </span>
+                {selectedBlockRef.notes && <span className="text-[10px]">{selectedBlockRef.notes}</span>}
+              </div>
+            )}
 
             {roomType === 'Room No' ? (
               <Input

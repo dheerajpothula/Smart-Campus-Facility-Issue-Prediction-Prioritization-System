@@ -24,19 +24,21 @@ from app.services.complaint_service import (
     complaint_service,
 )
 
+from tests.helpers import admin_headers, setup_isolated_environment, student_headers
+
 client = TestClient(app)
+_CTX: dict = {}
 
 
 @pytest.fixture
 def isolated_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """Provides an isolated temporary complaints JSON store for deterministic testing."""
-    temp_file = tmp_path / "complaints_test.json"
+    """Provides an isolated temporary complaints JSON store and ephemeral accounts for deterministic testing."""
     now = datetime.now()
     seed = [
         {
             "complaint_id": "CMP-2026-001",
-            "student_id": "STU101",
-            "student_name": "Rahul Sharma",
+            "student_id": "00123456",
+            "student_name": "Aarav Sharma",
             "contact_number": "9123456789",
             "category": "Electricity",
             "facility_type": "Electricity",
@@ -55,8 +57,8 @@ def isolated_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         },
         {
             "complaint_id": "CMP-2026-002",
-            "student_id": "STU102",
-            "student_name": "Priya Patel",
+            "student_id": "00123457",
+            "student_name": "Priya Nair",
             "contact_number": "9876543210",
             "category": "Plumbing",
             "facility_type": "Plumbing",
@@ -77,8 +79,8 @@ def isolated_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         },
         {
             "complaint_id": "CMP-2026-003",
-            "student_id": "STU101",
-            "student_name": "Rahul Sharma",
+            "student_id": "00123456",
+            "student_name": "Aarav Sharma",
             "contact_number": "9123456789",
             "category": "Air Conditioner",
             "facility_type": "Air Conditioner",
@@ -95,15 +97,15 @@ def isolated_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "status": "Resolved",
             "date_reported": (now - timedelta(days=4)).strftime("%Y-%m-%d %H:%M"),
             "resolved_at": (now - timedelta(days=1)).strftime("%Y-%m-%d %H:%M"),
-            "resolved_by": "ADM-2026-001",
+            "resolved_by": "fipp.admin",
             "closing_remarks": "Replaced capacitor and tested.",
             "estimated_resolution": (now - timedelta(days=2)).strftime("%Y-%m-%d"),
             "remarks_history": [],
         },
         {
             "complaint_id": "CMP-2026-004",
-            "student_id": "STU102",
-            "student_name": "Priya Patel",
+            "student_id": "00123457",
+            "student_name": "Priya Nair",
             "contact_number": "9876543210",
             "category": "Carpentry",
             "facility_type": "Carpentry",
@@ -123,19 +125,23 @@ def isolated_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "remarks_history": [],
         },
     ]
-    temp_file.write_text(json.dumps(seed, indent=2), encoding="utf-8")
-    monkeypatch.setattr(complaint_service, "data_file", temp_file)
-    return temp_file
+    env = setup_isolated_environment(tmp_path, monkeypatch, seed_complaints=seed)
+    _CTX.clear()
+    _CTX.update(env)
+    return env["data_file"]
 
 
-def _auth_headers(username: str, password: str) -> dict:
-    res = client.post("/api/auth/login", json={"username": username, "password": password})
-    assert res.status_code == 200, res.text
-    return {"Authorization": f"Bearer {res.json()['access_token']}"}
+def _adm_headers() -> dict:
+    return admin_headers(client, _CTX["admin_username"], _CTX["admin_password"])
+
+
+def _stu_headers(sid: str) -> dict:
+    name = "Aarav Sharma" if sid == "00123456" else "Priya Nair"
+    return student_headers(client, name, sid)
 
 
 def test_admin_rbac_and_unauthorized_actions(isolated_store):
-    stu_headers = _auth_headers("STU101", "student123")
+    stu_headers = _stu_headers("00123456")
 
     admin_gets = [
         "/api/admin/kpis",
@@ -159,7 +165,7 @@ def test_admin_rbac_and_unauthorized_actions(isolated_store):
 
 
 def test_assignment_persistence_and_clearing(isolated_store):
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    adm_headers = _adm_headers()
 
     res = client.patch(
         "/api/admin/complaints/CMP-2026-001",
@@ -176,7 +182,7 @@ def test_assignment_persistence_and_clearing(isolated_store):
     assert body["allotted_person"] == "Vikram Mehta"
     assert body["department"] == "Electrical Squad A"
     assert body["remarks_history"][0]["new_status"] == "Assigned"
-    assert "ADM-2026-001" in body["remarks_history"][0]["name"]
+    assert "fipp.admin" in body["remarks_history"][0]["name"]
 
     # Clearing technician and squad persists null
     clear_res = client.patch(
@@ -195,7 +201,7 @@ def test_assignment_persistence_and_clearing(isolated_store):
 
 
 def test_resolution_remarks_and_reopening_history(isolated_store):
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    adm_headers = _adm_headers()
 
     # 1. Resolving without remarks is rejected at API boundary
     bad_resolve = client.patch(
@@ -214,7 +220,7 @@ def test_resolution_remarks_and_reopening_history(isolated_store):
     assert ok_resolve.status_code == 200
     resolved = ok_resolve.json()
     assert resolved["status"] == "Resolved"
-    assert resolved["resolved_by"] == "ADM-2026-001"
+    assert resolved["resolved_by"] == "fipp.admin"
     assert resolved["closing_remarks"] == "Replaced leaking elbow joint and pressure tested."
     assert resolved["resolved_at"] is not None
 
@@ -245,16 +251,16 @@ def test_resolution_remarks_and_reopening_history(isolated_store):
     assert reopened["status"] == "Under Review"
     assert reopened["is_reopened"] is True
     assert reopened["original_resolved_at"] == resolved["resolved_at"]
-    assert reopened["original_resolved_by"] == "ADM-2026-001"
+    assert reopened["original_resolved_by"] == "fipp.admin"
     assert reopened["previous_closing_remarks"] == "Replaced leaking elbow joint and pressure tested."
     assert len(reopened["remarks_history"]) == 2
     assert "Ticket Reopened" in reopened["remarks_history"][0]["remarks"]
 
 
 def test_student_satisfaction_rating_authorization(isolated_store):
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
-    stu1_headers = _auth_headers("STU101", "student123")
-    stu2_headers = _auth_headers("STU102", "student123")
+    adm_headers = _adm_headers()
+    stu1_headers = _stu_headers("00123456")
+    stu2_headers = _stu_headers("00123457")
 
     # Admin cannot submit student feedback
     assert client.post(
@@ -286,13 +292,13 @@ def test_student_satisfaction_rating_authorization(isolated_store):
     assert ok_fb.status_code == 200
     detail = client.get("/api/student/complaints/CMP-2026-003", headers=stu1_headers).json()
     assert detail["feedback"]["rating"] == 5
-    assert detail["feedback"]["student_id"] == "STU101"
+    assert detail["feedback"]["student_id"] == "00123456"
 
 
 def test_attachment_ownership_isolation(isolated_store):
-    stu1_headers = _auth_headers("STU101", "student123")
-    stu2_headers = _auth_headers("STU102", "student123")
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    stu1_headers = _stu_headers("00123456")
+    stu2_headers = _stu_headers("00123457")
+    adm_headers = _adm_headers()
 
     img_bytes = io.BytesIO()
     Image.new("RGB", (20, 20), color="red").save(img_bytes, format="PNG")
@@ -322,7 +328,7 @@ def test_attachment_ownership_isolation(isolated_store):
 
 
 def test_report_metric_calculations_and_trends(isolated_store):
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    adm_headers = _adm_headers()
 
     # Daily analytics
     daily = client.get("/api/admin/reports/analytics?trend_agg=Daily", headers=adm_headers).json()
@@ -362,7 +368,7 @@ def test_report_metric_calculations_and_trends(isolated_store):
 
 
 def test_csv_privacy_and_filter_behavior(isolated_store):
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    adm_headers = _adm_headers()
 
     # Filtered CSV export respects status & category filters and masks PII
     res = client.get(
@@ -447,7 +453,7 @@ def test_mcpi_parity_with_original_priority_scoring():
 
 def test_in_progress_kpi_and_queue_status_definitions(isolated_store):
     """Verifies Overview KPI counts Under Review + Assigned + In Progress while /in-progress stays Assigned + In Progress."""
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    adm_headers = _adm_headers()
 
     # Reopen CMP-2026-003 -> transitions to Under Review while preserving resolution history
     reopen_res = client.post(
@@ -458,7 +464,7 @@ def test_in_progress_kpi_and_queue_status_definitions(isolated_store):
     assert reopen_res.status_code == 200
     reopened = reopen_res.json()
     assert reopened["status"] == "Under Review"
-    assert reopened["original_resolved_by"] == "ADM-2026-001"
+    assert reopened["original_resolved_by"] == "fipp.admin"
     assert reopened["previous_closing_remarks"] == "Replaced capacitor and tested."
 
     kpis = client.get("/api/admin/kpis", headers=adm_headers).json()

@@ -23,11 +23,11 @@ async function runVerification() {
   console.log(`[PASS] Time Slots (${tax.time_slots.length}):`, tax.time_slots.join(' | '));
 
   // 3. Student Authentication Endpoint
-  console.log('\n--- 3. Student Authentication (STU-2026-001) ---');
+  console.log('\n--- 3. Student Authentication (00123456) ---');
   const loginRes = await fetch(`${proxyBase}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'STU-2026-001', password: 'student123' }),
+    body: JSON.stringify({ username: '00123456', password: 'REDACTED_TEST_ENV_CRED' }),
   });
   const loginData = await loginRes.json();
   if (!loginRes.ok) throw new Error(`Login failed: ${JSON.stringify(loginData)}`);
@@ -57,11 +57,11 @@ async function runVerification() {
   });
 
   // 6. Admin Authentication Endpoint
-  console.log('\n--- 6. Administrator Authentication (ADM-2026-001) ---');
+  console.log('\n--- 6. Administrator Authentication (fipp.admin) ---');
   const adminLoginRes = await fetch(`${proxyBase}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'ADM-2026-001', password: 'Admin@001' }),
+    body: JSON.stringify({ username: 'fipp.admin', password: 'REDACTED_TEST_ENV_CRED' }),
   });
   const adminLoginData = await adminLoginRes.json();
   if (!adminLoginRes.ok) throw new Error(`Admin login failed: ${JSON.stringify(adminLoginData)}`);

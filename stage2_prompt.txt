@@ -5,9 +5,9 @@
 
 Implement the complete Hostel Maintenance / Electrical complaint workflow in the existing FIPP Student Portal using the attached reference document:
 
-`LPU_RMS_Hostel_Maintenance_Data-v2.pdf`
+`Hostel_Maintenance_Taxonomy_Reference.pdf`
 
-This document contains the verified LPU RMS workflow, form fields, and the complete available hierarchy of 19 Maintenance / Electrical complaint categories.
+This document contains the verified Campus Facility Taxonomy workflow, form fields, and the complete available hierarchy of 19 Maintenance / Electrical complaint categories.
 
 **IMPORTANT: Read and inspect all 6 pages of the PDF before implementation. Do not skip any page.**
 
@@ -421,7 +421,7 @@ After implementation, provide:
 
 Do not claim that the task is complete based only on code generation or passing unit tests. Verify the actual application.
 
-**Final instruction: Accuracy of the supplied LPU RMS PDF is more important than adding extra features. Implement the documented workflow faithfully, preserve the existing FIPP architecture, and do not invent missing data.**
+**Final instruction: Accuracy of the supplied Campus Facility Taxonomy PDF is more important than adding extra features. Implement the documented workflow faithfully, preserve the existing FIPP architecture, and do not invent missing data.**
 </USER_REQUEST>
 <ADDITIONAL_METADATA>
 The current local time is: 2026-11-18T23:12:12+05:30.

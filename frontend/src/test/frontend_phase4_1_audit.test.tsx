@@ -27,7 +27,7 @@ const { mockKPIs, mockTickets, mockReportNoTurnaround } = vi.hoisted(() => {
   const tickets = [
     {
       complaint_id: 'CMP-2026-201',
-      student_id: 'STU-2026-001',
+      student_id: '00123456',
       student_name: 'Student',
       contact_number: '9876543210',
       category: 'Electricity',
@@ -55,7 +55,7 @@ const { mockKPIs, mockTickets, mockReportNoTurnaround } = vi.hoisted(() => {
     },
     {
       complaint_id: 'CMP-2026-202',
-      student_id: 'STU101',
+      student_id: '00123456',
       student_name: 'Rahul Sharma',
       category: 'Plumbing',
       facility_type: 'Plumbing',
@@ -75,7 +75,7 @@ const { mockKPIs, mockTickets, mockReportNoTurnaround } = vi.hoisted(() => {
     },
     {
       complaint_id: 'CMP-2026-203',
-      student_id: 'STU102',
+      student_id: '00123457',
       student_name: 'Priya Patel',
       category: 'Carpentry',
       facility_type: 'Carpentry',
@@ -86,12 +86,12 @@ const { mockKPIs, mockTickets, mockReportNoTurnaround } = vi.hoisted(() => {
       priority_tier: 'Medium' as const,
       priority_score: 45.0,
       resolved_at: '2026-11-22 10:00:00',
-      resolved_by: 'ADM-2026-001',
+      resolved_by: 'fipp.admin',
       closing_remarks: 'Door hinge replaced.',
       is_reopened: true,
       reopened_at: '2026-11-23 11:00:00',
       original_resolved_at: '2026-11-22 10:00:00',
-      original_resolved_by: 'ADM-2026-001',
+      original_resolved_by: 'fipp.admin',
       previous_closing_remarks: 'Door hinge replaced.',
       description: 'Door hinge broken.',
       specific_categories: [],
@@ -166,7 +166,7 @@ describe('FIPP 2.0 Phase 4.1 — Verification Audit Regression Tests', () => {
     vi.clearAllMocks();
     sessionStorage.clear();
     TokenManager.setSession('mock-admin-jwt', 'mock-refresh', {
-      id: 'ADM-2026-001',
+      id: 'fipp.admin',
       role: 'admin',
       name: 'Administrator',
     });

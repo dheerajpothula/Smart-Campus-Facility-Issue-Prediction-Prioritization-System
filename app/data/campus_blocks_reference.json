@@ -1,0 +1,140 @@
+[
+  {
+    "block_id": "BLK-3",
+    "display_name": "Block 3",
+    "block_category": "Academic",
+    "floor_count": null,
+    "floor_status": "unknown",
+    "verification_status": "unverified_external_reference",
+    "notes": "Public block identifier reference; floor count unverified pending campus administrator confirmation.",
+    "floors": []
+  },
+  {
+    "block_id": "BLK-8B",
+    "display_name": "Block 8B",
+    "block_category": "Academic",
+    "floor_count": null,
+    "floor_status": "unknown",
+    "verification_status": "unverified_external_reference",
+    "notes": "Public block identifier reference; floor count unverified pending campus administrator confirmation.",
+    "floors": []
+  },
+  {
+    "block_id": "BLK-27",
+    "display_name": "Block 27",
+    "block_category": "Academic",
+    "floor_count": null,
+    "floor_status": "unknown",
+    "verification_status": "unverified_external_reference",
+    "notes": "Public block identifier reference; floor count unverified pending campus administrator confirmation.",
+    "floors": []
+  },
+  {
+    "block_id": "BLK-55",
+    "display_name": "Block 55",
+    "block_category": "Academic",
+    "floor_count": null,
+    "floor_status": "unknown",
+    "verification_status": "unverified_external_reference",
+    "notes": "Public block identifier reference; floor count unverified pending campus administrator confirmation.",
+    "floors": []
+  },
+  {
+    "block_id": "BLK-56",
+    "display_name": "Block 56",
+    "block_category": "Academic",
+    "floor_count": null,
+    "floor_status": "unknown",
+    "verification_status": "unverified_external_reference",
+    "notes": "Public block identifier reference; floor count unverified pending campus administrator confirmation.",
+    "floors": []
+  },
+  {
+    "block_id": "BLK-57",
+    "display_name": "Block 57",
+    "block_category": "Academic",
+    "floor_count": 8,
+    "floor_status": "external_reference_8_floors",
+    "verification_status": "unverified_external_reference",
+    "notes": "Public external reference indicates an eight-floor building; pending campus administrator verification (no basement assumed).",
+    "floors": [
+      { "floor_id": "BLK-57-F0", "block_id": "BLK-57", "floor_label": "Ground Floor", "sort_order": 0, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-57-F1", "block_id": "BLK-57", "floor_label": "First Floor", "sort_order": 1, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-57-F2", "block_id": "BLK-57", "floor_label": "Second Floor", "sort_order": 2, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-57-F3", "block_id": "BLK-57", "floor_label": "Third Floor", "sort_order": 3, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-57-F4", "block_id": "BLK-57", "floor_label": "Fourth Floor", "sort_order": 4, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-57-F5", "block_id": "BLK-57", "floor_label": "Fifth Floor", "sort_order": 5, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-57-F6", "block_id": "BLK-57", "floor_label": "Sixth Floor", "sort_order": 6, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-57-F7", "block_id": "BLK-57", "floor_label": "Seventh Floor", "sort_order": 7, "verification_status": "unverified_external_reference" }
+    ]
+  },
+  {
+    "block_id": "BLK-UC",
+    "display_name": "University Centre",
+    "block_category": "Administrative",
+    "floor_count": 8,
+    "floor_status": "external_reference_8_storeys",
+    "verification_status": "unverified_external_reference",
+    "notes": "Public external reference describes an eight-storey university centre facility; pending campus administrator verification.",
+    "floors": [
+      { "floor_id": "BLK-UC-F0", "block_id": "BLK-UC", "floor_label": "Ground Floor", "sort_order": 0, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-UC-F1", "block_id": "BLK-UC", "floor_label": "First Floor", "sort_order": 1, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-UC-F2", "block_id": "BLK-UC", "floor_label": "Second Floor", "sort_order": 2, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-UC-F3", "block_id": "BLK-UC", "floor_label": "Third Floor", "sort_order": 3, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-UC-F4", "block_id": "BLK-UC", "floor_label": "Fourth Floor", "sort_order": 4, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-UC-F5", "block_id": "BLK-UC", "floor_label": "Fifth Floor", "sort_order": 5, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-UC-F6", "block_id": "BLK-UC", "floor_label": "Sixth Floor", "sort_order": 6, "verification_status": "unverified_external_reference" },
+      { "floor_id": "BLK-UC-F7", "block_id": "BLK-UC", "floor_label": "Seventh Floor", "sort_order": 7, "verification_status": "unverified_external_reference" }
+    ]
+  },
+  {
+    "block_id": "BLK-ADM",
+    "display_name": "Administrative Block",
+    "block_category": "Administrative",
+    "floor_count": null,
+    "floor_status": "unknown",
+    "verification_status": "unverified_external_reference",
+    "notes": "Administrative facility category; exact floor count unverified pending campus administrator confirmation.",
+    "floors": []
+  },
+  {
+    "block_id": "BLK-LIB",
+    "display_name": "Library",
+    "block_category": "Library",
+    "floor_count": null,
+    "floor_status": "unknown",
+    "verification_status": "unverified_external_reference",
+    "notes": "Library facility category; exact floor count unverified pending campus administrator confirmation.",
+    "floors": []
+  },
+  {
+    "block_id": "BLK-HOSP",
+    "display_name": "Campus Hospital",
+    "block_category": "Hospital",
+    "floor_count": null,
+    "floor_status": "unknown",
+    "verification_status": "unverified_external_reference",
+    "notes": "Hospital facility category; exact floor count unverified pending campus administrator confirmation.",
+    "floors": []
+  },
+  {
+    "block_id": "BLK-BH1",
+    "display_name": "Boys Hostel 1",
+    "block_category": "Hostel",
+    "floor_count": null,
+    "floor_status": "unknown",
+    "verification_status": "unverified_external_reference",
+    "notes": "Residential hostel facility; exact floor count unverified pending campus administrator confirmation.",
+    "floors": []
+  },
+  {
+    "block_id": "BLK-GH1",
+    "display_name": "Girls Hostel 1",
+    "block_category": "Hostel",
+    "floor_count": null,
+    "floor_status": "unknown",
+    "verification_status": "unverified_external_reference",
+    "notes": "Residential hostel facility; exact floor count unverified pending campus administrator confirmation.",
+    "floors": []
+  }
+]

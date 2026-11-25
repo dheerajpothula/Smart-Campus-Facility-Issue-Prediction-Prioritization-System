@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union, Set
 
 from app.core.config import PRIMARY_JSON_DATA_FILE
 from app.models.data_models import StudentComplaintCreate, PriorityWeights
+from app.services.location_service import location_service
 
 # Ensure smart-campus-facility-prediction is in sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -244,6 +245,17 @@ class ComplaintService:
         weights: Optional[PriorityWeights] = None
     ) -> Dict[str, Any]:
         """Creates and persists a new complaint ticket from an authenticated student."""
+        validated_block, validated_floor = location_service.validate_block_floor_combination(
+            building=data.building,
+            block_id=data.block_id,
+            floor_id=data.floor_id,
+            floor_label=data.floor_label,
+        )
+        resolved_building = str(validated_block["display_name"])
+        resolved_block_id = str(validated_block["block_id"])
+        resolved_floor_id = str(validated_floor["floor_id"]) if validated_floor else None
+        resolved_floor_label = str(validated_floor["floor_label"]) if validated_floor else None
+
         with _SERVICE_LOCK:
             records = self._load_records()
             token = self.generate_next_token(records)
@@ -254,10 +266,12 @@ class ComplaintService:
             elif data.specified_location:
                 spec_loc = data.specified_location.strip()
             else:
-                spec_loc = "Campus Grounds"
+                spec_loc = "Campus Facility Area"
 
-            loc_parts = [data.building]
-            if data.sub_block:
+            loc_parts = [resolved_building]
+            if resolved_floor_label:
+                loc_parts.append(resolved_floor_label)
+            elif data.sub_block:
                 loc_parts.append(f"Sub Block {data.sub_block}")
             loc_parts.append(spec_loc)
             full_location = " - ".join(loc_parts[:2])
@@ -275,7 +289,7 @@ class ComplaintService:
                 category=data.category,
                 title=title,
                 description=data.description,
-                building=data.building,
+                building=resolved_building,
             )
             score, tier, bdown = self.compute_mcpi(
                 severity=pred["severity"],
@@ -299,7 +313,10 @@ class ComplaintService:
                 "specific_categories": data.specific_categories,
                 "specific_category": spec_cat_str,
                 "facility_type": data.category,
-                "building": data.building,
+                "building": resolved_building,
+                "block_id": resolved_block_id,
+                "floor_id": resolved_floor_id,
+                "floor_label": resolved_floor_label,
                 "sub_block": data.sub_block,
                 "room_type": data.room_type,
                 "room_number": data.room_number,

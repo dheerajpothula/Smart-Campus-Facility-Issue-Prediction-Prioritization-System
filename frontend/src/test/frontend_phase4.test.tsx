@@ -28,7 +28,7 @@ const { mockKPIs, mockTickets, mockAnalyticsReport } = vi.hoisted(() => {
   const tickets = [
     {
       complaint_id: 'CMP-2026-101',
-      student_id: 'STU-2026-001',
+      student_id: '00123456',
       student_name: 'Aarav Sharma',
       contact_number: '+91 98765 43210',
       category: 'Air Conditioner',
@@ -62,7 +62,7 @@ const { mockKPIs, mockTickets, mockAnalyticsReport } = vi.hoisted(() => {
     },
     {
       complaint_id: 'CMP-2026-102',
-      student_id: 'STU-2026-002',
+      student_id: '00123457',
       student_name: 'Priya Patel',
       category: 'Electrical',
       sub_category: 'Power Failure',
@@ -87,7 +87,7 @@ const { mockKPIs, mockTickets, mockAnalyticsReport } = vi.hoisted(() => {
     },
     {
       complaint_id: 'CMP-2026-103',
-      student_id: 'STU-2026-003',
+      student_id: '00123458',
       student_name: 'Rahul Verma',
       category: 'Plumbing',
       sub_category: 'Washroom Fixtures',
@@ -209,7 +209,7 @@ describe('FIPP 2.0 Phase 4 — Administrator Control Centre Tests', () => {
     vi.clearAllMocks();
     sessionStorage.clear();
     TokenManager.setSession('mock-admin-token', 'mock-refresh-token', {
-      user_id: 'ADM-2026-001',
+      user_id: 'fipp.admin',
       role: 'admin',
       name: 'Operations Director',
     });

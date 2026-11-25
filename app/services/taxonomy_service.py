@@ -1,11 +1,13 @@
 """
 FIPP 2.0 — Taxonomy Service.
-Exposes the authoritative LPU RMS 19-category complaint classification hierarchy,
-campus blocks, sub-blocks, room types, time slots, and legal declarations.
+Exposes the authoritative 19-category campus complaint classification hierarchy,
+structured campus block & floor reference data, room types, time slots, and legal declarations.
 """
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
+
+from app.services.location_service import location_service
 
 # Ensure smart-campus-facility-prediction is in path for single-source-of-truth import
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -13,56 +15,36 @@ SMART_CAMPUS_DIR = PROJECT_ROOT / "smart-campus-facility-prediction"
 if str(SMART_CAMPUS_DIR) not in sys.path:
     sys.path.insert(0, str(SMART_CAMPUS_DIR))
 
-try:
-    from src.data.complaint_categories import (
-        CATEGORY_TYPES,
-        MESSAGE_TYPES,
-        MAINTENANCE_ELECTRICAL_HIERARCHY,
-        ACADEMIC_ADMINISTRATIVE_HIERARCHY,
-        CLASSIFICATION_HIERARCHY,
-        HOSTEL_MAINTENANCE_CATEGORIES,
-        CAMPUS_BLOCKS,
-        CAMPUS_SUB_BLOCKS,
-        ROOM_TYPES,
-        TIME_SLOTS,
-        STAGE2_MANDATORY_DECLARATIONS,
-        FAQ_CONFIRMATION_TEXT,
-        get_categories_for_type as src_get_categories_for_type,
-        get_sub_categories as src_get_sub_categories,
-        get_specific_categories as src_get_specific_categories,
-        is_category_empty as src_is_category_empty,
-        has_specific_options as src_has_specific_options,
-    )
-except ImportError:
-    # Standalone fallback if invoked outside directory context
-    from app.services._taxonomy_data import (  # fallback import
-        CATEGORY_TYPES,
-        MESSAGE_TYPES,
-        MAINTENANCE_ELECTRICAL_HIERARCHY,
-        ACADEMIC_ADMINISTRATIVE_HIERARCHY,
-        CLASSIFICATION_HIERARCHY,
-        HOSTEL_MAINTENANCE_CATEGORIES,
-        CAMPUS_BLOCKS,
-        CAMPUS_SUB_BLOCKS,
-        ROOM_TYPES,
-        TIME_SLOTS,
-        STAGE2_MANDATORY_DECLARATIONS,
-        FAQ_CONFIRMATION_TEXT,
-    )
+from src.data.complaint_categories import (  # noqa: E402
+    ACADEMIC_ADMINISTRATIVE_HIERARCHY,
+    CAMPUS_SUB_BLOCKS,
+    CATEGORY_TYPES,
+    CLASSIFICATION_HIERARCHY,
+    FAQ_CONFIRMATION_TEXT,
+    HOSTEL_MAINTENANCE_CATEGORIES,
+    MAINTENANCE_ELECTRICAL_HIERARCHY,
+    MESSAGE_TYPES,
+    ROOM_TYPES,
+    STAGE2_MANDATORY_DECLARATIONS,
+    TIME_SLOTS,
+)
 
 
 class TaxonomyService:
-    """Provides taxonomy queries, validations, and hierarchy structures."""
+    """Provides taxonomy queries, validations, and structured location hierarchy."""
 
     @staticmethod
     def get_full_hierarchy() -> Dict[str, Any]:
-        """Returns the complete taxonomy tree with all 19 categories and location metadata."""
+        """Returns the complete taxonomy tree along with active campus block/floor references."""
+        blocks_ref = location_service.load_blocks()
+        block_names = [str(b["display_name"]) for b in blocks_ref if b.get("display_name")]
         return {
             "category_types": CATEGORY_TYPES,
             "message_types": MESSAGE_TYPES,
             "maintenance_categories": HOSTEL_MAINTENANCE_CATEGORIES,
             "hierarchy": CLASSIFICATION_HIERARCHY,
-            "campus_blocks": CAMPUS_BLOCKS,
+            "campus_blocks": block_names,
+            "blocks_reference": blocks_ref,
             "campus_sub_blocks": CAMPUS_SUB_BLOCKS,
             "room_types": ROOM_TYPES,
             "time_slots": TIME_SLOTS,

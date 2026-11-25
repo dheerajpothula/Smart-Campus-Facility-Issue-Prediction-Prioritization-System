@@ -65,7 +65,7 @@ describe('2. Authentication & Token Management', () => {
   it('manages access token, refresh token, and user session in sessionStorage', () => {
     expect(TokenManager.getAccessToken()).toBeNull();
 
-    const mockUser = { id: 'STU-2026-001', name: 'Student Resident', role: 'student' };
+    const mockUser = { id: '00123456', name: 'Student Resident', role: 'student' };
     TokenManager.setSession('mock_access_jwt', 'mock_refresh_jwt', mockUser);
 
     expect(TokenManager.getAccessToken()).toBe('mock_access_jwt');

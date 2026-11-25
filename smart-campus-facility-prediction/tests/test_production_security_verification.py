@@ -52,26 +52,34 @@ class TestProductionSecurityVerification(unittest.TestCase):
         salts = {h.split("$")[2] for h in hashes}
         self.assertEqual(len(salts), 20, "Salts must be cryptographically unique per generation")
 
-    def test_03_rehash_on_login_upgrades_legacy_accounts(self):
-        """Verifies transparent rehash-on-login upgrades legacy accounts to 600k modular format."""
-        admin_id = "ADM-2026-001"
-        admin = admin_auth.authenticate_admin(admin_id, "Admin@001")
-        self.assertIsNotNone(admin)
-        self.assertEqual(admin["id"], "ADM-2026-001")
-
-        # Check upgraded credentials cache
-        cached_hash = admin_auth._UPGRADED_CREDENTIALS_CACHE.get(admin_id)
-        self.assertIsNotNone(cached_hash)
+    def test_03_modular_600k_hash_verification(self):
+        """Verifies PBKDF2-HMAC-SHA256 modular 600k hash creation and isolated authentication."""
+        import tempfile, json, os, secrets
+        from pathlib import Path
+        sample_pwd = f"SecTest!{secrets.token_hex(5)}Q2"
+        cached_hash = admin_auth.hash_password_v2(sample_pwd, iterations=600_000)
         self.assertTrue(cached_hash.startswith("pbkdf2_sha256$600000$"))
+        self.assertTrue(admin_auth.verify_password(sample_pwd, cached_hash))
 
-        # Subsequent verification uses upgraded hash
-        verified = admin_auth.verify_password("Admin@001", cached_hash)
-        self.assertTrue(verified)
+        with tempfile.TemporaryDirectory() as tmp:
+            store_path = Path(tmp) / "admin_accounts.json"
+            store_path.write_text(json.dumps({
+                "bootstrapped": True,
+                "accounts": {"fipp.admin": {"id": "fipp.admin", "username": "fipp.admin", "name": "FIPP System Administrator", "password_hash": cached_hash, "is_active": True}}
+            }), encoding="utf-8")
+            prev = os.environ.get("FIPP_ADMIN_STORE_FILE")
+            os.environ["FIPP_ADMIN_STORE_FILE"] = str(store_path)
+            try:
+                admin = admin_auth.authenticate_admin("fipp.admin", sample_pwd)
+                self.assertIsNotNone(admin)
+                self.assertEqual(admin["id"], "fipp.admin")
+            finally:
+                if prev is None: os.environ.pop("FIPP_ADMIN_STORE_FILE", None)
+                else: os.environ["FIPP_ADMIN_STORE_FILE"] = prev
 
     def test_04_invalid_credentials_rejected(self):
         """Verifies bad passwords fail authentication."""
-        admin = admin_auth.authenticate_admin("ADM-2026-001", "WrongPassword#999")
-        self.assertIsNone(admin)
+        admin = admin_auth.authenticate_admin("fipp.admin", "WrongPassword#999")
         self.assertIsNone(admin)
 
     # --------------------------------------------------------------------------

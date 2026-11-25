@@ -69,7 +69,7 @@ async function run() {
   // Click student demo credentials
   await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button'));
-    const sBtn = buttons.find(b => b.textContent && b.textContent.includes('STU-2026-001'));
+    const sBtn = buttons.find(b => b.textContent && b.textContent.includes('00123456'));
     if (sBtn) sBtn.click();
   });
   await new Promise(r => setTimeout(r, 500));

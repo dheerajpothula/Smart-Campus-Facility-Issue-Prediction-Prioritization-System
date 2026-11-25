@@ -183,7 +183,7 @@ sudo -u fipp /opt/fipp/smart-campus-facility-prediction/venv/bin/pip install -r 
 ```bash
 sudo cp .env.example /etc/fipp/.env
 PRODUCTION_SALT=$(openssl rand -hex 32)
-sudo sed -i "s/fipp_secure_salt_2026_aiml/$PRODUCTION_SALT/g" /etc/fipp/.env
+sudo sed -i "s/<configured-auth-salt>/$PRODUCTION_SALT/g" /etc/fipp/.env
 sudo sed -i "s|# FIPP_DATA_FILE=.*|FIPP_DATA_FILE=/var/lib/fipp/data/complaints.json|g" /etc/fipp/.env
 sudo sed -i "s|# FIPP_BACKUP_DIR=.*|FIPP_BACKUP_DIR=/var/backups/fipp|g" /etc/fipp/.env
 sudo chown root:fipp /etc/fipp/.env

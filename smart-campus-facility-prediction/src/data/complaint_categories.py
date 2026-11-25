@@ -1,7 +1,7 @@
 """
 FIPP — Complete Student Complaint Classification & Location Taxonomy (Stage 2).
 Authoritative hierarchy of all 19 Maintenance / Electrical complaint categories,
-subcategories, and specific complaint options extracted from LPU_RMS_Hostel_Maintenance_Data-v2.pdf.
+subcategories, and specific complaint options.
 """
 from typing import Dict, List, Optional
 
@@ -11,7 +11,7 @@ CATEGORY_TYPES = [
     "Maintenance / Electrical Complaints",
 ]
 
-# 2. Message Types (Exact options from LPU RMS portal)
+# 2. Message Types
 MESSAGE_TYPES = [
     "Grievance",
     "Assistance",
@@ -424,7 +424,7 @@ STAGE2_MANDATORY_DECLARATIONS = [
     "The information given by me regarding the complaint/request is true to the best of my knowledge and if found false/ wrong, necessary disciplinary action can be initiated against me.",
 ]
 
-# FAQ Confirmation Alert Text from LPU RMS PDF Page 2
+# FAQ Confirmation Alert Text
 FAQ_CONFIRMATION_TEXT = (
     "Please Agree if you have read the FAQs. Click OK to confirm or Cancel to open FAQs again."
 )

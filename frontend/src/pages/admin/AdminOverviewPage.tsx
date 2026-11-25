@@ -9,6 +9,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Notification } from '../../components/ui/Notification';
 import { ComplaintDetailsDrawer } from '../../components/admin/ComplaintDetailsDrawer';
+import { AdminDirectoryModal } from '../../components/admin/AdminDirectoryModal';
 import { WorkloadIntelligenceStrip } from '../../components/admin/intelligence/WorkloadIntelligenceStrip';
 import { formatDate } from '../../utils/formatters';
 import type { AnalyticsReportResponse, ComplaintDetail, DashboardKPIs } from '../../types';
@@ -22,6 +23,8 @@ import {
   Building,
   RefreshCw,
   Eye,
+  Users,
+  MapPin,
 } from 'lucide-react';
 
 export const AdminOverviewPage: React.FC = () => {
@@ -29,6 +32,7 @@ export const AdminOverviewPage: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsReportResponse | null>(null);
   const [recentComplaints, setRecentComplaints] = useState<ComplaintDetail[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<ComplaintDetail | null>(null);
+  const [directoryModalTab, setDirectoryModalTab] = useState<'students' | 'blocks' | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -70,14 +74,32 @@ export const AdminOverviewPage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => fetchOverviewData(false)}
-          leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-        >
-          Refresh Data
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDirectoryModalTab('students')}
+            leftIcon={<Users className="w-3.5 h-3.5" />}
+          >
+            Student Registry
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDirectoryModalTab('blocks')}
+            leftIcon={<MapPin className="w-3.5 h-3.5" />}
+          >
+            Blocks &amp; Floors
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchOverviewData(false)}
+            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+          >
+            Refresh Data
+          </Button>
+        </div>
       </div>
 
       {errorMsg && <Notification type="error" message={errorMsg} onClose={() => setErrorMsg(null)} />}
@@ -244,6 +266,13 @@ export const AdminOverviewPage: React.FC = () => {
           fetchOverviewData(true);
         }}
       />
+
+      {directoryModalTab && (
+        <AdminDirectoryModal
+          initialTab={directoryModalTab}
+          onClose={() => setDirectoryModalTab(null)}
+        />
+      )}
     </div>
   );
 };

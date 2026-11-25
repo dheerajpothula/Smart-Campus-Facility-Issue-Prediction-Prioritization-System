@@ -875,7 +875,7 @@ def render_student_dashboard() -> None:
                     f"""
                     <div class="system-alert-box">
                         <div style="font-weight: 750; color: #203A32; margin-bottom: 0.25rem;">
-                            System Alert (ums.lpu.in says)
+                            Campus Portal System Alert
                         </div>
                         <div style="color: #203A32; margin-bottom: 0.65rem;">
                             "{FAQ_CONFIRMATION_TEXT}"

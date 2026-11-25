@@ -14,6 +14,36 @@ export interface UserProfile {
   email?: string;
   block?: string | null;
   room_number?: string | null;
+  must_change_password?: boolean;
+}
+
+export interface ProvisionedStudent {
+  student_id: string;
+  name: string;
+  block?: string | null;
+  room_number?: string | null;
+  is_active: boolean;
+  provisioned_at?: string;
+  provisioned_by?: string;
+}
+
+export interface CampusFloorReference {
+  floor_id: string;
+  block_id: string;
+  floor_label: string;
+  sort_order: number;
+  verification_status: string;
+}
+
+export interface CampusBlockReference {
+  block_id: string;
+  display_name: string;
+  block_category: string;
+  floor_count: number | null;
+  floor_status: string;
+  verification_status: string;
+  notes?: string | null;
+  floors: CampusFloorReference[];
 }
 
 export interface AuthResponse {
@@ -55,6 +85,9 @@ export interface ComplaintDetail {
   specific_category?: string | null;
   facility_type: string;
   building: string;
+  block_id?: string | null;
+  floor_id?: string | null;
+  floor_label?: string | null;
   sub_block?: string | null;
   room_type?: string | null;
   room_number?: string | null;
@@ -214,6 +247,7 @@ export interface TaxonomyHierarchyResponse {
   maintenance_categories: string[];
   hierarchy: Record<string, Record<string, Record<string, string[]>>>;
   campus_blocks: string[];
+  blocks_reference?: CampusBlockReference[];
   campus_sub_blocks: string[];
   room_types: string[];
   time_slots: string[];
@@ -229,6 +263,9 @@ export interface StudentComplaintCreatePayload {
   sub_category?: string;
   specific_categories: string[];
   building: string;
+  block_id?: string;
+  floor_id?: string;
+  floor_label?: string;
   sub_block?: string;
   room_type: string;
   room_number?: string;

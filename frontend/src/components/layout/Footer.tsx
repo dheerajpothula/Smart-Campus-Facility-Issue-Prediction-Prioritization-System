@@ -56,7 +56,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-2 text-xs text-[#A8B9A3]">
               <li className="flex items-center gap-1.5">
                 <FileText className="w-3 h-3 text-[#A8B9A3]" />
-                LPU RMS 19-Category Standard
+                Campus 19-Category Facility Standard
               </li>
               <li>Audited PBKDF2-HMAC-SHA256 Auth</li>
               <li>Multi-Criteria Priority Index (MCPI)</li>

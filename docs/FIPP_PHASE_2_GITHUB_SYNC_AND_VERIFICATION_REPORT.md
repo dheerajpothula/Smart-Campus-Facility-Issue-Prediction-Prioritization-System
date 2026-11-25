@@ -158,7 +158,7 @@ Source-level inspection confirms that every portal component connects to the liv
    - `authService.getProfile()` -> `GET /api/auth/me` (Validates Bearer token).
    - `authService.logout()` -> `POST /api/auth/logout` (Revokes token on server denylist).
 2. **Taxonomy API:**
-   - `taxonomyService.getHierarchy()` -> `GET /api/taxonomy/hierarchy` (Loads the 19 official LPU RMS categories and subcategories dynamically).
+   - `taxonomyService.getHierarchy()` -> `GET /api/taxonomy/hierarchy` (Loads the 19 official Campus Facility Taxonomy categories and subcategories dynamically).
 3. **Student Complaint Workflows:**
    - `complaintService.submitStudentComplaint()` -> `POST /api/student/complaints/submit` (Generates genuine `CMP-...` token).
    - `complaintService.getStudentComplaints()` -> `GET /api/student/complaints` (Strictly filtered by student identity).

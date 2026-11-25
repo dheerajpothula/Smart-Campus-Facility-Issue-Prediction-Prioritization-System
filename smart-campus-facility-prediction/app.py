@@ -99,61 +99,12 @@ def main() -> None:
     selected_role = st.session_state.get("selected_role")
     user_role = st.session_state.get("user_role")
 
-    # Support URL query parameter for direct portal access (e.g. ?role=admin)
+    # Allow selecting portal role via URL param without bypassing authentication
     if not selected_role and not auth:
         param_role = st.query_params.get("role")
         if param_role in ["admin", "student"]:
             st.session_state["selected_role"] = param_role
             selected_role = param_role
-            if param_role == "admin" and st.query_params.get("auth") == "true":
-                adm_id = st.query_params.get("id", "ADM-2026-001")
-                adm_rec = _ADMIN_CREDENTIALS_STORE.get(adm_id) or _ADMIN_CREDENTIALS_STORE["ADM-2026-001"]
-                auth = {
-                    "role": "admin",
-                    "name": adm_rec["name"],
-                    "id": adm_rec["id"],
-                    "title": adm_rec.get("title", "Facility Operations Lead"),
-                    "role_title": adm_rec.get("title", "Facility Operations Lead"),
-                }
-                st.session_state["auth_user"] = auth
-                st.session_state["user_role"] = "admin"
-                if st.query_params.get("page"):
-                    st.session_state["admin_active_page"] = st.query_params.get("page")
-                if st.query_params.get("selected"):
-                    st.session_state["admin_selected_complaint_id"] = st.query_params.get("selected")
-            elif param_role == "student" and st.query_params.get("auth") == "true":
-                s_name = st.query_params.get("name", "Student")
-                s_id = st.query_params.get("id", "STU-2026-001")
-                auth = {"role": "student", "name": s_name, "id": s_id}
-                st.session_state["auth_user"] = auth
-                st.session_state["user_role"] = "student"
-                if st.query_params.get("view"):
-                    st.session_state["student_active_view"] = st.query_params.get("view")
-                if st.query_params.get("agreed") == "true":
-                    st.session_state["student_agreed"] = True
-                if st.query_params.get("msg_type"):
-                    st.session_state["sq_message_type"] = st.query_params.get("msg_type")
-                if st.query_params.get("category"):
-                    st.session_state["sq_category"] = st.query_params.get("category")
-                if st.query_params.get("sub_category"):
-                    sub_val = st.query_params.get("sub_category")
-                    st.session_state["sq_sub_category"] = sub_val
-                    if st.query_params.get("faq_ok") == "true":
-                        st.session_state["sq_faq_confirmed_sub"] = sub_val
-                if st.query_params.get("room_type"):
-                    st.session_state["sq_room_type"] = st.query_params.get("room_type")
-                if st.query_params.get("block"):
-                    st.session_state["sq_block"] = st.query_params.get("block")
-                if st.query_params.get("val_err") == "true":
-                    st.session_state["sq_validation_errors"] = [
-                        "Please select a Message Type before submitting.",
-                        "Please select or enter your Hostel / Campus Block.",
-                        "Please select your Sub Block / Wing.",
-                        "Please select a Room Type (Room No or Any Other).",
-                        "Contact Number is mandatory. Please enter your mobile number.",
-                        "Please select a preferred time slot for facility inspection.",
-                        "Detailed Description is mandatory.",
-                    ]
 
     # Support for test harnesses that assign user_role directly
     if not auth and user_role in ["student", "admin"]:
@@ -193,9 +144,9 @@ def main() -> None:
     # 4. ROLE: Administrator Dashboard (LEFT-SIDE Navigation Sidebar & Full Main Workspace)
     # =========================================================================
     if auth and auth.get("role") == "admin":
-        admin_name = auth.get("name", "Administrator")
-        admin_id = auth.get("id", "ADM-2026-001")
-        admin_title = auth.get("title") or auth.get("role_title", "Facility Operations Lead")
+        admin_name = auth.get("name", "FIPP System Administrator")
+        admin_id = auth.get("id", "fipp.admin")
+        admin_title = auth.get("title") or auth.get("role_title", "System Administrator")
 
         # LEFT-SIDE navigation sidebar
         with st.sidebar:

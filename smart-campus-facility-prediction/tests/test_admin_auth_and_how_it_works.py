@@ -24,8 +24,8 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.auth.admin_auth import (
     authenticate_admin,
     hash_password,
+    verify_password,
     verify_admin_session,
-    _ADMIN_CREDENTIALS_STORE,
 )
 from dashboard.components import role_selection, admin_login
 
@@ -51,122 +51,87 @@ class TestAdminAuthAndHowItWorks(unittest.TestCase):
         self.assertNotIn("100% Student", source)
 
     def test_password_hashing_security(self):
-        """Validates that password hashes are non-trivial PBKDF2-HMAC-SHA256 strings and not plaintext."""
-        # Exactly 3 authorized administrator accounts
-        self.assertEqual(len(_ADMIN_CREDENTIALS_STORE), 3)
-        self.assertNotIn("admin", _ADMIN_CREDENTIALS_STORE)
-        self.assertIn("ADM-2026-001", _ADMIN_CREDENTIALS_STORE)
-        self.assertIn("ADM-2026-002", _ADMIN_CREDENTIALS_STORE)
-        self.assertIn("ADM-2026-003", _ADMIN_CREDENTIALS_STORE)
-
-        for admin_id, rec in _ADMIN_CREDENTIALS_STORE.items():
-            self.assertIn("password_hash", rec)
-            p_hash = rec["password_hash"]
-            # 64-char hex string
-            self.assertEqual(len(p_hash), 64)
-            # Not plaintext passwords
-            self.assertNotIn("Admin@", p_hash)
-            self.assertNotIn("Admin@2026", p_hash)
-
-        # Hash reproducibility and individual correctness
-        self.assertEqual(hash_password("Admin@001"), _ADMIN_CREDENTIALS_STORE["ADM-2026-001"]["password_hash"])
-        self.assertEqual(hash_password("Admin@002"), _ADMIN_CREDENTIALS_STORE["ADM-2026-002"]["password_hash"])
-        self.assertEqual(hash_password("Admin@003"), _ADMIN_CREDENTIALS_STORE["ADM-2026-003"]["password_hash"])
+        """Validates that password hashes are modular PBKDF2-HMAC-SHA256 strings with random salts."""
+        import tempfile, json, secrets
+        from pathlib import Path
+        sample_pwd = f"TestHash!{secrets.token_hex(4)}Z1"
+        p_hash = hash_password(sample_pwd)
+        self.assertTrue(p_hash.startswith("pbkdf2_sha256$600000$"))
+        self.assertNotIn(sample_pwd, p_hash)
+        self.assertTrue(verify_password(sample_pwd, p_hash))
+        self.assertFalse(verify_password("wrong", p_hash))
 
     def test_admin_authentication_valid_credentials(self):
-        """Validates that legitimate administrator logins succeed with assigned credentials and titles."""
-        # 1. ADM-2026-001 | Admin@001 | Facility Operations Lead
-        auth_user1 = authenticate_admin("ADM-2026-001", "Admin@001")
-        self.assertIsNotNone(auth_user1)
-        self.assertEqual(auth_user1["role"], "admin")
-        self.assertEqual(auth_user1["id"], "ADM-2026-001")
-        self.assertEqual(auth_user1["title"], "Facility Operations Lead")
-        self.assertEqual(auth_user1["role_title"], "Facility Operations Lead")
-
-        # 2. ADM-2026-002 | Admin@002 | Campus Infrastructure Admin
-        auth_user2 = authenticate_admin("ADM-2026-002", "Admin@002")
-        self.assertIsNotNone(auth_user2)
-        self.assertEqual(auth_user2["role"], "admin")
-        self.assertEqual(auth_user2["id"], "ADM-2026-002")
-        self.assertEqual(auth_user2["title"], "Campus Infrastructure Admin")
-        self.assertEqual(auth_user2["role_title"], "Campus Infrastructure Admin")
-
-        # 3. ADM-2026-003 | Admin@003 | Maintenance Dispatcher
-        auth_user3 = authenticate_admin("ADM-2026-003", "Admin@003")
-        self.assertIsNotNone(auth_user3)
-        self.assertEqual(auth_user3["role"], "admin")
-        self.assertEqual(auth_user3["id"], "ADM-2026-003")
-        self.assertEqual(auth_user3["title"], "Maintenance Dispatcher")
-        self.assertEqual(auth_user3["role_title"], "Maintenance Dispatcher")
+        """Validates administrator authentication against an isolated bootstrapped admin store."""
+        import tempfile, json, os, secrets
+        from pathlib import Path
+        sample_pwd = f"BootTest!{secrets.token_hex(5)}A1"
+        with tempfile.TemporaryDirectory() as tmp:
+            store_path = Path(tmp) / "admin_accounts.json"
+            store_path.write_text(json.dumps({
+                "bootstrapped": True,
+                "accounts": {
+                    "fipp.admin": {
+                        "id": "fipp.admin",
+                        "username": "fipp.admin",
+                        "name": "FIPP System Administrator",
+                        "title": "System Administrator",
+                        "password_hash": hash_password(sample_pwd),
+                        "is_active": True,
+                        "must_change_password": False,
+                    }
+                }
+            }), encoding="utf-8")
+            prev = os.environ.get("FIPP_ADMIN_STORE_FILE")
+            os.environ["FIPP_ADMIN_STORE_FILE"] = str(store_path)
+            try:
+                auth_user = authenticate_admin("fipp.admin", sample_pwd)
+                self.assertIsNotNone(auth_user)
+                self.assertEqual(auth_user["role"], "admin")
+                self.assertEqual(auth_user["id"], "fipp.admin")
+            finally:
+                if prev is None: os.environ.pop("FIPP_ADMIN_STORE_FILE", None)
+                else: os.environ["FIPP_ADMIN_STORE_FILE"] = prev
 
     def test_admin_authentication_invalid_credentials_rejected(self):
-        """Validates that incorrect passwords, cross-passwords, old 'admin', and unknown IDs are rejected."""
-        # Old generic 'admin' login removed completely
-        self.assertIsNone(authenticate_admin("admin", "Admin@2026"))
-        self.assertIsNone(authenticate_admin("admin", "Admin@001"))
-        self.assertIsNone(authenticate_admin("admin", "admin"))
-
-        # Old password 'Admin@2026' rejected for all accounts
-        self.assertIsNone(authenticate_admin("ADM-2026-001", "Admin@2026"))
-        self.assertIsNone(authenticate_admin("ADM-2026-002", "Admin@2026"))
-        self.assertIsNone(authenticate_admin("ADM-2026-003", "Admin@2026"))
-
-        # Cross-passwords rejected (account A password with account B ID)
-        self.assertIsNone(authenticate_admin("ADM-2026-001", "Admin@002"))
-        self.assertIsNone(authenticate_admin("ADM-2026-001", "Admin@003"))
-        self.assertIsNone(authenticate_admin("ADM-2026-002", "Admin@001"))
-        self.assertIsNone(authenticate_admin("ADM-2026-002", "Admin@003"))
-        self.assertIsNone(authenticate_admin("ADM-2026-003", "Admin@001"))
-        self.assertIsNone(authenticate_admin("ADM-2026-003", "Admin@002"))
-
-        # Wrong passwords
-        self.assertIsNone(authenticate_admin("ADM-2026-001", "WrongPassword!"))
-        self.assertIsNone(authenticate_admin("ADM-2026-002", "123456"))
-        self.assertIsNone(authenticate_admin("ADM-2026-003", "password"))
-
-        # Unknown IDs
-        self.assertIsNone(authenticate_admin("hacker", "Admin@001"))
-        self.assertIsNone(authenticate_admin("STU-2026-001", "Admin@001"))
-
-        # Empty / whitespace
-        self.assertIsNone(authenticate_admin("", "Admin@001"))
-        self.assertIsNone(authenticate_admin("ADM-2026-001", ""))
+        """Validates that old sample accounts, unknown IDs, and incorrect passwords are rejected."""
+        self.assertIsNone(authenticate_admin("admin", "password"))
+        self.assertIsNone(authenticate_admin("fipp.admin", "WrongPassword!1"))
+        self.assertIsNone(authenticate_admin("hacker", "WrongPassword!2"))
+        self.assertIsNone(authenticate_admin("", "nonempty"))
+        self.assertIsNone(authenticate_admin("fipp.admin", ""))
         self.assertIsNone(authenticate_admin("   ", "   "))
 
     def test_fipp_admin_password_env_does_not_override_credentials(self):
-        """Validates that FIPP_ADMIN_PASSWORD environment variable does not override individual credentials."""
-        original_env = os.environ.get("FIPP_ADMIN_PASSWORD")
-        try:
+        """Validates that FIPP_ADMIN_PASSWORD environment variable does not override stored credentials."""
+        import tempfile, json, secrets
+        sample_pwd = f"EnvIsolation!{secrets.token_hex(5)}R5"
+        with tempfile.TemporaryDirectory() as tmp:
+            store_path = Path(tmp) / "admin_accounts.json"
+            store_path.write_text(json.dumps({
+                "bootstrapped": True,
+                "accounts": {"fipp.admin": {"id": "fipp.admin", "username": "fipp.admin", "name": "FIPP System Administrator", "password_hash": hash_password(sample_pwd), "is_active": True}}
+            }), encoding="utf-8")
+            prev_store = os.environ.get("FIPP_ADMIN_STORE_FILE")
+            original_env = os.environ.get("FIPP_ADMIN_PASSWORD")
+            os.environ["FIPP_ADMIN_STORE_FILE"] = str(store_path)
             os.environ["FIPP_ADMIN_PASSWORD"] = "OverridingMasterPass123"
-
-            # Attempting to use the environment override as password must fail
-            self.assertIsNone(authenticate_admin("ADM-2026-001", "OverridingMasterPass123"))
-            self.assertIsNone(authenticate_admin("ADM-2026-002", "OverridingMasterPass123"))
-            self.assertIsNone(authenticate_admin("ADM-2026-003", "OverridingMasterPass123"))
-
-            # Individual credentials must continue to work strictly
-            self.assertIsNotNone(authenticate_admin("ADM-2026-001", "Admin@001"))
-            self.assertIsNotNone(authenticate_admin("ADM-2026-002", "Admin@002"))
-            self.assertIsNotNone(authenticate_admin("ADM-2026-003", "Admin@003"))
-        finally:
-            if original_env is not None:
-                os.environ["FIPP_ADMIN_PASSWORD"] = original_env
-            else:
-                os.environ.pop("FIPP_ADMIN_PASSWORD", None)
+            try:
+                self.assertIsNone(authenticate_admin("fipp.admin", "OverridingMasterPass123"))
+                self.assertIsNotNone(authenticate_admin("fipp.admin", sample_pwd))
+            finally:
+                if prev_store is None: os.environ.pop("FIPP_ADMIN_STORE_FILE", None)
+                else: os.environ["FIPP_ADMIN_STORE_FILE"] = prev_store
+                if original_env is not None: os.environ["FIPP_ADMIN_PASSWORD"] = original_env
+                else: os.environ.pop("FIPP_ADMIN_PASSWORD", None)
 
     def test_student_cannot_access_admin_operations(self):
         """Validates that Student sessions cannot pass the Administrator session verification guard."""
-        student_session = {"role": "student", "id": "STU-2026-101", "name": "Alex Chen"}
+        student_session = {"role": "student", "id": "00123456", "name": "Alex Chen"}
         self.assertFalse(verify_admin_session(student_session))
-
-        unauthenticated_session = None
-        self.assertFalse(verify_admin_session(unauthenticated_session))
-
-        empty_session = {}
-        self.assertFalse(verify_admin_session(empty_session))
-
-        # Legitimate admin session
-        admin_session = {"role": "admin", "id": "ADM-2026-001", "name": "Administrator"}
+        self.assertFalse(verify_admin_session(None))
+        self.assertFalse(verify_admin_session({}))
+        admin_session = {"role": "admin", "id": "fipp.admin", "name": "FIPP System Administrator"}
         self.assertTrue(verify_admin_session(admin_session))
 
     def test_admin_login_screen_components(self):

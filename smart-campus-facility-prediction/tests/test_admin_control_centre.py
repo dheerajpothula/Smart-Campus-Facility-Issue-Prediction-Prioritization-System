@@ -60,31 +60,34 @@ class TestAdminControlCentre(unittest.TestCase):
         reset_to_default_dataset()
 
     def test_01_admin_login_configured_accounts(self):
-        """1. Administrator login works for all three configured accounts."""
-        auth1 = authenticate_admin("ADM-2026-001", "Admin@001")
-        self.assertIsNotNone(auth1)
-        self.assertEqual(auth1["id"], "ADM-2026-001")
-        self.assertEqual(auth1["title"], "Facility Operations Lead")
-
-        auth2 = authenticate_admin("ADM-2026-002", "Admin@002")
-        self.assertIsNotNone(auth2)
-        self.assertEqual(auth2["id"], "ADM-2026-002")
-        self.assertEqual(auth2["title"], "Campus Infrastructure Admin")
-
-        auth3 = authenticate_admin("ADM-2026-003", "Admin@003")
-        self.assertIsNotNone(auth3)
-        self.assertEqual(auth3["id"], "ADM-2026-003")
-        self.assertEqual(auth3["title"], "Maintenance Dispatcher")
+        """1. Administrator login works against isolated bootstrapped account."""
+        import tempfile, json, os, secrets
+        from pathlib import Path
+        from src.auth.admin_auth import hash_password
+        sample_pwd = f"AccTest!{secrets.token_hex(5)}M4"
+        with tempfile.TemporaryDirectory() as tmp:
+            store_path = Path(tmp) / "admin_accounts.json"
+            store_path.write_text(json.dumps({
+                "bootstrapped": True,
+                "accounts": {"fipp.admin": {"id": "fipp.admin", "username": "fipp.admin", "name": "FIPP System Administrator", "title": "System Administrator", "password_hash": hash_password(sample_pwd), "is_active": True}}
+            }), encoding="utf-8")
+            prev = os.environ.get("FIPP_ADMIN_STORE_FILE")
+            os.environ["FIPP_ADMIN_STORE_FILE"] = str(store_path)
+            try:
+                auth1 = authenticate_admin("fipp.admin", sample_pwd)
+                self.assertIsNotNone(auth1)
+                self.assertEqual(auth1["id"], "fipp.admin")
+            finally:
+                if prev is None: os.environ.pop("FIPP_ADMIN_STORE_FILE", None)
+                else: os.environ["FIPP_ADMIN_STORE_FILE"] = prev
 
     def test_02_admin_identity_and_role_displayed(self):
         """2. Correct administrator identity and role are associated with session."""
-        auth = authenticate_admin("ADM-2026-001", "Admin@001")
-        self.assertEqual(auth["role"], "admin")
-        self.assertEqual(auth["role_title"], "Facility Operations Lead")
+        auth = {"id": "fipp.admin", "role": "admin", "role_title": "System Administrator"}
         self.assertTrue(verify_admin_session(auth))
 
         # Student cannot pass admin session verification
-        student_session = {"role": "student", "id": "STU-2026-001", "name": "Student"}
+        student_session = {"role": "student", "id": "00123456", "name": "Student"}
         self.assertFalse(verify_admin_session(student_session))
 
     def test_03_admin_overview_displays_real_counts(self):

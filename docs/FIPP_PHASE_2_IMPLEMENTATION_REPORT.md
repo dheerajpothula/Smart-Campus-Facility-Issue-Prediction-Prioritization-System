@@ -49,7 +49,7 @@
 - `frontend/src/context/AuthContext.tsx` — Universal React authentication context providing login, logout, profile state, and session initialization.
 - `frontend/src/services/apiClient.ts` — Centralized HTTP client managing Bearer token injection, 401 token refresh interceptors, and error normalization.
 - `frontend/src/services/authService.ts` — Auth service executing login, token refresh, profile retrieval, and server-side logout revocation.
-- `frontend/src/services/taxonomyService.ts` — Taxonomy service fetching and caching the 19-category LPU RMS hierarchy.
+- `frontend/src/services/taxonomyService.ts` — Taxonomy service fetching and caching the 19-category Campus Facility Taxonomy hierarchy.
 - `frontend/src/services/complaintService.ts` — Full complaint lifecycle service connecting student queries, admin triage, status updates, and reports.
 - `frontend/src/services/uploadService.ts` — Photo upload service validating MIME types, checking 10MB limits, and uploading attachments.
 
@@ -85,7 +85,7 @@
   3. **Prioritize:** Actionable triage queues for campus maintenance squads.
 
 ### 2.2 Student Portal
-- **Identity Banner:** Displays authenticated student's registration ID (`STU-2026-001`), full name, hostel/block, and session termination control.
+- **Identity Banner:** Displays authenticated student's registration ID (`legacy-student-id`), full name, hostel/block, and session termination control.
 - **Raise a Query:**
   - Cascading 3-level taxonomy dynamically loaded from `/api/taxonomy/hierarchy` with automatic dependent field resets.
   - 500-character description limit with real-time character counter and minimum length validation.

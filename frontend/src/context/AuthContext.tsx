@@ -8,6 +8,8 @@ interface AuthContextType {
   role: UserRole | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<UserProfile>;
+  studentLogin: (studentName: string, studentId: string) => Promise<UserProfile>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<UserProfile>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -56,6 +58,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const studentLogin = async (studentName: string, studentId: string): Promise<UserProfile> => {
+    setLoading(true);
+    try {
+      const res = await authService.studentLogin(studentName, studentId);
+      setUser(res.user);
+      return res.user;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<UserProfile> => {
+    const res = await authService.changePassword(currentPassword, newPassword);
+    setUser(res.user);
+    return res.user;
+  };
+
   const logout = async () => {
     setLoading(true);
     try {
@@ -74,6 +93,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: user?.role || null,
         loading,
         login,
+        studentLogin,
+        changePassword,
         logout,
         refreshProfile,
       }}

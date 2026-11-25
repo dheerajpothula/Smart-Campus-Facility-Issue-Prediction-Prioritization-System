@@ -77,7 +77,7 @@ export const LandingPage: React.FC = () => {
               <div className="pt-4 flex flex-wrap items-center gap-6 text-xs text-[#52605B]">
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-[#203A32]" />
-                  <span>19-Category LPU RMS Taxonomy</span>
+                  <span>19-Category Facility Taxonomy</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-[#203A32]" />
@@ -110,7 +110,7 @@ export const LandingPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-lg bg-white border border-[#DCE5D8]">
                       <span className="text-[10px] uppercase font-semibold text-[#52605B]">Campus Blocks</span>
-                      <p className="text-lg font-bold text-[#172D28] mt-0.5">38 Buildings</p>
+                      <p className="text-lg font-bold text-[#172D28] mt-0.5">Block &amp; Floor Hierarchy</p>
                     </div>
                     <div className="p-3 rounded-lg bg-white border border-[#DCE5D8]">
                       <span className="text-[10px] uppercase font-semibold text-[#52605B]">Classification</span>
@@ -205,7 +205,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <h4 className="font-semibold text-sm text-[#172D28]">Rule-Based Triage &amp; MCPI</h4>
               <p className="text-xs text-[#52605B] leading-relaxed">
-                Deterministic 4-factor priority scoring and 19-category LPU RMS taxonomy routing executing inside the Python backend.
+                Deterministic 4-factor priority scoring and 19-category facility taxonomy routing executing inside the Python backend.
               </p>
             </div>
 

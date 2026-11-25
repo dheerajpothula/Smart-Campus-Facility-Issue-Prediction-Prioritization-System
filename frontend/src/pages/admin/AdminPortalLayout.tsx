@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/Card';
+import { Notification } from '../../components/ui/Notification';
 import {
   LayoutDashboard,
   ListFilter,
@@ -13,13 +17,43 @@ import {
   Shield,
   Menu,
   X,
-  User,
+  KeyRound,
 } from 'lucide-react';
 
 export const AdminPortalLayout: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, changePassword } = useAuth();
   const navigate = useNavigate();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const [currPwd, setCurrPwd] = useState('');
+  const [newPwd, setNewPwd] = useState('');
+  const [confirmPwd, setConfirmPwd] = useState('');
+  const [pwdErr, setPwdErr] = useState<string | null>(null);
+  const [pwdSaving, setPwdSaving] = useState(false);
+
+  const handleForcedPasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwdErr(null);
+    if (newPwd !== confirmPwd) {
+      setPwdErr('New password and confirmation do not match.');
+      return;
+    }
+    if (newPwd.length < 12) {
+      setPwdErr('New password must be at least 12 characters with uppercase, lowercase, digit, and special character.');
+      return;
+    }
+    setPwdSaving(true);
+    try {
+      await changePassword(currPwd, newPwd);
+      setCurrPwd('');
+      setNewPwd('');
+      setConfirmPwd('');
+    } catch (err: any) {
+      setPwdErr(err.message || 'Unable to update password.');
+    } finally {
+      setPwdSaving(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -145,7 +179,54 @@ export const AdminPortalLayout: React.FC = () => {
 
         {/* Content Body */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <Outlet />
+          {user?.must_change_password ? (
+            <div className="max-w-md mx-auto py-8">
+              <Card>
+                <CardHeader>
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <KeyRound className="w-4 h-4 text-[#203A32]" /> First-Login Password Update Required
+                    </CardTitle>
+                    <CardDescription>
+                      Replace your temporary bootstrap password before accessing Control Centre operations.
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <form onSubmit={handleForcedPasswordChange} className="space-y-4">
+                    {pwdErr && <Notification type="error" message={pwdErr} onClose={() => setPwdErr(null)} />}
+                    <Input
+                      label="Current Temporary Password"
+                      type="password"
+                      value={currPwd}
+                      onChange={(e) => setCurrPwd(e.target.value)}
+                      required
+                    />
+                    <Input
+                      label="New Strong Password"
+                      type="password"
+                      value={newPwd}
+                      onChange={(e) => setNewPwd(e.target.value)}
+                      helperText="Minimum 12 characters with upper, lower, number & symbol."
+                      required
+                    />
+                    <Input
+                      label="Confirm New Password"
+                      type="password"
+                      value={confirmPwd}
+                      onChange={(e) => setConfirmPwd(e.target.value)}
+                      required
+                    />
+                    <Button type="submit" variant="primary" className="w-full" isLoading={pwdSaving}>
+                      Update Password & Unlock Control Centre
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Outlet />
+          )}
         </main>
       </div>
     </div>

@@ -14,8 +14,10 @@ from app.api.deps import reset_rate_limiter
 from app.main import app
 from app.services.complaint_service import complaint_service
 from app.services.intelligence_service import IntelligenceService, intelligence_service
+from tests.helpers import admin_headers, setup_isolated_environment, student_headers
 
 client = TestClient(app)
+_CTX: dict = {}
 
 
 @pytest.fixture(autouse=True)
@@ -28,13 +30,12 @@ def clear_rate_limits():
 @pytest.fixture
 def isolated_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Provides an isolated temporary complaints JSON store for deterministic Phase 7 tests."""
-    temp_file = tmp_path / "complaints_phase7.json"
     now = datetime.now()
     seed = [
         {
             "complaint_id": "CMP-2026-901",
-            "student_id": "STU101",
-            "student_name": "Rahul Sharma",
+            "student_id": "00123456",
+            "student_name": "Aarav Sharma",
             "category": "Electricity",
             "facility_type": "Electricity",
             "building": "Academic Block 1",
@@ -51,8 +52,8 @@ def isolated_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         },
         {
             "complaint_id": "CMP-2026-902",
-            "student_id": "STU102",
-            "student_name": "Priya Patel",
+            "student_id": "00123457",
+            "student_name": "Priya Nair",
             "category": "Plumbing",
             "facility_type": "Plumbing",
             "building": "Hostel Block B",
@@ -71,8 +72,8 @@ def isolated_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         },
         {
             "complaint_id": "CMP-2026-903",
-            "student_id": "STU101",
-            "student_name": "Rahul Sharma",
+            "student_id": "00123456",
+            "student_name": "Aarav Sharma",
             "category": "Carpentry",
             "facility_type": "Carpentry",
             "building": "BH-1 Boys Hostel",
@@ -86,7 +87,7 @@ def isolated_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "status": "Resolved",
             "allotted_person": "Satish Verma",
             "department": "Carpentry Squad",
-            "resolved_by": "ADM-2026-001",
+            "resolved_by": "fipp.admin",
             "closing_remarks": "Tightened hinge screws.",
             "is_reopened": True,
             "date_reported": (now - timedelta(days=5)).strftime("%Y-%m-%d %H:%M"),
@@ -94,19 +95,22 @@ def isolated_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "remarks_history": [],
         },
     ]
-    temp_file.write_text(json.dumps(seed, indent=2), encoding="utf-8")
-    monkeypatch.setattr(complaint_service, "data_file", temp_file)
-    return temp_file
+    env = setup_isolated_environment(tmp_path, monkeypatch, seed_complaints=seed)
+    _CTX.clear()
+    _CTX.update(env)
+    return env["data_file"]
 
 
-def _auth_headers(username: str, password: str) -> dict:
-    res = client.post("/api/auth/login", json={"username": username, "password": password})
-    assert res.status_code == 200, res.text
-    return {"Authorization": f"Bearer {res.json()['access_token']}"}
+def _adm_headers() -> dict:
+    return admin_headers(client, _CTX["admin_username"], _CTX["admin_password"])
+
+
+def _stu_headers() -> dict:
+    return student_headers(client, "Aarav Sharma", "00123456")
 
 
 def test_mcpi_calculation_consistency_and_thresholds(isolated_store):
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    adm_headers = _adm_headers()
 
     # Fetch intelligence for Critical Server Room complaint (0.35*100 + 0.25*100 + 0.25*85 + 0.15*90 = 94.8)
     res = client.get("/api/admin/intelligence/complaint/CMP-2026-901", headers=adm_headers)
@@ -134,7 +138,7 @@ def test_mcpi_calculation_consistency_and_thresholds(isolated_store):
 
 
 def test_shap_missing_artifact_and_missing_explainer_handling(isolated_store, tmp_path: Path):
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    adm_headers = _adm_headers()
 
     # Live environment: no model artifacts and no shap installed -> honest unavailable state
     res = client.get("/api/admin/intelligence/complaint/CMP-2026-901", headers=adm_headers)
@@ -167,7 +171,7 @@ def test_shap_missing_artifact_and_missing_explainer_handling(isolated_store, tm
 
 
 def test_shap_supported_model_and_explainer_bundle(isolated_store, monkeypatch: pytest.MonkeyPatch):
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    adm_headers = _adm_headers()
 
     def fake_bundle():
         return {
@@ -203,8 +207,8 @@ def test_shap_supported_model_and_explainer_bundle(isolated_store, monkeypatch: 
 
 
 def test_admin_only_intelligence_rbac_and_student_isolation(isolated_store):
-    stu_headers = _auth_headers("STU101", "student123")
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    stu_headers = _stu_headers()
+    adm_headers = _adm_headers()
 
     admin_only_gets = [
         "/api/admin/intelligence/overview",
@@ -232,7 +236,7 @@ def test_admin_only_intelligence_rbac_and_student_isolation(isolated_store):
     stu_list = client.get("/api/student/complaints", headers=stu_headers)
     assert stu_list.status_code == 200
     for rec in stu_list.json()["records"]:
-        assert rec["student_id"] == "STU101"
+        assert rec["student_id"] == "00123456"
         assert rec.get("mcpi_details") is None
 
     # Health check must not leak internal filesystem paths
@@ -241,7 +245,7 @@ def test_admin_only_intelligence_rbac_and_student_isolation(isolated_store):
 
 
 def test_invalid_inputs_and_rate_limiting(isolated_store):
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    adm_headers = _adm_headers()
 
     # Whitespace-only or too-short text rejected
     assert client.post("/api/ml/analyze", json={"text": "   "}, headers=adm_headers).status_code == 422
@@ -259,7 +263,7 @@ def test_invalid_inputs_and_rate_limiting(isolated_store):
 
 
 def test_workload_analytics_and_empty_dataset_handling(isolated_store):
-    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+    adm_headers = _adm_headers()
 
     rep = client.get("/api/admin/reports/analytics", headers=adm_headers).json()
     workload = rep["workload_summary"]
