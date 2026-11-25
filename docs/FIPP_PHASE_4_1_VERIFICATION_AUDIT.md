@@ -174,4 +174,8 @@ The prior Phase 4 `scripts/capture_phase4_screenshots.js` had matched `'Sign In 
 
 ## 11. Git Commit & Remote Verification Details
 
-*Populated upon committing and pushing Phase 4.1 corrections to `origin/main`.*
+- **Branch:** `main`
+- **Pre-Audit Base Commit:** `04d3497b6c7cb7e563531ebe9da616d6808ac198` (`feat(phase4): complete administrator control centre redesign`)
+- **Phase 4.1 Audit & Corrections Commit:** `77a087cda035009cb5a6db76e102c58accd9a177` (`fix(phase4.1): verify and correct admin control centre analytics, rbac, and drawer`)
+- **Remote:** `origin/main` (pushed and verified via `git ls-remote origin main` matching local `HEAD`)
+- **Preservation:** No force-push performed, no historical CSV or database migration executed, and unrelated workspace files remain untouched.
