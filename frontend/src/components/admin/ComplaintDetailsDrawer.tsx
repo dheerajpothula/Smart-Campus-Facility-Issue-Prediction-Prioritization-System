@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { complaintService } from '../../services/complaintService';
+import { intelligenceService } from '../../services/intelligenceService';
 import { uploadService } from '../../services/uploadService';
 import { TokenManager } from '../../services/apiClient';
 import { Badge } from '../ui/Badge';
@@ -8,24 +9,22 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { Notification } from '../ui/Notification';
+import { McpiBreakdownCard } from './intelligence/McpiBreakdownCard';
+import { ShapExplainabilityCard } from './intelligence/ShapExplainabilityCard';
 import { formatDate, formatDateTime } from '../../utils/formatters';
-import type { ComplaintDetail } from '../../types';
+import type { ComplaintDetail, ComplaintIntelligenceResponse } from '../../types';
 import {
   X,
   User,
   MapPin,
-  Calendar,
   Clock,
   Phone,
   FileText,
-  AlertTriangle,
   CheckCircle2,
   Send,
   RotateCcw,
   Star,
   Shield,
-  Layers,
-  Wrench,
   Check,
   Ban,
   ExternalLink,
@@ -69,6 +68,11 @@ export const ComplaintDetailsDrawer: React.FC<ComplaintDetailsDrawerProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Intelligence & SHAP state
+  const [intelligence, setIntelligence] = useState<ComplaintIntelligenceResponse | null>(null);
+  const [loadingIntel, setLoadingIntel] = useState<boolean>(false);
+  const [intelError, setIntelError] = useState<string | null>(null);
+
   // Sync state whenever selected ticket changes
   useEffect(() => {
     if (ticket) {
@@ -82,6 +86,41 @@ export const ComplaintDetailsDrawer: React.FC<ComplaintDetailsDrawerProps> = ({
       setSuccessMsg(null);
     }
   }, [ticket]);
+
+  // Fetch complaint-level MCPI & SHAP availability when drawer opens
+  useEffect(() => {
+    if (!isOpen || !ticket?.complaint_id) {
+      setIntelligence(null);
+      setIntelError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingIntel(true);
+    setIntelError(null);
+    intelligenceService
+      .getComplaintIntelligence(ticket.complaint_id)
+      .then((res) => {
+        if (!cancelled) {
+          setIntelligence(res);
+        }
+      })
+      .catch((err: any) => {
+        if (!cancelled) {
+          setIntelligence(null);
+          setIntelError(err?.message || 'Unable to verify SHAP explainability status.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoadingIntel(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, ticket?.complaint_id, ticket?.priority_score, ticket?.status]);
 
   // Close drawer on Escape key
   useEffect(() => {
@@ -382,38 +421,18 @@ export const ComplaintDetailsDrawer: React.FC<ComplaintDetailsDrawerProps> = ({
               </div>
             </div>
 
-            {/* MCPI Priority Details & Breakdown */}
-            <div className="p-4 rounded-xl bg-white border border-[#DCE5D8] space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-[#52605B] uppercase tracking-wider flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-[#203A32]" /> Multi-Criteria Priority (MCPI)
-                </span>
-                <span className="text-xs font-mono font-bold text-[#172D28]">
-                  Score: {ticket.priority_score.toFixed(1)} / 100
-                </span>
-              </div>
+            {/* MCPI Priority Details & Breakdown (Authoritative Rule-Based Scoring) */}
+            <McpiBreakdownCard
+              ticket={ticket}
+              mcpiDetails={intelligence?.mcpi || ticket.mcpi_details}
+            />
 
-              {ticket.score_breakdown && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                  {(() => {
-                    const entries = Object.entries(ticket.score_breakdown);
-                    const isRatioScale = entries.every(([, v]) => Number(v) <= 1.0);
-                    return entries.map(([k, val]) => (
-                      <div key={k} className="p-2 rounded-lg bg-[#F5F7F2] border border-[#DCE5D8] text-center">
-                        <span className="text-[9px] uppercase font-semibold text-[#52605B] block truncate" title={k}>
-                          {k.replace('weight_', '').replace(' Contribution', '').replace(/_/g, ' ')}
-                        </span>
-                        <span className="text-xs font-bold text-[#172D28] font-mono mt-0.5 block">
-                          {isRatioScale
-                            ? `${(Number(val) * 100).toFixed(0)}%`
-                            : `${Number(val).toFixed(1)} pts`}
-                        </span>
-                      </div>
-                    ));
-                  })()}
-                </div>
-              )}
-            </div>
+            {/* SHAP Explainability Status */}
+            <ShapExplainabilityCard
+              shap={intelligence?.shap || null}
+              loading={loadingIntel}
+              error={intelError}
+            />
 
             {/* Resolution & Prior Resolution History */}
             {(ticket.status === 'Resolved' || ticket.resolved_at || ticket.closing_remarks || ticket.is_reopened) && (

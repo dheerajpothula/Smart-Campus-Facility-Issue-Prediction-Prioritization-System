@@ -91,6 +91,95 @@ export interface ComplaintDetail {
   remarks_history: RemarksHistoryEntry[];
   feedback?: FeedbackData | null;
   score_breakdown?: Record<string, number> | null;
+  mcpi_details?: McpiExplanation | null;
+}
+
+export interface McpiComponentItem {
+  key: string;
+  label: string;
+  weight: number;
+  raw_label: string;
+  normalized_input: number;
+  points: number;
+  max_points: number;
+}
+
+export interface McpiThresholdItem {
+  tier: string;
+  rule: string;
+  min_score: number;
+}
+
+export interface McpiExplanation {
+  scoring_type: string;
+  is_ml_prediction: boolean;
+  priority_score: number;
+  priority_tier: string;
+  weights: Record<string, number>;
+  thresholds: McpiThresholdItem[];
+  components: McpiComponentItem[];
+  classification_rationale: string;
+}
+
+export interface ShapFeatureContribution {
+  feature_name: string;
+  feature_value: string | number;
+  shap_value: number;
+  contribution: 'increase' | 'decrease';
+  description: string;
+}
+
+export interface ShapAvailabilityResponse {
+  complaint_id: string;
+  available: boolean;
+  status: string;
+  reason: string;
+  model_artifact_present: boolean;
+  shap_library_installed: boolean;
+  explanation_method?: string | null;
+  model_version?: string | null;
+  prediction_timestamp?: string | null;
+  prediction?: string | number | null;
+  base_value?: number | null;
+  output_value?: number | null;
+  features: ShapFeatureContribution[];
+  summary: string;
+}
+
+export interface ComplaintIntelligenceResponse {
+  complaint_id: string;
+  mcpi: McpiExplanation;
+  shap: ShapAvailabilityResponse;
+}
+
+export interface IntelligenceOverviewResponse {
+  capabilities: {
+    mcpi_engine: {
+      available: boolean;
+      scoring_type: string;
+      is_ml_prediction: boolean;
+      weights: Record<string, number>;
+      thresholds: McpiThresholdItem[];
+    };
+    shap_explainability: {
+      available: boolean;
+      status: string;
+      reason: string;
+      model_artifact_present: boolean;
+      artifact_filenames: string[];
+      shap_library_installed: boolean;
+    };
+    auxiliary_models: {
+      nlp_classifier: Record<string, any>;
+      severity_model: Record<string, any>;
+    };
+    predictive_forecasting: {
+      available: boolean;
+      status: string;
+      reason: string;
+    };
+  };
+  operational_analytics: AnalyticsReportResponse;
 }
 
 export interface StudentComplaintListResponse {
@@ -160,6 +249,23 @@ export interface AdminStatusUpdatePayload {
   squad_assigned?: string;
 }
 
+export interface WorkloadSummary {
+  active_total: number;
+  unassigned_active: number;
+  assigned_active: number;
+  reopened_count: number;
+  average_mcpi_score?: number | null;
+  active_average_mcpi_score?: number | null;
+  high_critical_active: number;
+}
+
+export interface AssignmentDistributionItem {
+  assignee: string;
+  active_count: number;
+  resolved_count: number;
+  total_count: number;
+}
+
 export interface AnalyticsReportResponse {
   kpis: DashboardKPIs;
   trends: Array<{
@@ -181,4 +287,7 @@ export interface AnalyticsReportResponse {
   }>;
   priority_distribution: Record<string, number>;
   aging_brackets: Record<string, number>;
+  workload_summary?: WorkloadSummary | null;
+  assignment_distribution?: AssignmentDistributionItem[];
+  status_distribution?: Record<string, number>;
 }

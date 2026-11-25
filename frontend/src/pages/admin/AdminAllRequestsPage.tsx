@@ -250,7 +250,16 @@ export const AdminAllRequestsPage: React.FC = () => {
                   {ticket.location}
                 </TableCell>
                 <TableCell>
-                  <Badge priority={ticket.priority_tier} />
+                  <div
+                    className="flex items-center gap-1.5"
+                    aria-label={`Priority ${ticket.priority_tier}, MCPI Score ${Number(ticket.priority_score ?? 0).toFixed(1)} out of 100`}
+                    title={`Rule-Based MCPI Score: ${Number(ticket.priority_score ?? 0).toFixed(1)} / 100`}
+                  >
+                    <Badge priority={ticket.priority_tier} />
+                    <span className="text-[11px] font-mono font-semibold text-[#172D28]">
+                      {Number(ticket.priority_score ?? 0).toFixed(1)}
+                    </span>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Badge status={ticket.status} />

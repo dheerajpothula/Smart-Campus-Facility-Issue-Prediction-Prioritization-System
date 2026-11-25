@@ -9,8 +9,9 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Notification } from '../../components/ui/Notification';
 import { ComplaintDetailsDrawer } from '../../components/admin/ComplaintDetailsDrawer';
+import { WorkloadIntelligenceStrip } from '../../components/admin/intelligence/WorkloadIntelligenceStrip';
 import { formatDate } from '../../utils/formatters';
-import type { ComplaintDetail, DashboardKPIs } from '../../types';
+import type { AnalyticsReportResponse, ComplaintDetail, DashboardKPIs } from '../../types';
 import {
   Inbox,
   Clock,
@@ -25,6 +26,7 @@ import {
 
 export const AdminOverviewPage: React.FC = () => {
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsReportResponse | null>(null);
   const [recentComplaints, setRecentComplaints] = useState<ComplaintDetail[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<ComplaintDetail | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -34,12 +36,14 @@ export const AdminOverviewPage: React.FC = () => {
     if (!silent) setLoading(true);
     setErrorMsg(null);
     try {
-      const [kpiRes, listRes] = await Promise.all([
+      const [kpiRes, listRes, analyticsRes] = await Promise.all([
         complaintService.getAdminKPIs(),
         complaintService.getAllAdminComplaints({ limit: 6 }),
+        complaintService.getAnalyticsReport().catch(() => null),
       ]);
       setKpis(kpiRes);
       setRecentComplaints(listRes.records);
+      setAnalytics(analyticsRes);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to fetch operational overview metrics.');
     } finally {
@@ -141,6 +145,9 @@ export const AdminOverviewPage: React.FC = () => {
         </Link>
       </div>
 
+      {/* Priority Distribution & Operational Workload Strip */}
+      <WorkloadIntelligenceStrip analytics={analytics} />
+
       {/* Recent Incident Ledger */}
       <Card>
         <CardHeader>
@@ -193,7 +200,12 @@ export const AdminOverviewPage: React.FC = () => {
                       {ticket.location}
                     </TableCell>
                     <TableCell>
-                      <Badge priority={ticket.priority_tier} />
+                      <div className="flex items-center gap-1.5">
+                        <Badge priority={ticket.priority_tier} />
+                        <span className="text-[10px] font-mono font-semibold text-[#52605B]">
+                          {Number(ticket.priority_score ?? 0).toFixed(1)}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge status={ticket.status} />

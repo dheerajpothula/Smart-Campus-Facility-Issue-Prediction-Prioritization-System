@@ -446,8 +446,8 @@ def test_ml_endpoints():
     assert mm.status_code == 200
     assert "nlp_classifier" in mm.json()
 
-    # Priority weights
-    gw = client.get("/api/settings/weights")
+    # Priority weights (admin-only)
+    gw = client.get("/api/settings/weights", headers=adm_headers)
     assert gw.status_code == 200
     assert gw.json()["severity"] >= 0
 

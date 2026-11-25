@@ -217,6 +217,7 @@ class ComplaintDetail(BaseModel):
     remarks_history: List[RemarksHistoryEntry] = Field(default_factory=list)
     feedback: Optional[Dict[str, Any]] = None
     score_breakdown: Optional[Dict[str, float]] = None
+    mcpi_details: Optional["McpiExplanation"] = None
 
 
 class StudentComplaintListResponse(BaseModel):
@@ -261,6 +262,23 @@ class CategoryDistributionItem(BaseModel):
     percentage: float
 
 
+class WorkloadSummary(BaseModel):
+    active_total: int = 0
+    unassigned_active: int = 0
+    assigned_active: int = 0
+    reopened_count: int = 0
+    average_mcpi_score: Optional[float] = None
+    active_average_mcpi_score: Optional[float] = None
+    high_critical_active: int = 0
+
+
+class AssignmentDistributionItem(BaseModel):
+    assignee: str
+    active_count: int
+    resolved_count: int
+    total_count: int
+
+
 class AnalyticsReportResponse(BaseModel):
     kpis: DashboardKPIs
     trends: List[TrendPoint]
@@ -268,6 +286,9 @@ class AnalyticsReportResponse(BaseModel):
     location_distribution: List[Dict[str, Any]]
     priority_distribution: Dict[str, int]
     aging_brackets: Dict[str, int]
+    workload_summary: Optional[WorkloadSummary] = None
+    assignment_distribution: List[AssignmentDistributionItem] = Field(default_factory=list)
+    status_distribution: Dict[str, int] = Field(default_factory=dict)
 
 
 # ============================================================================
@@ -353,6 +374,59 @@ class ShapExplanationResponse(BaseModel):
 
 # Alias for ML explainer backward-compatibility
 ShapExplanation = ShapExplanationResponse
+
+
+class McpiComponentItem(BaseModel):
+    key: str
+    label: str
+    weight: float
+    raw_label: str
+    normalized_input: float
+    points: float
+    max_points: float
+
+
+class McpiThresholdItem(BaseModel):
+    tier: str
+    rule: str
+    min_score: float
+
+
+class McpiExplanation(BaseModel):
+    scoring_type: str
+    is_ml_prediction: bool = False
+    priority_score: float
+    priority_tier: str
+    weights: Dict[str, float]
+    thresholds: List[McpiThresholdItem]
+    components: List[McpiComponentItem]
+    classification_rationale: str
+
+
+class ShapAvailabilityResponse(BaseModel):
+    complaint_id: str
+    available: bool
+    status: str
+    reason: str
+    model_artifact_present: bool
+    shap_library_installed: bool
+    explanation_method: Optional[str] = None
+    model_version: Optional[str] = None
+    prediction_timestamp: Optional[str] = None
+    prediction: Optional[Any] = None
+    base_value: Optional[float] = None
+    output_value: Optional[float] = None
+    features: List[ShapFeatureContribution] = Field(default_factory=list)
+    summary: str
+
+
+class ComplaintIntelligenceResponse(BaseModel):
+    complaint_id: str
+    mcpi: McpiExplanation
+    shap: ShapAvailabilityResponse
+
+
+ComplaintDetail.model_rebuild()
 
 
 class PredictiveMaintenanceItem(BaseModel):

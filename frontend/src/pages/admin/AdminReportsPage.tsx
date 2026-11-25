@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { complaintService } from '../../services/complaintService';
+import { intelligenceService } from '../../services/intelligenceService';
 import { taxonomyService } from '../../services/taxonomyService';
 import { TokenManager } from '../../services/apiClient';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
@@ -8,11 +9,12 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { Notification } from '../../components/ui/Notification';
-import type { AnalyticsReportResponse, TaxonomyHierarchyResponse } from '../../types';
+import type {
+  AnalyticsReportResponse,
+  IntelligenceOverviewResponse,
+  TaxonomyHierarchyResponse,
+} from '../../types';
 import {
-  Download,
-  Calendar,
-  Filter,
   BarChart2,
   TrendingUp,
   Clock,
@@ -21,12 +23,13 @@ import {
   FileSpreadsheet,
   Building,
   AlertTriangle,
-  CheckCircle2,
-  Layers,
+  Users,
+  BrainCircuit,
 } from 'lucide-react';
 
 export const AdminReportsPage: React.FC = () => {
   const [report, setReport] = useState<AnalyticsReportResponse | null>(null);
+  const [intelOverview, setIntelOverview] = useState<IntelligenceOverviewResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -48,15 +51,19 @@ export const AdminReportsPage: React.FC = () => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const data = await complaintService.getAnalyticsReport({
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
-        category: categoryFilter !== 'All Categories' ? categoryFilter : undefined,
-        location: locationFilter !== 'All Locations' ? locationFilter : undefined,
-        status: statusFilter !== 'All Statuses' ? statusFilter : undefined,
-        trend_agg: trendAgg,
-      });
+      const [data, intel] = await Promise.all([
+        complaintService.getAnalyticsReport({
+          start_date: startDate || undefined,
+          end_date: endDate || undefined,
+          category: categoryFilter !== 'All Categories' ? categoryFilter : undefined,
+          location: locationFilter !== 'All Locations' ? locationFilter : undefined,
+          status: statusFilter !== 'All Statuses' ? statusFilter : undefined,
+          trend_agg: trendAgg,
+        }),
+        intelligenceService.getOverview().catch(() => null),
+      ]);
       setReport(data);
+      setIntelOverview(intel && intel.capabilities ? intel : null);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to generate operational analytics report.');
     } finally {
@@ -478,6 +485,128 @@ export const AdminReportsPage: React.FC = () => {
                   })
                 ) : (
                   <p className="text-xs text-[#52605B]">No aging data available.</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Workload Assignment & Model Diagnostics Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Genuine Operational Assignment Workload */}
+            <Card data-testid="reports-workload-card">
+              <CardHeader>
+                <div className="flex items-center justify-between w-full gap-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#203A32]" /> Assignment &amp; Workload Distribution
+                  </CardTitle>
+                  <span className="text-[11px] font-mono text-[#52605B]">
+                    Avg MCPI:{' '}
+                    {report?.workload_summary?.average_mcpi_score !== null &&
+                    report?.workload_summary?.average_mcpi_score !== undefined
+                      ? `${report.workload_summary.average_mcpi_score.toFixed(1)} / 100`
+                      : 'Unavailable'}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {report?.assignment_distribution && report.assignment_distribution.length > 0 ? (
+                  report.assignment_distribution.slice(0, 8).map((item) => {
+                    const maxTotal = Math.max(
+                      ...report.assignment_distribution!.map((a) => a.total_count),
+                      1
+                    );
+                    const pct = Math.round((item.total_count / maxTotal) * 100);
+                    return (
+                      <div key={item.assignee} className="space-y-1">
+                        <div className="flex justify-between text-xs gap-2">
+                          <span className="font-medium text-[#172D28] truncate">
+                            {item.assignee}
+                          </span>
+                          <span className="font-mono text-[#52605B] shrink-0">
+                            {item.active_count} active • {item.resolved_count} resolved ({item.total_count} total)
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-[#EAEFE6] overflow-hidden">
+                          <div
+                            className="h-full bg-[#203A32] rounded-full transition-all duration-500"
+                            style={{ width: `${item.total_count > 0 ? Math.max(5, pct) : 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-[#52605B]">
+                    No assignment distribution records match the active filter.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Honest Predictive Intelligence & Model Registry Status */}
+            <Card data-testid="reports-model-diagnostics-card">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <BrainCircuit className="w-4 h-4 text-[#203A32]" /> Predictive Intelligence &amp; Model Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-xs">
+                <div className="p-3 rounded-lg bg-[#F5F7F2] border border-[#DCE5D8] space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[#172D28]">MCPI Priority Engine</span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-900 border border-emerald-200 text-[10px] font-semibold">
+                      Active (Rule-Based)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#52605B]">
+                    Weights: Severity 0.35 • Location 0.25 • Recurrence 0.25 • Impact 0.15. Thresholds: &ge;75 Critical, &ge;50 High, &ge;28 Medium, &lt;28 Low.
+                  </p>
+                </div>
+
+                {intelOverview?.capabilities?.shap_explainability ? (
+                  <>
+                    <div className="p-3 rounded-lg bg-[#F5F7F2] border border-[#DCE5D8] space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-[#172D28]">SHAP Explainability</span>
+                        <span className="px-2 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-200 text-[10px] font-semibold">
+                          {intelOverview.capabilities.shap_explainability.available ? 'Active' : 'Unavailable'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#52605B]">
+                        {intelOverview.capabilities.shap_explainability.reason}
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-[#F5F7F2] border border-[#DCE5D8] space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-[#172D28]">Live Failure Forecasting</span>
+                        <span className="px-2 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-200 text-[10px] font-semibold">
+                          {intelOverview.capabilities.predictive_forecasting.available ? 'Active' : 'Unavailable'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#52605B]">
+                        {intelOverview.capabilities.predictive_forecasting.reason}
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-white border border-[#DCE5D8] space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-[#172D28]">
+                          Auxiliary Baseline Models (Demo Holdout Only)
+                        </span>
+                        <span className="text-[10px] font-mono text-[#52605B]">
+                          Not Applied to Live Tickets
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#52605B]">
+                        NLP 7-Class Baseline: {((intelOverview.capabilities.auxiliary_models.nlp_classifier.holdout_accuracy || 0) * 100).toFixed(1)}% holdout accuracy ({intelOverview.capabilities.auxiliary_models.nlp_classifier.test_samples} test samples) • Severity Baseline: {((intelOverview.capabilities.auxiliary_models.severity_model.holdout_accuracy || 0) * 100).toFixed(1)}% holdout accuracy ({intelOverview.capabilities.auxiliary_models.severity_model.test_samples} test samples).
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-[11px] text-[#52605B]">
+                    Model registry diagnostics unavailable.
+                  </p>
                 )}
               </CardContent>
             </Card>

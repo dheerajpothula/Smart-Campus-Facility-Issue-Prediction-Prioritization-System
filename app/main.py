@@ -27,6 +27,7 @@ from app.api.routes_uploads import router as uploads_router
 from app.api.routes_ml import router as ml_router, weights_router
 from app.api.deps import require_admin
 from app.services.complaint_service import complaint_service
+from app.services.intelligence_service import intelligence_service
 from app.services.taxonomy_service import taxonomy_service
 from app.services.ml_service import ml_service
 from app.data.database import campus_db
@@ -69,6 +70,7 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 def health_check():
     """Health check endpoint providing service status, version, and datastore integrity."""
     records = complaint_service._load_records()
+    caps = intelligence_service.inspect_ml_capabilities()
     return {
         "status": "healthy",
         "service": "fipp-backend-api",
@@ -76,15 +78,15 @@ def health_check():
         "timestamp": datetime.now().isoformat(),
         "datastore": {
             "type": "json",
-            "path": str(PRIMARY_JSON_DATA_FILE),
             "status": "connected" if PRIMARY_JSON_DATA_FILE.is_file() else "missing",
             "record_count": len(records),
         },
         "ml_services": {
-            "nlp_classifier": "active",
-            "severity_model": "active",
-            "shap_explainer": "active",
-            "priority_engine": "active",
+            "mcpi_engine": "active",
+            "nlp_classifier": "auxiliary_baseline",
+            "severity_model": "auxiliary_baseline",
+            "shap_explainer": caps["shap_explainability"]["status"],
+            "model_artifacts": "present" if caps["shap_explainability"]["model_artifact_present"] else "missing",
         },
     }
 
@@ -94,8 +96,8 @@ def health_check():
 # ============================================================================
 
 @app.get("/api/kpi", response_model=DashboardKPIs, tags=["Overview"])
-def get_dashboard_kpis():
-    """Top-level convenience endpoint returning real-time operational KPIs."""
+def get_dashboard_kpis(current_user: Dict[str, Any] = Depends(require_admin)):
+    """Top-level convenience endpoint returning real-time operational KPIs (admin-only)."""
     return DashboardKPIs(**complaint_service.get_kpis())
 
 
@@ -106,43 +108,52 @@ def get_campus_locations():
 
 
 @app.get("/api/model-metrics", tags=["Machine Learning & Analytics"])
-def get_model_metrics():
-    """Returns genuine evaluation metrics from holdout test partitions."""
+def get_model_metrics(current_user: Dict[str, Any] = Depends(require_admin)):
+    """Returns genuine evaluation metrics from demo holdout test partitions (admin-only)."""
     return ml_service.get_model_metrics()
 
 
 @app.get("/api/predictive-maintenance", tags=["Machine Learning & Analytics"])
-def get_predictive_maintenance():
-    """Returns predictive maintenance issue-risk forecasts."""
-    return ml_service.get_predictive_forecasts()
+def get_predictive_maintenance(current_user: Dict[str, Any] = Depends(require_admin)):
+    """Returns predictive maintenance availability status (admin-only)."""
+    caps = intelligence_service.inspect_ml_capabilities()
+    return {
+        "available": False,
+        "status": "unavailable",
+        "forecasts": [],
+        "reason": caps["predictive_forecasting"]["reason"],
+        "disclaimer": "Prediction ≠ Confirmed Physical Breakdown. Live failure forecasting requires longitudinal asset telemetry not present in current operational records.",
+    }
 
 
 @app.get("/api/recurring-issues", tags=["Machine Learning & Analytics"])
-def get_recurring_issues():
-    """Returns chronic recurring issue profile and pattern timeline from active dataset."""
-    records = campus_db._records
-    recurring_records = [r for r in records if r.get("recurrence_detected", False)]
-
+def get_recurring_issues(current_user: Dict[str, Any] = Depends(require_admin)):
+    """Returns recurring issue clusters from live operational records (admin-only)."""
+    records = complaint_service._load_records()
     grouped: Dict[str, Dict[str, Any]] = {}
-    for r in recurring_records:
-        key = f"{r.get('facility_type')} - {r.get('location')}"
+    for r in records:
+        norm = complaint_service.normalize_record(r)
+        is_rec = bool(norm.get("is_recurring", False)) or float(norm.get("recurrence_risk", 0.0)) >= 0.5
+        if not is_rec:
+            continue
+        key = f"{norm.get('category')} - {norm.get('building')}"
         if key not in grouped:
             grouped[key] = {
-                "facility": r.get("facility_type"),
-                "location": r.get("location"),
+                "facility": norm.get("category"),
+                "location": norm.get("building"),
                 "count": 0,
-                "latest_ticket": r.get("complaint_id"),
-                "latest_severity": r.get("severity"),
+                "latest_ticket": norm.get("complaint_id"),
                 "highest_priority": 0.0,
-                "status": r.get("status"),
+                "status": norm.get("status"),
             }
         grouped[key]["count"] += 1
-        grouped[key]["highest_priority"] = max(grouped[key]["highest_priority"], float(r.get("priority_score", 0.0)))
+        grouped[key]["highest_priority"] = max(grouped[key]["highest_priority"], float(norm.get("priority_score", 0.0)))
 
+    clusters = sorted(grouped.values(), key=lambda x: x["count"], reverse=True)[:25]
     return {
-        "chronic_highlight": CHRONIC_RECURRENCE_DATA,
-        "recurring_clusters": sorted(grouped.values(), key=lambda x: x["count"], reverse=True)[:25],
-        "total_recurring_tickets": len(recurring_records),
+        "source": "live_operational_records",
+        "recurring_clusters": clusters,
+        "total_recurring_tickets": sum(c["count"] for c in clusters),
     }
 
 

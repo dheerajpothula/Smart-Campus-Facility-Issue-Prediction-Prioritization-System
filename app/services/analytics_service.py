@@ -144,13 +144,81 @@ class AnalyticsService:
             for k, v in sorted(loc_counts.items(), key=lambda x: x[1], reverse=True)
         ]
 
-        # Priority breakdown using existing/normalized MCPI tiers
+        # Priority breakdown using existing/normalized MCPI tiers and scores
         prio_counts = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0}
+        status_counts = {
+            "Submitted": 0,
+            "Under Review": 0,
+            "Assigned": 0,
+            "In Progress": 0,
+            "Resolved": 0,
+            "Withdrawn": 0,
+        }
+        all_mcpi_scores: List[float] = []
+        active_mcpi_scores: List[float] = []
+        active_total = 0
+        unassigned_active = 0
+        assigned_active = 0
+        reopened_count = 0
+        high_critical_active = 0
+        assignee_buckets: Dict[str, Dict[str, int]] = {}
+
         for r in filtered:
             norm = complaint_service.normalize_record(r)
             tier = norm.get("priority_tier", "Medium")
+            score_val = float(norm.get("priority_score", 0.0))
+            all_mcpi_scores.append(score_val)
             if tier in prio_counts:
                 prio_counts[tier] += 1
+
+            st = str(norm.get("status") or "Submitted")
+            if st in status_counts:
+                status_counts[st] += 1
+
+            if norm.get("is_reopened"):
+                reopened_count += 1
+
+            is_active = st not in ("Resolved", "Withdrawn")
+            person = str(norm.get("allotted_person") or "").strip()
+            dept = str(norm.get("department") or "").strip()
+            assignee_label = person or dept or "Unassigned"
+
+            bucket = assignee_buckets.setdefault(
+                assignee_label,
+                {"active_count": 0, "resolved_count": 0, "total_count": 0},
+            )
+            bucket["total_count"] += 1
+            if st == "Resolved":
+                bucket["resolved_count"] += 1
+            elif is_active:
+                bucket["active_count"] += 1
+
+            if is_active:
+                active_total += 1
+                active_mcpi_scores.append(score_val)
+                if person or dept:
+                    assigned_active += 1
+                else:
+                    unassigned_active += 1
+                if tier in ("Critical", "High"):
+                    high_critical_active += 1
+
+        avg_mcpi = round(sum(all_mcpi_scores) / len(all_mcpi_scores), 1) if all_mcpi_scores else None
+        active_avg_mcpi = round(sum(active_mcpi_scores) / len(active_mcpi_scores), 1) if active_mcpi_scores else None
+
+        assignment_distribution = [
+            {
+                "assignee": name,
+                "active_count": counts["active_count"],
+                "resolved_count": counts["resolved_count"],
+                "total_count": counts["total_count"],
+            }
+            for name, counts in sorted(
+                assignee_buckets.items(),
+                key=lambda item: (item[1]["active_count"], item[1]["total_count"]),
+                reverse=True,
+            )
+        ]
 
         # Aging brackets for open requests (excluding unparseable timestamps rather than inventing age)
         now = datetime.now()
@@ -184,6 +252,17 @@ class AnalyticsService:
             "location_distribution": loc_dist,
             "priority_distribution": prio_counts,
             "aging_brackets": aging,
+            "workload_summary": {
+                "active_total": active_total,
+                "unassigned_active": unassigned_active,
+                "assigned_active": assigned_active,
+                "reopened_count": reopened_count,
+                "average_mcpi_score": avg_mcpi,
+                "active_average_mcpi_score": active_avg_mcpi,
+                "high_critical_active": high_critical_active,
+            },
+            "assignment_distribution": assignment_distribution,
+            "status_distribution": status_counts,
         }
 
     @classmethod

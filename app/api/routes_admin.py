@@ -11,20 +11,30 @@ Provides full operational management across all six sections:
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
-from app.api.deps import require_admin
+from app.api.deps import rate_limit_admin_intelligence, require_admin
 from app.models.data_models import (
     AdminComplaintListResponse,
     AdminReopenRequest,
     AdminStatusUpdateRequest,
     AnalyticsReportResponse,
     ComplaintDetail,
+    ComplaintIntelligenceResponse,
     DashboardKPIs,
 )
 from app.services.analytics_service import analytics_service
 from app.services.complaint_service import complaint_service
+from app.services.intelligence_service import intelligence_service
 from app.services.migration_service import migration_service
 
 router = APIRouter(prefix="/api/admin", tags=["Administrator Operations"])
+_admin_intel_rate_limit = rate_limit_admin_intelligence(max_requests=60, window_seconds=60)
+
+
+def _to_admin_detail(record: Dict[str, Any]) -> ComplaintDetail:
+    """Normalizes a complaint record and attaches authoritative MCPI details for admins only."""
+    norm = complaint_service.normalize_record(record)
+    norm["mcpi_details"] = intelligence_service.build_mcpi_explanation(norm)
+    return ComplaintDetail(**norm)
 
 
 # ============================================================================
@@ -70,7 +80,7 @@ def get_all_complaints(
         offset=offset,
         sort_by=sort_by,
     )
-    normalized = [ComplaintDetail(**complaint_service.normalize_record(r)) for r in records]
+    normalized = [_to_admin_detail(r) for r in records]
 
     return AdminComplaintListResponse(
         total_count=total_count,
@@ -88,7 +98,7 @@ def get_unassigned_complaints(
 ):
     """Convenience endpoint: Retrieves New / Unassigned requests requiring initial triage."""
     records, total = complaint_service.get_all_complaints(status="Submitted", limit=limit, offset=offset)
-    normalized = [ComplaintDetail(**complaint_service.normalize_record(r)) for r in records]
+    normalized = [_to_admin_detail(r) for r in records]
     return AdminComplaintListResponse(total_count=total, limit=limit, offset=offset, records=normalized)
 
 
@@ -100,7 +110,7 @@ def get_in_progress_complaints(
 ):
     """Convenience endpoint: Retrieves active work orders in progress or assigned."""
     records, total = complaint_service.get_all_complaints(status=["In Progress", "Assigned"], limit=limit, offset=offset)
-    normalized = [ComplaintDetail(**complaint_service.normalize_record(r)) for r in records]
+    normalized = [_to_admin_detail(r) for r in records]
     return AdminComplaintListResponse(total_count=total, limit=limit, offset=offset, records=normalized)
 
 
@@ -112,7 +122,7 @@ def get_resolved_complaints(
 ):
     """Convenience endpoint: Retrieves resolved complaint archives."""
     records, total = complaint_service.get_all_complaints(status="Resolved", limit=limit, offset=offset)
-    normalized = [ComplaintDetail(**complaint_service.normalize_record(r)) for r in records]
+    normalized = [_to_admin_detail(r) for r in records]
     return AdminComplaintListResponse(total_count=total, limit=limit, offset=offset, records=normalized)
 
 
@@ -132,7 +142,7 @@ def get_complaint_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Complaint '{complaint_id}' was not found.",
         )
-    return ComplaintDetail(**complaint_service.normalize_record(record))
+    return _to_admin_detail(record)
 
 
 @router.patch("/complaints/{complaint_id}", response_model=ComplaintDetail)
@@ -159,7 +169,7 @@ def update_complaint_status(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Unable to update: Complaint '{complaint_id}' does not exist.",
         )
-    return ComplaintDetail(**complaint_service.normalize_record(updated))
+    return _to_admin_detail(updated)
 
 
 @router.post("/complaints/{complaint_id}/reopen", response_model=ComplaintDetail)
@@ -189,7 +199,7 @@ def reopen_complaint(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Unable to reopen: Complaint '{complaint_id}' was not found.",
         )
-    return ComplaintDetail(**complaint_service.normalize_record(reopened))
+    return _to_admin_detail(reopened)
 
 
 # ============================================================================
@@ -275,4 +285,38 @@ def inspect_migration_datastores(current_user: Dict[str, Any] = Depends(require_
     detecting token namespaces and collision risks.
     """
     return migration_service.inspect_source_datastores()
+
+
+# ============================================================================
+# 8. PREDICTIVE INTELLIGENCE & MODEL DIAGNOSTICS (ADMIN ONLY)
+# ============================================================================
+
+@router.get("/intelligence/overview")
+def get_admin_intelligence_overview(current_user: Dict[str, Any] = Depends(require_admin)):
+    """
+    Returns genuine operational intelligence summary from persisted records along with
+    honest ML model registry and SHAP/forecasting availability disclosures.
+    """
+    return {
+        "capabilities": intelligence_service.inspect_ml_capabilities(),
+        "operational_analytics": analytics_service.get_analytics_report(),
+    }
+
+
+@router.get("/intelligence/complaint/{complaint_id}", response_model=ComplaintIntelligenceResponse)
+def get_complaint_intelligence(
+    complaint_id: str,
+    current_user: Dict[str, Any] = Depends(_admin_intel_rate_limit),
+):
+    """
+    Returns authoritative rule-based MCPI breakdown and honest SHAP explainability
+    status for a single complaint (admin-only, rate-limited).
+    """
+    record = complaint_service.get_by_id(complaint_id)
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Complaint '{complaint_id}' was not found.",
+        )
+    return ComplaintIntelligenceResponse(**intelligence_service.get_complaint_intelligence(record))
 

@@ -425,11 +425,20 @@ def test_file_upload_magic_bytes_and_validation():
 # ============================================================================
 
 def test_ml_analyze_and_shap_explainability():
-    """Verifies Scikit-Learn NLP text analysis and SHAP feature attributions."""
-    # 1. ML Analysis
+    """Verifies admin-only ML endpoints, honest SHAP unavailable state, and predictive status."""
+    adm_login = client.post("/api/auth/login", json={"username": "ADM-2026-001", "password": "Admin@001"})
+    adm_headers = {"Authorization": f"Bearer {adm_login.json()['access_token']}"}
+
+    # Unauthenticated calls must be rejected
+    assert client.post("/api/ml/analyze", json={"text": "Water pipeline burst"}).status_code == 401
+    assert client.get("/api/ml/shap/CMP-2026-001").status_code == 401
+    assert client.get("/api/ml/predictive").status_code == 401
+
+    # 1. ML Analysis (admin-only auxiliary baseline)
     analysis_res = client.post(
         "/api/ml/analyze",
         json={"text": "Water pipeline burst in basement causing severe flooding.", "location": "Academic Block 1"},
+        headers=adm_headers,
     )
     assert analysis_res.status_code == 200
     analysis = analysis_res.json()["analysis"]
@@ -439,18 +448,19 @@ def test_ml_analyze_and_shap_explainability():
     assert "priority_score" in analysis
     assert "points_breakdown" in analysis
 
-    # 2. SHAP attributions for complaint
-    shap_res = client.get("/api/ml/shap/CMP-2026-001")
+    # 2. Honest SHAP availability for complaint
+    shap_res = client.get("/api/ml/shap/CMP-2026-001", headers=adm_headers)
     assert shap_res.status_code == 200
     shap_data = shap_res.json()
-    assert "base_value" in shap_data
-    assert "features" in shap_data
-    assert len(shap_data["features"]) >= 4
+    assert shap_data["complaint_id"] == "CMP-2026-001"
+    assert shap_data["available"] is False
+    assert shap_data["features"] == []
 
-    # 3. Predictive Maintenance Forecasts
-    pred_res = client.get("/api/ml/predictive")
+    # 3. Predictive Maintenance status (unavailable without longitudinal telemetry)
+    pred_res = client.get("/api/ml/predictive", headers=adm_headers)
     assert pred_res.status_code == 200
     pred_data = pred_res.json()
+    assert pred_data["available"] is False
     assert "forecasts" in pred_data
     assert "disclaimer" in pred_data
     assert "Prediction ≠ Confirmed Physical Breakdown" in pred_data["disclaimer"]
