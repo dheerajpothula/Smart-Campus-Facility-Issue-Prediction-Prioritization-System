@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { complaintService } from '../../services/complaintService';
 import { uploadService } from '../../services/uploadService';
+import { TokenManager } from '../../services/apiClient';
 import { Card } from '../../components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/ui/Table';
 import { Badge } from '../../components/ui/Badge';
@@ -66,6 +67,7 @@ export const StudentHistoryPage: React.FC = () => {
   const [feedbackRating, setFeedbackRating] = useState<number>(5);
   const [feedbackComments, setFeedbackComments] = useState<string>('');
   const [submittingFeedback, setSubmittingFeedback] = useState<boolean>(false);
+  const [loadingPhoto, setLoadingPhoto] = useState<boolean>(false);
 
   const fetchHistory = async (keyword?: string) => {
     setLoading(true);
@@ -105,6 +107,29 @@ export const StudentHistoryPage: React.FC = () => {
       setSelectedTicket(fresh);
     } catch {
       // Retain existing record if single fetch fails
+    }
+  };
+
+  // Authenticated Attachment Retrieval
+  const handleViewAttachment = async (storedFilename: string) => {
+    setLoadingPhoto(true);
+    setErrorMsg(null);
+    try {
+      const token = TokenManager.getAccessToken();
+      const res = await fetch(uploadService.getPhotoUrl(storedFilename), {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        throw new Error(`Unable to retrieve attachment (${res.status}).`);
+      }
+      const blob = await res.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Unable to load attachment.');
+    } finally {
+      setLoadingPhoto(false);
     }
   };
 
@@ -426,14 +451,14 @@ export const StudentHistoryPage: React.FC = () => {
                 <span className="flex items-center gap-2 font-medium text-[#172D28]">
                   <ImageIcon className="w-4 h-4 text-[#203A32]" /> Attached Defect Photo
                 </span>
-                <a
-                  href={uploadService.getPhotoUrl(selectedTicket.photo_stored_filename)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs font-semibold text-[#203A32] underline hover:text-[#172D28]"
+                <button
+                  type="button"
+                  onClick={() => handleViewAttachment(selectedTicket.photo_stored_filename!)}
+                  disabled={loadingPhoto}
+                  className="text-xs font-semibold text-[#203A32] underline hover:text-[#172D28] cursor-pointer disabled:opacity-50"
                 >
-                  View Attachment
-                </a>
+                  {loadingPhoto ? 'Opening...' : 'View Attachment'}
+                </button>
               </div>
             )}
 
@@ -464,9 +489,9 @@ export const StudentHistoryPage: React.FC = () => {
                   <CheckCircle2 className="w-4 h-4 text-emerald-700" /> Resolution Confirmation
                 </h4>
 
-                {selectedTicket.resolution_date && (
+                {(selectedTicket.resolved_at || selectedTicket.resolution_date) && (
                   <p className="text-xs text-emerald-900">
-                    Resolved on: <strong>{selectedTicket.resolution_date}</strong>
+                    Resolved on: <strong>{selectedTicket.resolved_at || selectedTicket.resolution_date}</strong>
                   </p>
                 )}
 

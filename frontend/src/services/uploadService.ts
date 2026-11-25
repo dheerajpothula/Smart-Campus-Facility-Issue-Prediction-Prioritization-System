@@ -18,9 +18,9 @@ export const uploadService = {
       throw new Error('Photo attachment exceeds 10MB maximum file size limit.');
     }
 
-    const validMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    const validMimes = ['image/png', 'image/jpeg', 'image/jpg'];
     if (!validMimes.includes(file.type.toLowerCase())) {
-      throw new Error('Invalid file format. Only JPEG, PNG, and WebP raster images are permitted.');
+      throw new Error('Invalid file format. Only JPEG and PNG raster images are permitted.');
     }
 
     return api.upload<UploadPhotoResponse>('/api/uploads/photo', file);

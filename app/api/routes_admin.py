@@ -155,15 +155,31 @@ def update_complaint_status(
     Updates complaint status, technician assignment, and squad allotment.
     Appends an immutable audit entry to the complaint remarks history.
     """
-    updated = complaint_service.update_complaint_status(
-        complaint_id=complaint_id,
-        new_status=payload.status,
-        remarks=payload.remarks,
-        admin_id=current_user["id"],
-        admin_title=current_user.get("title") or current_user.get("name"),
-        allotted_person=payload.allotted_person,
-        squad_assigned=payload.squad_assigned,
-    )
+    try:
+        updated = complaint_service.update_complaint_status(
+            complaint_id=complaint_id,
+            new_status=payload.status,
+            remarks=payload.remarks,
+            admin_id=current_user["id"],
+            admin_title=current_user.get("title") or current_user.get("name"),
+            allotted_person=payload.allotted_person,
+            squad_assigned=payload.squad_assigned,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+    except RuntimeError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist reopened complaint safely.",
+        )
+    except RuntimeError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist complaint update safely.",
+        )
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -193,6 +209,11 @@ def reopen_complaint(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
+        )
+    except RuntimeError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist reopened complaint safely.",
         )
     if not reopened:
         raise HTTPException(

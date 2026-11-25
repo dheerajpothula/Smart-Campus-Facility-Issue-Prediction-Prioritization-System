@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from app.core.config import PRIMARY_JSON_DATA_FILE
+from app.core.config import CORS_ORIGINS, PRIMARY_JSON_DATA_FILE
 from app.api.routes_auth import router as auth_router
 from app.api.routes_taxonomy import router as taxonomy_router
 from app.api.routes_student import router as student_router
@@ -40,14 +40,26 @@ app = FastAPI(
     version="2.0.0",
 )
 
-# Enable CORS for future React + TypeScript dev server and enterprise clients
+# Enable explicit trusted CORS for React + TypeScript frontend and enterprise clients
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Attaches defensive HTTP security headers to all responses."""
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    if request.url.path.startswith("/api/"):
+        response.headers.setdefault("Cache-Control", "no-store")
+    return response
 
 # Register Core API Routers
 app.include_router(auth_router)
@@ -177,12 +189,7 @@ async def upload_dataset_csv(
         raise HTTPException(status_code=400, detail="Only standard CSV files are accepted.")
 
     contents = await file.read()
-    try:
-        csv_text = contents.decode("utf-8")
-    except UnicodeDecodeError:
-        raise HTTPException(status_code=400, detail="CSV file must be UTF-8 encoded text.")
-
-    res = campus_db.import_custom_csv(csv_text)
+    res = campus_db.validate_and_replace_csv(contents)
     if not res.get("success", False):
         raise HTTPException(status_code=400, detail=res.get("error", "CSV validation failed."))
     return res

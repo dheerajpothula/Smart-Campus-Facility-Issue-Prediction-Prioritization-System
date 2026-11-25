@@ -43,6 +43,11 @@ def submit_complaint(
             "complaint": ComplaintDetail(**normalized),
             "message": f"Complaint {normalized['complaint_id']} has been registered successfully.",
         }
+    except RuntimeError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist complaint submission safely.",
+        )
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -111,11 +116,17 @@ def withdraw_complaint(
     """
     Allows a student to withdraw an open query that has not yet been resolved.
     """
-    success = complaint_service.withdraw_complaint(
-        complaint_id=complaint_id,
-        student_id=current_user["id"],
-        reason=payload.reason,
-    )
+    try:
+        success = complaint_service.withdraw_complaint(
+            complaint_id=complaint_id,
+            student_id=current_user["id"],
+            reason=payload.reason,
+        )
+    except RuntimeError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist complaint withdrawal safely.",
+        )
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -136,12 +147,18 @@ def submit_complaint_feedback(
     """
     Records student 5-star resolution feedback and satisfaction ratings for a resolved complaint.
     """
-    success = complaint_service.submit_feedback(
-        complaint_id=complaint_id,
-        student_id=current_user["id"],
-        rating=payload.rating,
-        comments=payload.comments,
-    )
+    try:
+        success = complaint_service.submit_feedback(
+            complaint_id=complaint_id,
+            student_id=current_user["id"],
+            rating=payload.rating,
+            comments=payload.comments,
+        )
+    except RuntimeError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist student feedback safely.",
+        )
     if not success:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

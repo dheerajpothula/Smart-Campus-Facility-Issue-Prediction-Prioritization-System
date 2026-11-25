@@ -20,10 +20,10 @@ export const Footer: React.FC = () => {
             </p>
             <div className="flex items-center gap-4 text-xs text-[#A8B9A3] pt-2">
               <span className="flex items-center gap-1">
-                <Shield className="w-3.5 h-3.5 text-[#DCE5D8]" /> ISO 27001 Aligned
+                <Shield className="w-3.5 h-3.5 text-[#DCE5D8]" /> Role-Based Access Control
               </span>
               <span className="flex items-center gap-1">
-                <Lock className="w-3.5 h-3.5 text-[#DCE5D8]" /> DPDP Act 2023 Compliant
+                <Lock className="w-3.5 h-3.5 text-[#DCE5D8]" /> PBKDF2 &amp; JWT Session Security
               </span>
             </div>
           </div>

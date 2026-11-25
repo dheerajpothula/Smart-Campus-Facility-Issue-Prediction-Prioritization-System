@@ -177,7 +177,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <h3 className="text-base font-semibold text-[#172D28] mb-1">Analyze</h3>
               <p className="text-xs text-[#52605B] leading-relaxed">
-                Identify and assess facility issues using Scikit-Learn NLP text classification, recurrence tracking, and hazard severity estimation.
+                Evaluate facility issues using rule-based severity assessment, campus location criticality, recurrence tracking, and impact scaling.
               </p>
             </Card>
 
@@ -203,9 +203,9 @@ export const LandingPage: React.FC = () => {
               <div className="w-10 h-10 rounded-lg bg-[#DCE5D8] flex items-center justify-center text-[#203A32]">
                 <Cpu className="w-5 h-5" />
               </div>
-              <h4 className="font-semibold text-sm text-[#172D28]">Scikit-Learn NLP Engine</h4>
+              <h4 className="font-semibold text-sm text-[#172D28]">Rule-Based Triage &amp; MCPI</h4>
               <p className="text-xs text-[#52605B] leading-relaxed">
-                Automatic keyword identification and severity extraction executing natively inside the unified Python backend.
+                Deterministic 4-factor priority scoring and 19-category LPU RMS taxonomy routing executing inside the Python backend.
               </p>
             </div>
 

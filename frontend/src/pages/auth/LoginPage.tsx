@@ -99,35 +99,38 @@ export const LoginPage: React.FC = () => {
             </Button>
           </form>
 
-          {/* Quick Demo Fillers for Evaluators */}
-          <div className="pt-4 border-t border-[#DCE5D8] space-y-2">
-            <p className="text-[11px] font-semibold text-[#52605B] uppercase tracking-wider flex items-center gap-1">
-              <KeyRound className="w-3.5 h-3.5 text-[#203A32]" /> Demo Credentials:
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => fillCredentials('STU-2026-001', 'student123')}
-                className="p-2 text-left rounded-lg border border-[#DCE5D8] bg-[#F5F7F2] hover:bg-white hover:border-[#203A32] transition-all text-xs"
-              >
-                <div className="flex items-center gap-1 font-semibold text-[#172D28]">
-                  <GraduationCap className="w-3.5 h-3.5 text-[#203A32]" /> Student
-                </div>
-                <div className="text-[10px] text-[#52605B] mt-0.5 font-mono">STU-2026-001</div>
-              </button>
+          {/* Quick Demo Fillers (Strictly disabled in pilot/production builds unless explicitly enabled) */}
+          {((import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_LOGIN !== 'false') ||
+            import.meta.env.VITE_ENABLE_DEMO_LOGIN === 'true') && (
+            <div className="pt-4 border-t border-[#DCE5D8] space-y-2">
+              <p className="text-[11px] font-semibold text-[#52605B] uppercase tracking-wider flex items-center gap-1">
+                <KeyRound className="w-3.5 h-3.5 text-[#203A32]" /> Demo Credentials:
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => fillCredentials('STU-2026-001', 'student123')}
+                  className="p-2 text-left rounded-lg border border-[#DCE5D8] bg-[#F5F7F2] hover:bg-white hover:border-[#203A32] transition-all text-xs"
+                >
+                  <div className="flex items-center gap-1 font-semibold text-[#172D28]">
+                    <GraduationCap className="w-3.5 h-3.5 text-[#203A32]" /> Student
+                  </div>
+                  <div className="text-[10px] text-[#52605B] mt-0.5 font-mono">STU-2026-001</div>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => fillCredentials('ADM-2026-001', 'Admin@001')}
-                className="p-2 text-left rounded-lg border border-[#DCE5D8] bg-[#F5F7F2] hover:bg-white hover:border-[#203A32] transition-all text-xs"
-              >
-                <div className="flex items-center gap-1 font-semibold text-[#172D28]">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#203A32]" /> Admin Lead
-                </div>
-                <div className="text-[10px] text-[#52605B] mt-0.5 font-mono">ADM-2026-001</div>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => fillCredentials('ADM-2026-001', 'Admin@001')}
+                  className="p-2 text-left rounded-lg border border-[#DCE5D8] bg-[#F5F7F2] hover:bg-white hover:border-[#203A32] transition-all text-xs"
+                >
+                  <div className="flex items-center gap-1 font-semibold text-[#172D28]">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#203A32]" /> Admin Lead
+                  </div>
+                  <div className="text-[10px] text-[#52605B] mt-0.5 font-mono">ADM-2026-001</div>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 

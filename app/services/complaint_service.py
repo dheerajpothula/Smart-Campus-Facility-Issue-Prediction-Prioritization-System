@@ -108,19 +108,21 @@ class ComplaintService:
             return []
 
     def _save_records(self, records: List[Dict[str, Any]]) -> None:
-        """Persists records atomically using temporary file replacement under lock."""
+        """Persists records atomically using temporary file replacement under lock; fails loudly on write error."""
         with _SERVICE_LOCK:
             temp_path = self.data_file.with_suffix(".tmp")
             try:
                 with open(temp_path, "w", encoding="utf-8") as f:
                     json.dump(records, f, indent=2, ensure_ascii=False)
                 os.replace(temp_path, self.data_file)
-            except Exception:
-                try:
-                    with open(self.data_file, "w", encoding="utf-8") as f:
-                        json.dump(records, f, indent=2, ensure_ascii=False)
-                except Exception:
-                    pass
+            except Exception as exc:
+                raise RuntimeError("Failed to persist complaint records safely.") from exc
+            finally:
+                if temp_path.exists():
+                    try:
+                        temp_path.unlink()
+                    except OSError:
+                        pass
 
     def generate_next_token(self, records: Optional[List[Dict[str, Any]]] = None) -> str:
         """
@@ -447,6 +449,10 @@ class ComplaintService:
             for r in records:
                 if r.get("complaint_id") == complaint_id:
                     old_status = r.get("status", "Submitted")
+                    if old_status == "Withdrawn":
+                        raise ValueError("Cannot update status of a terminal 'Withdrawn' complaint.")
+                    if old_status == "Resolved" and new_status != "Resolved":
+                        raise ValueError("Resolved complaints must be reopened via the reopen workflow.")
                     r["status"] = new_status
                     if remarks:
                         r["action_taken"] = remarks

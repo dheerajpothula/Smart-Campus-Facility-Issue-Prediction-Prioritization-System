@@ -2,8 +2,8 @@
 FIPP 2.0 — Authentication API Routes.
 Provides secure token issuance, identity inspection, token refreshing, and logout.
 """
-from typing import Any, Dict
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Any, Dict, Optional
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 
 from app.api.deps import get_current_user
 from app.core.security import (
@@ -72,13 +72,16 @@ def get_profile(current_user: Dict[str, Any] = Depends(get_current_user)):
 @router.post("/refresh")
 def refresh_access_token(payload: RefreshTokenRequest):
     """
-    Validates a cryptographic refresh token and issues a fresh 60-minute access token.
+    Validates a cryptographic refresh token, checks revocation status,
+    and issues a fresh 60-minute access token.
     """
+    from app.core.security import is_token_revoked
+
     decoded = decode_token(payload.refresh_token)
-    if not decoded or decoded.get("token_type") != "refresh":
+    if not decoded or decoded.get("token_type") != "refresh" or is_token_revoked(payload.refresh_token):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token is invalid or has expired. Please authenticate again.",
+            detail="Refresh token is invalid, revoked, or has expired. Please authenticate again.",
         )
 
     user_id = str(decoded.get("sub") or decoded.get("id"))
@@ -99,11 +102,16 @@ def refresh_access_token(payload: RefreshTokenRequest):
 
 
 @router.post("/logout")
-def logout(current_user: Dict[str, Any] = Depends(get_current_user)):
-    """Logs out user session and confirms token invalidation."""
+def logout(
+    payload: Optional[RefreshTokenRequest] = Body(default=None),
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """Logs out user session and revokes active access and optional refresh tokens."""
     raw_token = current_user.get("token")
     if raw_token:
         revoke_token(raw_token)
+    if payload and payload.refresh_token:
+        revoke_token(payload.refresh_token)
     return {
         "success": True,
         "message": f"Session closed for {current_user['name']}. Please discard local authentication tokens.",

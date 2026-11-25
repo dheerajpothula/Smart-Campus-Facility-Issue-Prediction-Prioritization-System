@@ -15,7 +15,8 @@ export const authService = {
 
   logout: async (): Promise<void> => {
     try {
-      await api.post('/api/auth/logout');
+      const refreshToken = TokenManager.getRefreshToken();
+      await api.post('/api/auth/logout', refreshToken ? { refresh_token: refreshToken } : undefined);
     } catch {
       // Backend token revocation attempt, clear locally regardless
     } finally {
