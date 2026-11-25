@@ -110,16 +110,16 @@ export const AdminOverviewPage: React.FC = () => {
           </Card>
         </Link>
 
-        {/* In Progress */}
+        {/* Active & Under Review (Under Review, Assigned, In Progress) */}
         <Link to="/admin/in-progress">
           <Card className="p-5 bg-white border-[#DCE5D8] hover:border-[#203A32] transition-colors cursor-pointer h-full">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">In Progress</span>
+              <span className="text-xs font-semibold text-[#52605B] uppercase tracking-wider">Active &amp; Under Review</span>
               <Clock className="w-4 h-4 text-blue-600" />
             </div>
             <p className="text-3xl font-bold text-[#203A32] mt-2">{kpis?.in_progress ?? 0}</p>
             <div className="mt-3 flex items-center justify-between text-xs text-[#52605B]">
-              <span>Active Work Orders</span>
+              <span>Under Review, Assigned &amp; In Progress</span>
               <ArrowRight className="w-3.5 h-3.5 text-[#A8B9A3]" />
             </div>
           </Card>

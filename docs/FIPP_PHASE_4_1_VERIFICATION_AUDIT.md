@@ -98,7 +98,7 @@ Inspected `GET /api/admin/reports/export` (`app/api/routes_admin.py`), `Analytic
 
 - **Authorization:** Requires `require_admin` (`401` unauthenticated, `403` student).
 - **Filter Respect Defect Found & Fixed:** Previously `/api/admin/reports/export` ignored active `start_date`, `end_date`, `category`, `location`, and `status` filters and exported the entire ledger. Extracted shared `AnalyticsService._filter_records()` and wired all five filter parameters from `AdminReportsPage.tsx` to `GET /api/admin/reports/export`.
-- **Overstated Privacy Claim Fixed:** Replaced `"DPDP Act 2023 Masking Active"` / `"Enforces Indian DPDP Act 2023 compliance"` claims in UI and backend docstrings with accurate wording: `"Direct student identifiers (ID, name, phone) masked on CSV export"`. Redacting 3 columns alone does not constitute full DPDP Act 2023 compliance.
+- **Overstated Privacy Claim Fixed:** Replaced `"DPDP Act 2023 Masking Active"` / `"Enforces Indian DPDP Act 2023 compliance"` claims in UI and backend docstrings with explicit operational privacy disclosure: `"Authorized admin export masks direct student identifiers (ID, name, phone); room/location details and technician names remain in operational exports."` Redacting 3 columns alone does not constitute full DPDP Act 2023 compliance.
 - **Exact Exported, Masked, and Excluded Fields (`redact_pii=true`):**
   - **Exported Operational Fields:** `complaint_id`, `date_reported`, `category_type`, `message_type`, `category`, `sub_category`, `specific_category`, `building`, `sub_block`, `location`, `status`, `priority_tier`, `priority_score`, `allotted_person`, `department`, `resolved_at`, `closing_remarks`.
   - **Masked Fields (`"[REDACTED]"` when `redact_pii=true`):** `student_id`, `student_name`, `contact_number`.
@@ -126,11 +126,11 @@ All test suites were executed **after** final code edits, clearly separated by t
 
 | Test Suite | Type | Exact Command | Outcome | Scope / Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| **Backend Phase 1 + Phase 4.1 Audit** | Unit & FastAPI `TestClient` API Integration | `.\venv_backend\Scripts\python.exe -m pytest tests/test_admin_phase4_1_audit.py tests/test_backend_phase1.py -v` | **21 / 21 Passed** (10.34s) | 7 new isolated `tmp_path` tests (RBAC, assignment/clearing, resolution remarks, reopen history, feedback auth, upload IDOR, report math/trends, CSV privacy/filters) + 14 Phase 1 integration tests. |
-| **Empirical Phase 1 Verification** | API Integration Script (`TestClient`) | `.\venv_backend\Scripts\python.exe scripts/empirical_phase1_verification.py` | **10 / 10 Modules Passed** | Executed prior to the final 4-line column-width edit in `AdminUnassignedPage.tsx` (backend unchanged afterward). |
-| **Legacy Streamlit Suite** | Unit (`unittest`) | `python -m unittest discover -s smart-campus-facility-prediction/tests -p "test_*.py"` | **233 / 233 Passed** (17.012s) | Verified legacy compatibility intact (backend/legacy unchanged afterward). |
-| **Frontend Vitest Suite** | Component Unit & Mocked Service Integration (`jsdom`) | `cd frontend; npm test -- --run` | **31 / 31 Passed** (4/4 files, 9.14s) | `frontend_phase2.test.tsx` (10), `frontend_phase3.test.tsx` (9), `frontend_phase4.test.tsx` (8), `frontend_phase4_1_audit.test.tsx` (4). Uses `vi.mock` for API services. |
-| **Frontend Production Build** | TypeScript + Vite Bundle | `cd frontend; npm run build` | **Passed** (0 errors, 898ms) | `tsc -b && vite build` clean output (`dist/assets/index-Ci1LmaKe.js`). |
+| **Backend Phase 1 + Phase 4.1 Audit** | Unit & FastAPI `TestClient` API Integration | `.\venv_backend\Scripts\python.exe -m pytest tests/test_admin_phase4_1_audit.py tests/test_backend_phase1.py -v` | **23 / 23 Passed** (25.76s) | 9 isolated `tmp_path` & parity tests (including MCPI parity across all severities/locations/weights and KPI/queue consistency) + 14 Phase 1 integration tests. |
+| **Empirical Phase 1 Verification** | API Integration Script (`TestClient`) | `.\venv_backend\Scripts\python.exe scripts/empirical_phase1_verification.py` | **10 / 10 Modules Passed** | Executed after final backend edits; all 10 verification modules passed. |
+| **Legacy Streamlit Suite** | Unit (`unittest`) | `python -m unittest discover -s smart-campus-facility-prediction/tests -p "test_*.py"` | **233 / 233 Passed** (17.012s) | Verified legacy compatibility intact (run during Phase 4.1 audit; legacy codebase unchanged in closure check). |
+| **Frontend Vitest Suite** | Component Unit & Mocked Service Integration (`jsdom`) | `cd frontend; npm test -- --run` | **32 / 32 Passed** (4/4 files, 15.28s) | `frontend_phase2.test.tsx` (10), `frontend_phase3.test.tsx` (9), `frontend_phase4.test.tsx` (8), `frontend_phase4_1_audit.test.tsx` (5). Uses `vi.mock` for API services. |
+| **Frontend Production Build** | TypeScript + Vite Bundle | `cd frontend; npm run build` | **Passed** (0 errors, 3.30s) | `tsc -b && vite build` clean output (`dist/assets/index-B2CL1PEN.js`). |
 | **Live Browser E2E & Screenshots** | Real Headless Chrome (`1440x900` & `390x844`) against live Uvicorn + Vite Preview | `node scripts/capture_phase4_screenshots.js` | **Passed** (0 console errors, 0 HTTP ≥400 responses) | Logged in via `/login`, navigated all 6 `/admin/*` views, opened `ComplaintDetailsDrawer`, verified MCPI `pts` and `Resolution Record`, captured all 14 screenshots. |
 
 ---
@@ -166,7 +166,7 @@ The prior Phase 4 `scripts/capture_phase4_screenshots.js` had matched `'Sign In 
 
 ### Remaining Limitations (Preserved Within Existing Architecture)
 1. **Free-Text Technician & Squad Assignment:** `allotted_person` and `department` remain free-text string fields on complaint records in `complaints.json` rather than foreign-key references to normalized technician/squad master entities.
-2. **`Under Review` Queue Placement:** `GET /api/admin/complaints/in-progress` remains scoped to `["In Progress", "Assigned"]` to preserve Phase 1 verification compatibility, while `Overview`'s `In Progress` KPI counts `["Under Review", "Assigned", "In Progress"]`. Tickets in `Under Review` (including reopened tickets) are managed via `All Requests`.
+2. **`Under Review` Queue Placement (Label Aligned in Closure Check):** `GET /api/admin/complaints/in-progress` remains scoped to `["In Progress", "Assigned"]` to preserve Phase 1 verification compatibility, while `Overview`'s KPI (`kpis.in_progress`) counts `["Under Review", "Assigned", "In Progress"]`. Updated Overview KPI label to `Active & Under Review` (`Under Review, Assigned & In Progress`), Reports subtitle to `active / under review`, and `AdminInProgressPage` subtitle to clarify that `"Under Review"` tickets are managed in `All Requests`.
 3. **Category Filter Taxonomy vs. Legacy Seed Labels:** Filter dropdowns list the 19 canonical LPU categories (`taxonomy.maintenance_categories`), whereas legacy seed records (`CMP-2026-001`–`007`) carry legacy labels such as `"HVAC"` and `"Other maintenance issues"`.
 4. **CSV Operational Fields:** `location` (which can contain room numbers) and `allotted_person` (technician name) remain included in CSV exports for operational reporting while direct student identifiers (`student_id`, `student_name`, `contact_number`) are masked when `redact_pii=true`.
 
@@ -177,5 +177,24 @@ The prior Phase 4 `scripts/capture_phase4_screenshots.js` had matched `'Sign In 
 - **Branch:** `main`
 - **Pre-Audit Base Commit:** `04d3497b6c7cb7e563531ebe9da616d6808ac198` (`feat(phase4): complete administrator control centre redesign`)
 - **Phase 4.1 Audit & Corrections Commit:** `77a087cda035009cb5a6db76e102c58accd9a177` (`fix(phase4.1): verify and correct admin control centre analytics, rbac, and drawer`)
-- **Remote:** `origin/main` (pushed and verified via `git ls-remote origin main` matching local `HEAD`)
+- **Audit Report Hash Record Commit:** `0928bb9bb91730ac2302962a3a3c2edcb87386d9` (`docs(phase4.1): record commit hash in verification audit report`)
+- **Remote:** `origin/main` (pushed and verified via `git show-ref refs/remotes/origin/main` matching local `HEAD`; `git ls-remote` could not run directly due to local schannel root certificate trust).
 - **Preservation:** No force-push performed, no historical CSV or database migration executed, and unrelated workspace files remain untouched.
+
+---
+
+## 12. Phase 4 Final Closure Check (November 25, 2026)
+
+1. **MCPI Parity Verified:**
+   - Compared `ComplaintService.compute_mcpi()` (`app/services/complaint_service.py`) against the original approved scoring engine `calculate_priority_score()` (`smart-campus-facility-prediction/src/prediction/priority_scoring.py`) across all 5 severity inputs (`Critical`, `High`, `Medium`, `Low`, unknown fallback), all 15 location inputs (14 `LOCATION_CRITICALITY_MAP` entries + unknown fallback), 7 recurrence values (`-0.2` to `1.3`), and 6 impact/population scale values (`-0.1` to `1.2`) — **3,150 combinations with 0 mismatches**.
+   - Verified default weights (`0.35 / 0.25 / 0.25 / 0.15`), tier thresholds (`>=75` Critical, `>=50` High, `>=28` Medium, `<28` Low), and added weight normalization (`if abs(w.total - 1.0) > 0.005: w = w.normalize()`) in `compute_mcpi()` for unnormalized custom weight inputs.
+   - Added automated parity & tier boundary regression test `test_mcpi_parity_with_original_priority_scoring` in `tests/test_admin_phase4_1_audit.py`.
+
+2. **In Progress KPI Consistency Resolved:**
+   - Preserved `kpis.in_progress` counting `["Under Review", "Assigned", "In Progress"]` (so `new + in_progress + resolved + withdrawn == total`), preserved `GET /api/admin/complaints/in-progress` filtering `["In Progress", "Assigned"]`, and preserved reopened-ticket history (`original_resolved_at`, `original_resolved_by`, `previous_closing_remarks`, `remarks_history`).
+   - Updated `AdminOverviewPage.tsx` KPI card title from `In Progress` to `Active & Under Review` (`Under Review, Assigned & In Progress`), updated `AdminReportsPage.tsx` (`active / under review`), and updated `AdminInProgressPage.tsx` subtitle to specify `"Assigned" or "In Progress"` (`"Under Review"` tickets managed in `All Requests`).
+   - Verified with `test_in_progress_kpi_and_queue_status_definitions` (`tests/test_admin_phase4_1_audit.py`) and frontend Vitest test #5 (`frontend_phase4_1_audit.test.tsx`).
+
+3. **CSV Privacy Disclosure Updated:**
+   - Updated `AdminReportsPage.tsx`, `routes_admin.py`, and `analytics_service.py` to disclose explicitly that **authorized admin export masks direct student identifiers (`student_id`, `student_name`, `contact_number` as `[REDACTED]` by default), while room/location details and technician names (`location`, `allotted_person`) remain in operational exports**, and that this does not claim full DPDP Act 2023 compliance.
+   - Verified default `redact_pii` masking, `require_admin` enforcement, and retained operational fields via `test_csv_privacy_and_filter_behavior` and Vitest test #1.

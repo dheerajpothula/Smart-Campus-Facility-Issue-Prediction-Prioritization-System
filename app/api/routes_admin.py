@@ -223,7 +223,10 @@ def get_analytics_report(
 
 @router.get("/reports/export")
 def export_complaints_csv(
-    redact_pii: bool = Query(True, description="Mask direct student identifiers (student_id, student_name, contact_number)"),
+    redact_pii: bool = Query(
+        True,
+        description="Mask direct student identifiers (student_id, student_name, contact_number); room/location and technician fields remain in operational exports",
+    ),
     start_date: Optional[str] = Query(None, description="Start date filter (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="End date filter (YYYY-MM-DD)"),
     category: Optional[str] = Query(None, description="Category filter"),
@@ -232,8 +235,9 @@ def export_complaints_csv(
     current_user: Dict[str, Any] = Depends(require_admin),
 ):
     """
-    Exports filtered complaint ledger records as a standard CSV download.
-    Masks direct student identifiers (student_id, student_name, contact_number) by default.
+    Exports filtered complaint ledger records as a standard CSV download (admin-only).
+    Masks direct student identifiers (student_id, student_name, contact_number) by default;
+    room/location details and technician names remain in operational exports.
     """
     csv_data = analytics_service.export_complaints_csv(
         redact_pii=redact_pii,

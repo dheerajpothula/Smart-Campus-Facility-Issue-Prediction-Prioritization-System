@@ -192,6 +192,9 @@ describe('FIPP 2.0 Phase 4.1 — Verification Audit Regression Tests', () => {
       expect(screen.getByText('Unavailable')).toBeDefined();
       expect(screen.queryByText('1.8 Days')).toBeNull();
       expect(screen.queryByText(/DPDP Act 2023/i)).toBeNull();
+      expect(
+        screen.getByText(/room\/location details and technician names remain in operational exports/i)
+      ).toBeDefined();
     });
 
     // Change trend grouping to Weekly and verify backend param is 'Weekly'
@@ -348,5 +351,29 @@ describe('FIPP 2.0 Phase 4.1 — Verification Audit Regression Tests', () => {
       });
       unmount();
     }
+  });
+
+  it('5. displays aligned Overview Active & Under Review KPI label and In Progress status definition', async () => {
+    const { unmount } = render(
+      <BrowserRouter>
+        <AdminOverviewPage />
+      </BrowserRouter>
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Active & Under Review')).toBeDefined();
+      expect(screen.getByText('Under Review, Assigned & In Progress')).toBeDefined();
+    });
+    unmount();
+
+    render(
+      <BrowserRouter>
+        <AdminInProgressPage />
+      </BrowserRouter>
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Dispatched work orders with status .Assigned. or .In Progress./i)
+      ).toBeDefined();
+    });
   });
 });

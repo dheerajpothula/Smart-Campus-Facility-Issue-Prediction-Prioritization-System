@@ -59,7 +59,7 @@ export const AdminInProgressPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-[#172D28] tracking-tight">In Progress Work Orders</h1>
           <p className="text-xs text-[#52605B] mt-0.5">
-            Active facility maintenance operations currently being executed by campus engineering squads.
+            Dispatched work orders with status &ldquo;Assigned&rdquo; or &ldquo;In Progress&rdquo; (&ldquo;Under Review&rdquo; tickets are managed in All Requests).
           </p>
         </div>
 

@@ -225,10 +225,10 @@ export const AdminReportsPage: React.FC = () => {
           />
         </div>
 
-        <div className="flex justify-between items-center pt-3 mt-3 border-t border-[#DCE5D8]/60 text-xs">
+        <div className="flex justify-between items-center pt-3 mt-3 border-t border-[#DCE5D8]/60 text-xs gap-4">
           <span className="text-[#52605B] flex items-center gap-1.5">
-            <Shield className="w-3.5 h-3.5 text-[#203A32]" />
-            Direct student identifiers (ID, name, phone) masked on CSV export
+            <Shield className="w-3.5 h-3.5 text-[#203A32] shrink-0" />
+            Authorized admin export masks direct student identifiers (ID, name, phone); room/location details and technician names remain in operational exports.
           </span>
 
           <button
@@ -278,7 +278,7 @@ export const AdminReportsPage: React.FC = () => {
             {(report?.kpis.in_progress ?? 0) + (report?.kpis.new ?? 0)}
           </p>
           <span className="text-[11px] text-[#52605B] mt-1 block">
-            {report?.kpis.new ?? 0} unassigned, {report?.kpis.in_progress ?? 0} in progress
+            {report?.kpis.new ?? 0} unassigned, {report?.kpis.in_progress ?? 0} active / under review
           </span>
         </Card>
       </div>

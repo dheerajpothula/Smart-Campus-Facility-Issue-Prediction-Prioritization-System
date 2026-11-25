@@ -1,10 +1,10 @@
 {
   "Health Checks": {
     "status": "PASSED",
-    "duration_ms": 85.21,
+    "duration_ms": 199.34,
     "details": {
       "status": "healthy",
-      "records": 19,
+      "records": 13,
       "ml": {
         "nlp_classifier": "active",
         "severity_model": "active",
@@ -15,7 +15,7 @@
   },
   "Authentication & Persistence": {
     "status": "PASSED",
-    "duration_ms": 1127.05,
+    "duration_ms": 3120.27,
     "details": {
       "admin_authenticated": true,
       "student_authenticated": true,
@@ -25,16 +25,16 @@
   },
   "RBAC & Student Isolation": {
     "status": "PASSED",
-    "duration_ms": 861.74,
+    "duration_ms": 2822.95,
     "details": {
       "rbac_enforced": true,
       "student_isolation_verified": true,
-      "created_token": "CMP-2026-020"
+      "created_token": "CMP-2026-014"
     }
   },
   "Taxonomy Endpoint": {
     "status": "PASSED",
-    "duration_ms": 7.09,
+    "duration_ms": 21.34,
     "details": {
       "category_count": 19,
       "first_category": "Air Conditioner"
@@ -42,32 +42,32 @@
   },
   "Secure File Upload": {
     "status": "PASSED",
-    "duration_ms": 310.68,
+    "duration_ms": 975.58,
     "details": {
-      "stored_filename": "CMP-PHOTO_d2db46f1810e.png",
+      "stored_filename": "CMP-PHOTO_16c0eda0ee03.png",
       "security_validation_passed": true
     }
   },
   "Admin Workflows & Lifecycle": {
     "status": "PASSED",
-    "duration_ms": 635.03,
+    "duration_ms": 1667.68,
     "details": {
       "lifecycle_verified": true,
-      "token": "CMP-2026-021",
+      "token": "CMP-2026-015",
       "remarks_count": 5
     }
   },
   "Student Withdrawal": {
     "status": "PASSED",
-    "duration_ms": 313.21,
+    "duration_ms": 630.76,
     "details": {
       "withdrawal_verified": true,
-      "token": "CMP-2026-022"
+      "token": "CMP-2026-016"
     }
   },
   "Reports & PII Export": {
     "status": "PASSED",
-    "duration_ms": 303.88,
+    "duration_ms": 666.37,
     "details": {
       "analytics_ok": true,
       "export_redacted": true
@@ -75,7 +75,7 @@
   },
   "ML & Predictions": {
     "status": "PASSED",
-    "duration_ms": 297.09,
+    "duration_ms": 645.18,
     "details": {
       "nlp_analyzed": true,
       "expected_impact": "Medium",
@@ -85,11 +85,11 @@
   },
   "Migration Safety": {
     "status": "PASSED",
-    "duration_ms": 345.09,
+    "duration_ms": 806.47,
     "details": {
       "dry_run_success": true,
-      "migrated_live_count": 22,
-      "staging_total": 22,
+      "migrated_live_count": 16,
+      "staging_total": 16,
       "token_collisions": 0,
       "switch_status": "PRESERVED_JSON_LIVE (No production switch executed)"
     }

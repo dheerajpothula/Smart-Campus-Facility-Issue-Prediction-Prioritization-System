@@ -198,7 +198,9 @@ class AnalyticsService:
     ) -> str:
         """
         Exports filtered complaint records as a CSV string.
-        Masks direct student identifiers (student_id, student_name, contact_number) by default.
+        Masks direct student identifiers (student_id, student_name, contact_number) by default;
+        room/location details and technician names remain in operational exports.
+        Does not claim full DPDP Act 2023 compliance.
         """
         records = complaint_service._load_records()
         filtered = cls._filter_records(

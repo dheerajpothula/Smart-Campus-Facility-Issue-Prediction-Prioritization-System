@@ -153,6 +153,8 @@ class ComplaintService:
     ) -> Tuple[float, str, Dict[str, float]]:
         """Computes multi-criteria priority score (0-100), tier, and breakdown."""
         w = weights or PriorityWeights()
+        if abs(w.total - 1.0) > 0.005:
+            w = w.normalize()
         s_val = SEVERITY_SCORE_MAP.get(severity, 0.4)
         c_val = LOCATION_CRITICALITY_MAP.get(location_type, 0.5)
         r_val = max(0.0, min(1.0, float(recurrence_risk)))

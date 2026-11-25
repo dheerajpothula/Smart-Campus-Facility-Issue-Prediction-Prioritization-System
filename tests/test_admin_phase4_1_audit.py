@@ -3,8 +3,11 @@ FIPP 2.0 — Phase 4.1 Verification Audit Test Suite (Backend API & Unit Tests).
 Uses an isolated temporary JSON datastore so live data is never mutated.
 """
 import csv
+import importlib.util
 import io
 import json
+import sys
+import types
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -14,7 +17,12 @@ from PIL import Image
 
 from app.main import app
 from app.core.config import UPLOAD_DIR
-from app.services.complaint_service import complaint_service
+from app.models.data_models import PriorityWeights
+from app.services.complaint_service import (
+    LOCATION_CRITICALITY_MAP,
+    SEVERITY_SCORE_MAP,
+    complaint_service,
+)
 
 client = TestClient(app)
 
@@ -374,3 +382,94 @@ def test_csv_privacy_and_filter_behavior(isolated_store):
         assert forbidden_col not in row
     assert "9123456789" not in res.text
     assert "Rahul Sharma" not in res.text
+
+    # Default export (without explicit redact_pii query param) still masks student PII
+    # while retaining operational room/location and technician fields
+    default_res = client.get("/api/admin/reports/export", headers=adm_headers)
+    assert default_res.status_code == 200
+    default_rows = {r["complaint_id"]: r for r in csv.DictReader(io.StringIO(default_res.text))}
+    assert default_rows["CMP-2026-002"]["student_id"] == "[REDACTED]"
+    assert default_rows["CMP-2026-002"]["student_name"] == "[REDACTED]"
+    assert default_rows["CMP-2026-002"]["contact_number"] == "[REDACTED]"
+    assert default_rows["CMP-2026-002"]["location"] == "Hostel Block B - 2nd Floor"
+    assert default_rows["CMP-2026-002"]["allotted_person"] == "Ramesh Kumar"
+
+
+def test_mcpi_parity_with_original_priority_scoring():
+    """Verifies bit-for-bit parity between pure-Python compute_mcpi and original priority_scoring."""
+    sys.modules.setdefault("streamlit", types.ModuleType("streamlit"))
+    orig_path = Path("smart-campus-facility-prediction/src/prediction/priority_scoring.py")
+    spec = importlib.util.spec_from_file_location("orig_priority_scoring_parity", orig_path)
+    orig_mod = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(orig_mod)
+
+    assert orig_mod.LOCATION_CRITICALITY_MAP == LOCATION_CRITICALITY_MAP
+    assert orig_mod.SEVERITY_SCORE_MAP == SEVERITY_SCORE_MAP
+
+    for sev in ["Critical", "High", "Medium", "Low", "Unknown"]:
+        for loc in list(LOCATION_CRITICALITY_MAP.keys()) + ["Unknown Zone"]:
+            for rec in [-0.2, 0.0, 0.25, 0.65, 1.0, 1.3]:
+                for imp in [-0.1, 0.0, 0.45, 0.80, 1.0, 1.2]:
+                    expected = orig_mod.calculate_priority_score(
+                        severity=sev,
+                        location_type=loc,
+                        recurrence_risk=rec,
+                        impact_scale=imp,
+                        weights=orig_mod.PriorityWeights(),
+                    )
+                    actual = complaint_service.compute_mcpi(
+                        severity=sev,
+                        location_type=loc,
+                        recurrence_risk=rec,
+                        impact_scale=imp,
+                        weights=PriorityWeights(),
+                    )
+                    assert actual == expected
+
+    # Verify weight normalization for unnormalized weights
+    unnorm = PriorityWeights(
+        severity=0.70,
+        location_criticality=0.50,
+        recurrence_probability=0.50,
+        impact_population=0.30,
+    )
+    norm_res = complaint_service.compute_mcpi("Critical", "Server Room", 0.80, 0.90, weights=unnorm)
+    default_res = complaint_service.compute_mcpi("Critical", "Server Room", 0.80, 0.90, weights=PriorityWeights())
+    assert norm_res == default_res
+
+    # Verify exact tier thresholds: >=75 Critical, >=50 High, >=28 Medium, <28 Low
+    assert complaint_service.compute_mcpi("Critical", "Server Room", 1.0, 1.0)[1] == "Critical"
+    assert complaint_service.compute_mcpi("High", "Hostel Room", 0.5, 0.5)[1] == "High"
+    assert complaint_service.compute_mcpi("Medium", "Corridor / Common Area", 0.25, 0.45)[1] == "Medium"
+    assert complaint_service.compute_mcpi("Low", "Campus Grounds", 0.0, 0.0)[1] == "Low"
+
+
+def test_in_progress_kpi_and_queue_status_definitions(isolated_store):
+    """Verifies Overview KPI counts Under Review + Assigned + In Progress while /in-progress stays Assigned + In Progress."""
+    adm_headers = _auth_headers("ADM-2026-001", "Admin@001")
+
+    # Reopen CMP-2026-003 -> transitions to Under Review while preserving resolution history
+    reopen_res = client.post(
+        "/api/admin/complaints/CMP-2026-003/reopen",
+        json={"remarks": "Compressor noise returned after restart."},
+        headers=adm_headers,
+    )
+    assert reopen_res.status_code == 200
+    reopened = reopen_res.json()
+    assert reopened["status"] == "Under Review"
+    assert reopened["original_resolved_by"] == "ADM-2026-001"
+    assert reopened["previous_closing_remarks"] == "Replaced capacitor and tested."
+
+    kpis = client.get("/api/admin/kpis", headers=adm_headers).json()
+    # CMP-2026-002 (In Progress) + CMP-2026-003 (Under Review) = 2
+    assert kpis["in_progress"] == 2
+    assert kpis["new"] == 1
+    assert kpis["resolved"] == 0
+    assert kpis["withdrawn"] == 1
+    assert kpis["new"] + kpis["in_progress"] + kpis["resolved"] + kpis["withdrawn"] == kpis["total"]
+
+    queue = client.get("/api/admin/complaints/in-progress", headers=adm_headers).json()
+    assert queue["total_count"] == 1
+    assert [r["complaint_id"] for r in queue["records"]] == ["CMP-2026-002"]
+
