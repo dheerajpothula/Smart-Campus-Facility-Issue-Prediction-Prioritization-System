@@ -248,7 +248,7 @@ class TestFinalRefinementRequirements(unittest.TestCase):
         self.assertIn("Administrator Username", source)
         self.assertIn("Student ID", source)
         self.assertIn("Back to Role Selection", source)
-        self.assertIn("Simulated Authentication", source)
+        self.assertIn("Self-Declared Identity", source)
 
         # No password or email inputs
         self.assertNotIn("password", source.lower())

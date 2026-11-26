@@ -53,7 +53,7 @@ class SmartCampusApp {
             🔒 <strong>Strict Privacy Isolation:</strong> Students can never view other students' tickets, administrator control panels, ML weights, or raw datasets.
           </div>
           <p style="color:var(--text-muted); font-size:0.88rem; line-height:1.6;">
-            Notice the personal KPI cards showing tickets reported by Rahul Sharma (Computer Science & Engineering).
+            Personal KPI cards track only requests linked to the signed-in student's eight-digit Student ID.
           </p>
         `
       },
@@ -197,15 +197,6 @@ class SmartCampusApp {
     const username = document.getElementById("loginUsername").value.trim();
     const password = document.getElementById("loginPassword").value;
     await this.login(username, password);
-  }
-
-  async quickLogin(username, password, notify = true) {
-    const userInput = document.getElementById("loginUsername");
-    const passInput = document.getElementById("loginPassword");
-    if (userInput) userInput.value = username;
-    if (passInput) passInput.value = password;
-
-    await this.login(username, password, notify);
   }
 
   async login(username, password, notify = true) {

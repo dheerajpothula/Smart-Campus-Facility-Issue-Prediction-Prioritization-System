@@ -20,10 +20,12 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({ initia
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Student form state
+  // Student form & name correction state
   const [stuId, setStuId] = useState('');
   const [stuName, setStuName] = useState('');
   const [stuBlock, setStuBlock] = useState('');
+  const [editingStuId, setEditingStuId] = useState<string | null>(null);
+  const [editingStuName, setEditingStuName] = useState('');
 
   // Block editor state
   const [editBlockId, setEditBlockId] = useState('');
@@ -74,13 +76,13 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({ initia
         name: stuName.trim(),
         block: stuBlock.trim() || undefined,
       });
-      setSuccess(`Authorized student ${stuId.trim()} (${stuName.trim()}).`);
+      setSuccess(`Registered student profile ${stuId.trim()} (${stuName.trim()}).`);
       setStuId('');
       setStuName('');
       setStuBlock('');
       await loadData();
     } catch (err: any) {
-      setError(err.message || 'Unable to authorize student.');
+      setError(err.message || 'Unable to register student profile.');
     }
   };
 
@@ -94,6 +96,32 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({ initia
       await loadData();
     } catch (err: any) {
       setError(err.message || 'Unable to update student status.');
+    }
+  };
+
+  const handleStartEditStudent = (student: ProvisionedStudent) => {
+    setEditingStuId(student.student_id);
+    setEditingStuName(student.name);
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleSaveStudentName = async (studentId: string) => {
+    const trimmed = editingStuName.trim().replace(/\s+/g, ' ');
+    if (trimmed.length < 2 || !/[a-zA-Z]/.test(trimmed)) {
+      setError('Corrected student name must contain at least 2 alphabetic characters.');
+      return;
+    }
+    setError(null);
+    setSuccess(null);
+    try {
+      await complaintService.updateStudentEnrollment(studentId, { name: trimmed });
+      setSuccess(`Updated registered name for Student ID ${studentId} to ${trimmed}.`);
+      setEditingStuId(null);
+      setEditingStuName('');
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Unable to correct student name.');
     }
   };
 
@@ -149,7 +177,7 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({ initia
                 tab === 'students' ? 'bg-white text-[#172D28]' : 'text-[#DCE5D8] hover:bg-[#203A32]'
               }`}
             >
-              <UserPlus className="w-3.5 h-3.5" /> Authorized Students
+              <UserPlus className="w-3.5 h-3.5" /> Student Profiles
             </button>
             <button
               type="button"
@@ -179,8 +207,12 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({ initia
             <div className="space-y-4">
               <form onSubmit={handleProvisionStudent} className="p-4 rounded-xl bg-[#F5F7F2] border border-[#DCE5D8] space-y-3">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-[#172D28]">
-                  Enroll / Authorize 8-Digit Student Identity
+                  Student Directory &amp; Identity Corrections
                 </h3>
+                <p className="text-[11px] text-[#52605B]">
+                  Students self-register directly with their full name and 8-digit Student ID. Use this table to
+                  correct mismatched student names, pre-add entries, or deactivate accounts if needed.
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Input
                     label="8-Digit Student ID"
@@ -192,7 +224,7 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({ initia
                     required
                   />
                   <Input
-                    label="Registered Full Name"
+                    label="Student Full Name"
                     placeholder="Student full name"
                     value={stuName}
                     onChange={(e) => setStuName(e.target.value)}
@@ -206,7 +238,7 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({ initia
                   />
                 </div>
                 <Button type="submit" size="sm" variant="primary" isLoading={loading}>
-                  Provision Student Account
+                  Add Student Profile
                 </Button>
               </form>
 
@@ -225,14 +257,34 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({ initia
                     {students.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="p-4 text-center text-[#52605B]">
-                          No student records provisioned yet. Enroll verified 8-digit student IDs above.
+                          No student records stored yet. Students appear here automatically upon self-registration.
                         </td>
                       </tr>
                     ) : (
                       students.map((s) => (
                         <tr key={s.student_id}>
                           <td className="p-3 font-mono font-semibold">{s.student_id}</td>
-                          <td className="p-3">{s.name}</td>
+                          <td className="p-3">
+                            {editingStuId === s.student_id ? (
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={editingStuName}
+                                  onChange={(e) => setEditingStuName(e.target.value)}
+                                  className="px-2 py-1 text-xs border border-[#DCE5D8] rounded bg-white text-[#172D28]"
+                                  aria-label={`Correct name for ${s.student_id}`}
+                                />
+                                <Button size="sm" variant="primary" onClick={() => handleSaveStudentName(s.student_id)}>
+                                  Save
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => setEditingStuId(null)}>
+                                  Cancel
+                                </Button>
+                              </div>
+                            ) : (
+                              <span>{s.name}</span>
+                            )}
+                          </td>
                           <td className="p-3 text-[#52605B]">{s.block || '—'}</td>
                           <td className="p-3">
                             <span
@@ -244,13 +296,20 @@ export const AdminDirectoryModal: React.FC<AdminDirectoryModalProps> = ({ initia
                             </span>
                           </td>
                           <td className="p-3 text-right">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleToggleStudent(s)}
-                            >
-                              {s.is_active ? 'Deactivate' : 'Activate'}
-                            </Button>
+                            <div className="inline-flex items-center gap-1.5">
+                              {editingStuId !== s.student_id && (
+                                <Button size="sm" variant="outline" onClick={() => handleStartEditStudent(s)}>
+                                  Edit Name
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleToggleStudent(s)}
+                              >
+                                {s.is_active ? 'Deactivate' : 'Activate'}
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))

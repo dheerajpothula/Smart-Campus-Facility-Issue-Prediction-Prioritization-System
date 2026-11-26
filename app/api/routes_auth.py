@@ -6,10 +6,12 @@ authorized eight-digit student login, session inspection, token refresh, and log
 from typing import Any, Dict, Optional
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, rate_limit_auth_requests
 from app.core.security import (
+    StudentAccountDeactivatedError,
+    StudentIdentityMismatchError,
     authenticate_admin_user,
-    authenticate_student,
+    authenticate_or_register_student,
     change_admin_password,
     create_access_token,
     create_refresh_token,
@@ -29,6 +31,7 @@ from app.models.data_models import (
 )
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+_auth_rate_limit = rate_limit_auth_requests(max_requests=25, window_seconds=60)
 
 
 def _to_user_profile(user: Dict[str, Any]) -> UserProfile:
@@ -42,10 +45,11 @@ def _to_user_profile(user: Dict[str, Any]) -> UserProfile:
         block=user.get("block"),
         room_number=user.get("room_number"),
         must_change_password=bool(user.get("must_change_password", False)),
+        identity_verification=user.get("identity_verification"),
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse, dependencies=[Depends(_auth_rate_limit)])
 def login(payload: LoginRequest):
     """
     Authenticates administrator credentials using OWASP PBKDF2-HMAC-SHA256 verification.
@@ -78,23 +82,46 @@ def login(payload: LoginRequest):
     )
 
 
-@router.post("/student/login", response_model=TokenResponse)
+@router.post("/student/login", response_model=TokenResponse, dependencies=[Depends(_auth_rate_limit)])
 def student_login(payload: StudentLoginRequest):
     """
-    Authenticates an authorized student using Student Name and exact 8-digit Student ID.
-    Only administrator-provisioned active student records are permitted.
+    Self-registration and sign-in endpoint for students using Student Name and exact 8-digit Student ID.
+    - New valid 8-digit Student IDs are automatically created and persisted in the local student registry.
+    - Existing Student IDs authenticate if the normalized name matches; mismatched names are rejected
+      with 409 Conflict without overwriting or leaking existing identity records.
     """
-    user = authenticate_student(payload.student_name, payload.student_id)
-    if not user:
+    try:
+        user, is_new = authenticate_or_register_student(payload.student_name, payload.student_id)
+    except StudentAccountDeactivatedError as exc:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Student identity is not authorized or does not match an active enrollment record.",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(exc),
+        )
+    except StudentIdentityMismatchError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+    except RuntimeError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to persist student registration record safely.",
         )
 
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
     profile = _to_user_profile(user)
+
+    msg = (
+        f"Student profile registered under self-declared identity. Welcome, {user['name']} ({user['id']})."
+        if is_new
+        else f"Welcome back, {user['name']} ({user['id']})."
+    )
 
     return TokenResponse(
         success=True,
@@ -103,7 +130,8 @@ def student_login(payload: StudentLoginRequest):
         refresh_token=refresh_token,
         expires_in_seconds=3600,
         user=profile,
-        message=f"Welcome, {user['name']} ({user['id']}).",
+        is_new_registration=is_new,
+        message=msg,
     )
 
 
@@ -186,18 +214,19 @@ def refresh_access_token(payload: RefreshTokenRequest):
         if not stu or not stu.get("is_active", True):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Student enrollment no longer active.",
+                detail="Student account no longer active.",
             )
         user_profile = {
             "id": str(stu["student_id"]),
             "name": str(stu["name"]),
             "role": "student",
-            "title": "Enrolled Student",
+            "title": "Self-Registered Student",
             "department": "",
             "email": "",
             "block": stu.get("block"),
             "room_number": stu.get("room_number"),
             "must_change_password": False,
+            "identity_verification": stu.get("identity_verification", "self_declared_unverified"),
         }
     else:
         adm = get_admin_account(user_id)
@@ -205,6 +234,11 @@ def refresh_access_token(payload: RefreshTokenRequest):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Administrator account no longer active.",
+            )
+        if int(decoded.get("token_version", 1)) != int(adm.get("token_version", 1)):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token invalidated due to administrator credential rotation.",
             )
         user_profile = {
             "id": str(adm["id"]),
@@ -214,6 +248,7 @@ def refresh_access_token(payload: RefreshTokenRequest):
             "department": adm.get("department", ""),
             "email": adm.get("email", ""),
             "must_change_password": bool(adm.get("must_change_password", False)),
+            "token_version": int(adm.get("token_version", 1)),
         }
 
     new_access_token = create_access_token(user_profile)

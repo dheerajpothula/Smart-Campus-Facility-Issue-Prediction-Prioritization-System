@@ -210,4 +210,51 @@ Stored neutrally in [campus_blocks_reference.json](file:///c:/Users/pothu/OneDri
 
 **Decision: `CONDITIONALLY APPROVED — PREREQUISITES REMAIN`**
 
-FIPP 2.0 satisfies all Phase 9 software security, credential hygiene, administrator bootstrap, eight-digit student identity validation, structured neutral campus block/floor integration, automated testing, and responsive browser E2E criteria for a **controlled campus pilot**, conditional on completing the operational prerequisites listed in Section 14 and Section 15 (secrets, HTTPS proxy, `--workers 1`, verified backups, block/floor verification by campus estates, and pilot cohort enrollment). Public campus-wide production launch remains contingent on future approved relational database and institutional SSO/directory phases.
+FIPP 2.0 satisfies all Phase 9 software security, credential hygiene, administrator bootstrap, eight-digit student identity validation, structured neutral campus block/floor integration, automated testing, and responsive browser E2E criteria for a **controlled campus pilot**, conditional on completing the operational prerequisites listed in Section 14 and Section 15 (secrets, HTTPS proxy, `--workers 1`, verified backups, block/floor verification by campus estates, and pilot cohort configuration). Public campus-wide production launch remains contingent on future approved relational database and institutional SSO/directory phases.
+
+---
+
+## 18. Phase 9 Correction / Hotfix: Student Self-Registration & Admin Credential Handover
+
+Following initial Phase 9 review, a targeted hotfix was applied to replace mandatory administrator pre-provisioning for students with **self-declared Student Name + 8-digit Student ID self-registration**, remove any remaining fallback student test identities, and rotate the initial administrator temporary password.
+
+### 18.1 Removal of Default & Fallback Student Credentials
+
+- **Mandatory Pre-Creation Gate Removed:** `POST /api/auth/student/login` no longer requires an administrator to enroll a student beforehand.
+- **Hidden Fallbacks Removed:** Removed the residual `"STU-TEST-001"` / `"ADM-TEST-001"` fallbacks in `smart-campus-facility-prediction/src/data/complaints_store.py` (`get_current_student_identity()`) and `smart-campus-facility-prediction/app.py`, cleared residual quick-login helpers/placeholders in `app/static/index.html` and `app/static/js/app.js`, and updated legacy `smart-campus-facility-prediction/dashboard/components/login_page.py` to use the exact 8-digit string ID and self-registration validation rules.
+- **Legacy Credential Rejection:** Verified old demo accounts (`STU-2026-001`, `STU101`, `STU-TEST-001`, `ADMIN01`, `student123`) and empty/invalid student strings cannot authenticate.
+
+### 18.2 Student Self-Registration & Eight-Digit ID Validation
+
+- **Strict Server & Client Validation (`app/core/security.py`, `app/models/data_models.py`, `frontend/src/pages/auth/LoginPage.tsx`):**
+  - `student_id` must be submitted as a string matching `^\d{8}$` (exact 8 numeric digits `0-9`); leading zeroes (e.g., `00123456`, `00001122`) are preserved end-to-end and integer/alphanumeric/wrong-length values fail with HTTP `422`.
+  - `student_name` is trimmed and whitespace-collapsed (`" ".join(name.strip().split())`), rejecting empty strings or strings without alphabetic characters.
+- **Case A — New Student ID:** When an unused valid 8-digit `student_id` is submitted, `authenticate_or_register_student()` atomically creates and persists a profile in `student_registry.json` (`registration_source: "self_registered"`, `identity_verification: "self_declared_unverified"`, `registered_at`, `last_login_at`), sets `is_new_registration: true`, and issues signed JWT access/refresh tokens immediately.
+- **Case B — Existing Student ID:** Retrieves the stored record, normalizes submitted vs. stored names (`casefold()` + collapsed whitespace), and authenticates without creating duplicate entries when matching (`is_new_registration: false`).
+- **Name Mismatch Handling:** If an existing 8-digit `student_id` is submitted with a non-matching name, login fails with HTTP `409 Conflict` and a generic safe message (without leaking the stored student name or silently overwriting the stored record). Administrators can perform identity name corrections via **Student Profiles → Edit Name** (`PATCH /api/admin/students/{student_id}`) in `AdminDirectoryModal.tsx`.
+
+### 18.3 Student Record Persistence, Ownership & Retrieval
+
+- **JSON-Backed Persistence:** Profiles persist atomically (`tempfile` + `os.replace` under `threading.RLock`) in `student_registry.json`; complaints and queries persist atomically in `complaints.json`. *(FIPP continues using JSON-backed storage rather than claiming relational PostgreSQL persistence.)*
+- **Stable `student_id` Linkage & Ownership Isolation:** Every complaint, query (`message_type` in `Grievance`, `Enquiry`, `Assistance`, `Feedback`), location/block/floor selection, inspection availability (`availability_date`, `time_slot`), photo attachment reference, withdrawal, status history entry, resolution closing summary, and 5-star feedback links strictly to JWT-authenticated `student_id` (payload `student_id` overrides are not accepted).
+- **Cross-Student Protections:** Students retrieve only their own records via `GET /api/student/complaints`; cross-student ticket retrieval returns `403 Forbidden`, cross-student attachment downloads return `403 Forbidden`, attachment reuse/theft across different `student_id`s is rejected (`400 Bad Request`), and administrators see associated `student_id` and `student_name` in `ComplaintDetailsDrawer.tsx`.
+- **Rate Limiting & Enumeration Prevention:** Added sliding-window IP rate limiting (`rate_limit_auth_requests`, 25 requests / 60s) on `/api/auth/login` and `/api/auth/student/login` returning `429 Too Many Requests` on bursts; no public student lookup or enumeration endpoint exists.
+
+### 18.4 Security Limitations of Self-Declared Student Identity
+
+> **IMPORTANT SECURITY DISCLOSURE:** Student self-registration using a self-declared Student Name and 8-digit Student ID is **NOT** independent or university-verified authentication.
+> - **Impersonation Risk:** Any individual who knows another student's 8-digit Student ID before first registration—or knows both the Student Name and 8-digit ID after registration—can register or sign in as that student without a password or institutional Single Sign-On (SSO).
+> - **Mitigation & Governance:** Both the React login portal (`LoginPage.tsx`) and this approval report explicitly disclose that student identities are self-declared and unverified. Administrator oversight (name correction, account deactivation via `/api/admin/students/{id}`), ownership isolation, rate limiting, and non-enumerating errors reduce automated abuse, but campus SSO / verified student password authentication remains mandatory prior to unmonitored campus-wide production deployment. *(Supersedes Section 15 Item 9 mandatory pre-enrollment note for pilot self-service access.)*
+
+### 18.5 Administrator Credential Rotation & Bootstrap Verification
+
+- Updated `app/core/security.py` and `app/bootstrap_admin.py` to support explicit credential rotation (`--rotate` / `rotate_admin_temporary_password()`) alongside strict idempotency for default `python -m app.bootstrap_admin`.
+- Added per-account `token_version` verification in `app/api/deps.py` and `app/api/routes_auth.py` so rotating or updating an administrator password immediately invalidates prior JWT access and refresh tokens.
+- Executed `python -m app.bootstrap_admin` (confirmed idempotent preservation) followed by `python -m app.bootstrap_admin --rotate` for `fipp.admin` (`FIPP System Administrator`, role `admin`), invalidating the previously exposed temporary credential, hashing only the new PBKDF2-HMAC-SHA256 digest in gitignored `admin_accounts.json`, enforcing `must_change_password: true`, and delivering the new temporary one-time password solely in execution output (never committed or written into files).
+
+### 18.6 Hotfix Regression Verification Results
+
+- **Focused Backend Hotfix Pytest (`.\venv_backend\Scripts\python.exe -m pytest tests/test_phase9_hotfix_self_registration.py -v`):** **3 / 3 PASSED (`4.96s`)** covering all 16 hotfix acceptance scenarios (new self-registration, normalized existing login, 8-digit & leading-zero validation, duplicate prevention, `409` mismatch & admin name correction, simulated restart persistence, complaints/queries/inspection/remarks/feedback/attachment ownership, `429` auth rate limiting, admin credential rotation + `must_change_password` gate, default credential rejection, and preservation of `CMP-2026-001..010`). Scope: isolated `tmp_path` FastAPI `TestClient` mounting genuine `auth_router`, `taxonomy_router`, `student_router`, `uploads_router`, and `require_admin` gate.
+- **Legacy Streamlit Regression (`python -m unittest discover -s smart-campus-facility-prediction/tests -p "test_*.py"`):** **233 / 233 PASSED (`16.056s`, `OK`)** executed with backup/restore preserving live `complaints.json` intact.
+- **Frontend Vitest & Production Build (`cd frontend && npm test -- --run && npm run build`):** **43 / 43 PASSED (`6.46s`, 6 files)** and `tsc -b && vite build` **PASSED (`1.01s`)**.
+- **Environment Limitation Observed (Host Windows Application Control):** Running the full-app suites importing `app.main` / `routes_admin` (`test_phase9_release_gate.py`, `test_phase8_qa_suite.py`, etc.) or starting full `uvicorn app.main:app` for live browser E2E post-hotfix encountered an OS-level Windows Application Control policy DLL load block on compiled C-extensions inside the virtualenv (`ImportError: DLL load failed while importing _stats_pythran / conversion / interval: An Application Control policy has blocked this file` for `scipy`/`pandas` in `venv_backend` and `C:\Users\pothu\venv`). No attempt was made to bypass host Application Control; non-`scipy`/`pandas` backend modules (`security`, `bootstrap_admin`, `deps`, `routes_auth`, `routes_student`, `routes_uploads`, `routes_taxonomy`, `complaint_service`, `location_service`, `analytics_service`), all 43 frontend unit tests, production Vite build, and all 233 legacy Streamlit tests ran cleanly and passed after the hotfix edits. Re-running the full `app.main` pytest and live browser E2E suite in an Application-Control-cleared environment remains required prior to pilot launch.

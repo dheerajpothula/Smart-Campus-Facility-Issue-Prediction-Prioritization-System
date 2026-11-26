@@ -55,6 +55,28 @@ def rate_limit_admin_intelligence(max_requests: int = 60, window_seconds: int = 
     return _limiter
 
 
+def rate_limit_auth_requests(max_requests: int = 25, window_seconds: int = 60) -> Callable:
+    """Creates a per-IP sliding-window rate limiter for authentication & self-registration routes."""
+
+    def _limiter(request: Request) -> None:
+        now = time.monotonic()
+        client_host = request.client.host if request.client else "unknown"
+        bucket_key = f"auth:{client_host}:{request.url.path}"
+        with _RATE_LIMIT_LOCK:
+            q = _RATE_LIMIT_BUCKETS[bucket_key]
+            cutoff = now - window_seconds
+            while q and q[0] <= cutoff:
+                q.popleft()
+            if len(q) >= max_requests:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Too many authentication attempts. Please wait a moment and try again.",
+                )
+            q.append(now)
+
+    return _limiter
+
+
 def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
     authorization: Optional[str] = Header(None),
@@ -111,6 +133,18 @@ def get_current_user(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Administrator account has been suspended or deactivated.",
             )
+        if int(payload.get("token_version", 1)) != int(user.get("token_version", 1)):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session invalidated due to administrator credential update. Please sign in again.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if int(payload.get("token_version", 1)) != int(user.get("token_version", 1)):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Administrator session was invalidated due to credential update. Please sign in again.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         return {
             "id": str(user["id"]),
             "name": str(user["name"]),
@@ -129,7 +163,7 @@ def get_current_user(
         if not student:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Student identity is no longer authorized. Please sign in again.",
+                detail="Student profile was not found. Please register or sign in again.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         if not student.get("is_active", True):
@@ -141,12 +175,13 @@ def get_current_user(
             "id": str(student["student_id"]),
             "name": str(student["name"]),
             "role": "student",
-            "title": "Enrolled Student",
+            "title": "Self-Registered Student",
             "department": "",
             "email": "",
             "block": student.get("block"),
             "room_number": student.get("room_number"),
             "must_change_password": False,
+            "identity_verification": student.get("identity_verification", "self_declared_unverified"),
             "token": token,
         }
 

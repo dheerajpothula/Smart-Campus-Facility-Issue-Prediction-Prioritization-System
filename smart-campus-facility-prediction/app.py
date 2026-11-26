@@ -106,14 +106,8 @@ def main() -> None:
             st.session_state["selected_role"] = param_role
             selected_role = param_role
 
-    # Support for test harnesses that assign user_role directly
-    if not auth and user_role in ["student", "admin"]:
-        if user_role == "student":
-            auth = {"role": "student", "name": "Student", "id": "STU-TEST-001"}
-            st.session_state["auth_user"] = auth
-        elif user_role == "admin":
-            auth = {"role": "admin", "name": "Administrator", "id": "ADM-TEST-001"}
-            st.session_state["auth_user"] = auth
+    if not auth and user_role == "student":
+        selected_role = "student"
 
     # =========================================================================
     # 1. GATEWAY: Role Selection (When no role has been chosen)

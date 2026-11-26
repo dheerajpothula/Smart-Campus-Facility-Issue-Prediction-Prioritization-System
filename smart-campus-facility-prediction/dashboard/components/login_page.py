@@ -9,7 +9,25 @@ Modern Sage & Forest Theme:
 - Pale Sage: #DCE5D8
 - White: #FFFFFF
 """
+import re
+import sys
+from pathlib import Path
 import streamlit as st
+
+_ROOT_REPO_DIR = Path(__file__).resolve().parents[3]
+if str(_ROOT_REPO_DIR) not in sys.path:
+    sys.path.insert(0, str(_ROOT_REPO_DIR))
+
+try:
+    from app.core.security import (
+        StudentAccountDeactivatedError,
+        StudentIdentityMismatchError,
+        authenticate_or_register_student,
+    )
+except ImportError:
+    authenticate_or_register_student = None
+    StudentIdentityMismatchError = ValueError
+    StudentAccountDeactivatedError = PermissionError
 
 
 def render_login_screen(role: str) -> None:
@@ -113,11 +131,12 @@ def render_login_screen(role: str) -> None:
                             border: 1px solid #A8B9A3;
                             display: inline-block;
                             margin-top: 0.2rem;
-                        ">Simulated Authentication</span>
+                        ">Self-Declared Identity</span>
                     </div>
                 </div>
                 <p style="color: #4A6357; font-size: 0.88rem; line-height: 1.5; margin: 0.8rem 0 1.25rem 0;">
-                    This prototype uses simulated authentication for demonstration purposes without requiring external server credentials. Please enter your name and ID to proceed.
+                    Enter your trimmed full name and exact 8-digit Student ID (leading zeroes preserved). New IDs are
+                    registered locally on first sign-in. This self-declared flow is not externally verified by the university.
                 </p>
             </div>
             """,
@@ -152,10 +171,30 @@ def render_login_screen(role: str) -> None:
                 st.rerun()
 
             if login_submitted:
-                clean_name = entered_name.strip()
+                clean_name = " ".join(entered_name.strip().split())
                 clean_id = entered_id.strip()
 
-                if not clean_name or not clean_id:
+                if len(clean_name) < 2 or not any(ch.isalpha() for ch in clean_name):
+                    st.error("Please enter your full Student Name (at least 2 alphabetic characters).")
+                elif not is_admin and not re.fullmatch(r"\d{8}", clean_id):
+                    st.error("Student ID must consist of exactly eight numeric digits (0-9), preserving leading zeroes.")
+                elif not is_admin and authenticate_or_register_student is not None:
+                    try:
+                        profile, _ = authenticate_or_register_student(clean_name, clean_id)
+                        st.session_state["auth_user"] = {
+                            "role": "student",
+                            "name": profile["name"],
+                            "id": profile["id"],
+                        }
+                        st.session_state["user_role"] = "student"
+                        st.rerun()
+                    except StudentAccountDeactivatedError as exc:
+                        st.error(str(exc))
+                    except StudentIdentityMismatchError as exc:
+                        st.error(str(exc))
+                    except Exception as exc:
+                        st.error(f"Unable to sign in: {exc}")
+                elif not clean_id:
                     st.error("Please enter both your name and ID to log in.")
                 else:
                     st.session_state["auth_user"] = {

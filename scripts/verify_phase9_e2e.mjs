@@ -93,7 +93,7 @@ async function run() {
   const consoleErrors = [];
   const pageErrors = [];
   const unexpectedHttpErrors = [];
-  let allowExpected401 = false;
+  let allowExpectedAuthError = false;
   let sawUploadGet200 = false;
   let sawLogout200 = false;
   let sawAdminPatch200 = false;
@@ -111,7 +111,7 @@ async function run() {
 
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
-        if (allowExpected401 && msg.text().includes('401')) return;
+        if (allowExpectedAuthError && (msg.text().includes('401') || msg.text().includes('409'))) return;
         consoleErrors.push(msg.text());
       }
     });
@@ -129,7 +129,7 @@ async function run() {
         sawAdminPatch200 = true;
       }
       if (status >= 400) {
-        if (allowExpected401 && status === 401 && url.includes('/api/auth/')) return;
+        if (allowExpectedAuthError && (status === 401 || status === 409) && url.includes('/api/auth/')) return;
         unexpectedHttpErrors.push({ status, url });
       }
     });
@@ -150,17 +150,16 @@ async function run() {
 
     const loginText = await page.evaluate(() => document.body.innerText);
     assert(!loginText.toUpperCase().includes('DEMO CREDENTIALS'), 'Demo credentials unexpectedly displayed');
+    assert(loginText.toUpperCase().includes('SELF-DECLARED STUDENT IDENTITY'), 'Missing self-declared disclosure');
 
-    // Verify unprovisioned student cannot log in
-    await typeIntoInput(page, 'input[name="studentName"]', 'Unregistered Person');
-    await typeIntoInput(page, 'input[name="studentId"]', '99887766');
-    allowExpected401 = true;
+    // Verify invalid non-8-digit ID rejected cleanly client-side
+    await typeIntoInput(page, 'input[name="studentName"]', 'Rohan Verma');
+    await typeIntoInput(page, 'input[name="studentId"]', '1234ABCD');
     await page.click('button[type="submit"]');
     await page.waitForFunction(
-      () => document.body.innerText.toUpperCase().includes('NOT AUTHORIZED'),
-      { timeout: 10000 },
+      () => document.body.innerText.toUpperCase().includes('EXACTLY EIGHT NUMERIC DIGITS'),
+      { timeout: 6000 },
     );
-    allowExpected401 = false;
 
     // Switch to Administrator tab & test initial `fipp.admin` mandatory password change gate
     await clickButtonByText(page, /^Administrator$/i);
@@ -186,22 +185,8 @@ async function run() {
     );
     summary.checks.adminFirstLoginAndPasswordChange = 'PASSED';
 
-    // Provision student "00123456" ("Aarav Sharma") via Student Registry modal
-    await clickButtonByText(page, /Student Registry/i);
-    await page.waitForFunction(
-      () => document.body.innerText.toUpperCase().includes('ENROLL / AUTHORIZE 8-DIGIT STUDENT IDENTITY'),
-      { timeout: 8000 },
-    );
-    await typeIntoInput(page, 'input[placeholder="8 digits (0-9)"]', '00123456');
-    await typeIntoInput(page, 'input[placeholder="Student full name"]', 'Aarav Sharma');
-    await clickButtonByText(page, /Provision Student Account/i);
-    await page.waitForFunction(
-      () => document.body.innerText.includes('00123456') && document.body.innerText.includes('Aarav Sharma'),
-      { timeout: 8000 },
-    );
-
-    // Check Block & Floor Reference tab inside modal
-    await clickButtonByText(page, /Block & Floor Reference/i);
+    // Check Block & Floor Reference tab inside Admin Directory modal (NO pre-provisioning of student needed)
+    await clickButtonByText(page, /Blocks & Floors/i);
     await page.waitForFunction(
       () => document.body.innerText.includes('Block 57') && document.body.innerText.includes('University Centre'),
       { timeout: 8000 },
@@ -210,10 +195,10 @@ async function run() {
     await clickButtonByText(page, /Sign Out/i);
     await page.waitForFunction(() => window.location.pathname === '/' || window.location.pathname.includes('/login'), { timeout: 8000 });
 
-    // 2. Student Login (Name + Leading-Zero 8-Digit ID) & Dynamic Block -> Floor Cascade
+    // 2. Brand-New Student Self-Registration (Name + Leading-Zero 8-Digit ID) & Dynamic Block -> Floor Cascade
     await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle0' });
-    await typeIntoInput(page, 'input[name="studentName"]', 'Aarav Sharma');
-    await typeIntoInput(page, 'input[name="studentId"]', '00123456');
+    await typeIntoInput(page, 'input[name="studentName"]', 'Rohan Verma');
+    await typeIntoInput(page, 'input[name="studentId"]', '00246810');
     await page.click('button[type="submit"]');
     await page.waitForFunction(() => window.location.pathname.startsWith('/student'), { timeout: 10000 });
     await page.waitForFunction(() => document.querySelectorAll('input[type="checkbox"]').length >= 3, { timeout: 8000 });
@@ -224,9 +209,9 @@ async function run() {
     await clickButtonByText(page, /Agree & Proceed/i);
     await page.waitForSelector('textarea', { timeout: 8000 });
 
-    // Verify leading zeroes preserved in Locker Identity banner
+    // Verify leading zeroes preserved in Student Portal header banner
     const stuBanner = await page.evaluate(() => document.body.innerText);
-    assert(stuBanner.includes('00123456'), 'Leading zero Student ID 00123456 missing from portal banner');
+    assert(stuBanner.includes('00246810'), 'Leading zero Student ID 00246810 missing from portal banner');
     assert(!/\bLPU\b/i.test(stuBanner), 'Institution reference present on Raise Query page');
 
     // Test Block -> Floor cascading + Unknown floor block behavior
@@ -314,6 +299,27 @@ async function run() {
     await clickButtonByText(page, /Sign Out/i);
     await page.waitForFunction(() => window.location.pathname === '/' || window.location.pathname.includes('/login'), { timeout: 8000 });
     assert(sawLogout200, 'Logout did not return HTTP 200');
+
+    // Verify existing student re-login retrieves persisted complaint + name mismatch protection works
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle0' });
+    await typeIntoInput(page, 'input[name="studentName"]', 'Imposter Name');
+    await typeIntoInput(page, 'input[name="studentId"]', '00246810');
+    allowExpectedAuthError = true;
+    await page.click('button[type="submit"]');
+    await page.waitForFunction(
+      () => document.body.innerText.toUpperCase().includes('ALREADY REGISTERED UNDER A DIFFERENT NAME'),
+      { timeout: 8000 },
+    );
+    allowExpectedAuthError = false;
+
+    await typeIntoInput(page, 'input[name="studentName"]', '  rohan   verma ');
+    await typeIntoInput(page, 'input[name="studentId"]', '00246810');
+    await page.click('button[type="submit"]');
+    await page.waitForFunction(() => window.location.pathname.startsWith('/student'), { timeout: 10000 });
+    await page.goto(`${BASE_URL}/student/history`, { waitUntil: 'networkidle0' });
+    await page.waitForFunction((tid) => document.body.innerText.includes(tid), { timeout: 8000 }, ticket1Id);
+    await clickButtonByText(page, /Sign Out/i);
+    await page.waitForFunction(() => window.location.pathname === '/' || window.location.pathname.includes('/login'), { timeout: 8000 });
     summary.checks.studentWorkflow = 'PASSED';
 
     // 3. Admin Re-Login with New Password & Verify All 6 Views + Responsive Viewports
@@ -324,6 +330,21 @@ async function run() {
     await page.click('button[type="submit"]');
     await page.waitForFunction(() => window.location.pathname.startsWith('/admin'), { timeout: 10000 });
     await page.waitForFunction(() => document.body.innerText.toUpperCase().includes('OVERVIEW'), { timeout: 10000 });
+
+    // Confirm self-registered student 00246810 appears in Admin Student Registry & inline name correction works
+    await clickButtonByText(page, /Student Registry/i);
+    await page.waitForFunction(
+      () => document.body.innerText.includes('00246810') && document.body.innerText.includes('Rohan Verma'),
+      { timeout: 8000 },
+    );
+    await clickButtonByText(page, /^Edit Name$/i);
+    await typeIntoInput(page, 'input[aria-label="Correct name for 00246810"]', 'Rohan K. Verma');
+    await clickButtonByText(page, /^Save$/i);
+    await page.waitForFunction(
+      () => document.body.innerText.includes('Rohan K. Verma'),
+      { timeout: 8000 },
+    );
+    await page.click('button[aria-label="Close Directory"]');
 
     const adminSections = ['Overview', 'All Requests', 'New / Unassigned', 'In Progress', 'Resolved', 'Reports'];
     for (const sec of adminSections) {

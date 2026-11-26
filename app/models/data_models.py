@@ -19,7 +19,7 @@ class LoginRequest(BaseModel):
 
 
 class StudentLoginRequest(BaseModel):
-    student_name: str = Field(..., min_length=2, max_length=100, description="Authorized student full name")
+    student_name: str = Field(..., min_length=2, max_length=100, description="Self-declared student full name")
     student_id: str = Field(..., min_length=8, max_length=8, description="Exact eight-digit numeric Student ID preserving leading zeroes")
 
     @field_validator("student_id", mode="before")
@@ -88,6 +88,7 @@ class UserProfile(BaseModel):
     block: Optional[str] = None
     room_number: Optional[str] = None
     must_change_password: bool = False
+    identity_verification: Optional[str] = None
 
 
 class TokenResponse(BaseModel):
@@ -99,6 +100,7 @@ class TokenResponse(BaseModel):
     expires_in_seconds: int = 3600
     user: UserProfile
     message: str = "Authenticated successfully."
+    is_new_registration: Optional[bool] = None
 
     @model_validator(mode="after")
     def populate_token_alias(self) -> "TokenResponse":

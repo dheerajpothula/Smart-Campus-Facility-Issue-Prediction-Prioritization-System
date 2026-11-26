@@ -12,6 +12,7 @@ from typing import Any, Dict
 
 from fastapi.testclient import TestClient
 
+from app.api.deps import reset_rate_limiter
 from app.core.config import CAMPUS_BLOCKS_SEED_FILE, PRIMARY_JSON_DATA_FILE
 from app.core.security import (
     bootstrap_initial_admin,
@@ -54,6 +55,7 @@ def setup_isolated_environment(tmp_path: Path, monkeypatch, seed_complaints: Any
     monkeypatch.setattr("app.api.routes_uploads.UPLOAD_DIR", upload_dir)
     monkeypatch.setattr("app.core.security._REVOKED_TOKENS_FILE", revoked_file)
     monkeypatch.setattr("app.core.security._REVOKED_TOKENS", set())
+    reset_rate_limiter()
 
     boot = bootstrap_initial_admin()
     active_admin_pwd = f"QaPilot!{secrets.token_hex(6)}A1"

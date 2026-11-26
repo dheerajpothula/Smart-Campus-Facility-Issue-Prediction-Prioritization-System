@@ -19,7 +19,7 @@ import secrets
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import jwt
 
 from app.core.config import (
@@ -239,6 +239,7 @@ def bootstrap_initial_admin(
             "email": "",
             "password_hash": pwd_hash,
             "must_change_password": True,
+            "token_version": 1,
             "is_active": True,
             "created_at": now_iso,
             "password_updated_at": None,
@@ -254,6 +255,50 @@ def bootstrap_initial_admin(
             "display_name": display_name,
             "must_change_password": True,
             "temporary_password": temp_password,
+        }
+
+
+def rotate_admin_temporary_password(
+    username: str = INITIAL_ADMIN_USERNAME,
+    display_name: str = INITIAL_ADMIN_DISPLAY_NAME,
+) -> Dict[str, Any]:
+    """
+    Rotates the initial administrator's credential to a fresh cryptographically random
+    temporary password, enforces mandatory first-login password change, and invalidates
+    any previously issued sessions via `token_version` increment.
+    """
+    norm_username = (username or INITIAL_ADMIN_USERNAME).strip().lower()
+    if not norm_username:
+        raise ValueError("Administrator username cannot be empty.")
+
+    with _AUTH_LOCK:
+        store = _load_admin_store()
+        accounts = store.setdefault("accounts", {})
+        rec = accounts.get(norm_username)
+        if not rec:
+            return bootstrap_initial_admin(username=norm_username, display_name=display_name)
+
+        new_temp_password = generate_secure_password(20)
+        while verify_password(new_temp_password, rec.get("password_hash", "")):
+            new_temp_password = generate_secure_password(20)
+
+        now_iso = datetime.now(timezone.utc).isoformat()
+        rec["name"] = display_name or rec.get("name", INITIAL_ADMIN_DISPLAY_NAME)
+        rec["password_hash"] = hash_password(new_temp_password, iterations=OWASP_PBKDF2_ITERATIONS)
+        rec["must_change_password"] = True
+        rec["is_active"] = True
+        rec["token_version"] = int(rec.get("token_version", 1)) + 1
+        rec["password_updated_at"] = now_iso
+        store["bootstrapped"] = True
+        _save_admin_store(store)
+
+        return {
+            "created": False,
+            "rotated": True,
+            "username": norm_username,
+            "display_name": rec["name"],
+            "must_change_password": True,
+            "temporary_password": new_temp_password,
         }
 
 
@@ -291,6 +336,7 @@ def authenticate_admin_user(username: str, plain_password: str) -> Optional[Dict
             "block": None,
             "room_number": None,
             "must_change_password": bool(rec.get("must_change_password", False)),
+            "token_version": int(rec.get("token_version", 1)),
             "is_active": bool(rec.get("is_active", True)),
         }
     return None
@@ -316,6 +362,7 @@ def change_admin_password(username: str, current_password: str, new_password: st
 
         rec["password_hash"] = hash_password(new_password, iterations=OWASP_PBKDF2_ITERATIONS)
         rec["must_change_password"] = False
+        rec["token_version"] = int(rec.get("token_version", 1)) + 1
         rec["password_updated_at"] = datetime.now(timezone.utc).isoformat()
         _save_admin_store(store)
 
@@ -329,6 +376,7 @@ def change_admin_password(username: str, current_password: str, new_password: st
             "block": None,
             "room_number": None,
             "must_change_password": False,
+            "token_version": int(rec["token_version"]),
             "is_active": True,
         }
 
@@ -417,6 +465,19 @@ def get_student_record(student_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def normalize_student_name(student_name: str) -> str:
+    """Consistent case-folded whitespace-collapsed student name normalization."""
+    return " ".join((student_name or "").strip().split()).casefold()
+
+
+class StudentIdentityMismatchError(ValueError):
+    """Raised when an existing 8-digit Student ID is submitted with a non-matching name."""
+
+
+class StudentAccountDeactivatedError(PermissionError):
+    """Raised when an inactive/disabled student account attempts login."""
+
+
 def provision_student(
     student_id: str,
     name: str,
@@ -424,20 +485,26 @@ def provision_student(
     room_number: Optional[str] = None,
     provisioned_by: str = INITIAL_ADMIN_USERNAME,
 ) -> Dict[str, Any]:
-    """Provisions a verified 8-digit student identity under administrator control."""
+    """Provisions a student record under administrator control (optional administrative workflow)."""
     valid_id = validate_student_id(student_id)
     valid_name = validate_student_name(name)
+    now_iso = datetime.now(timezone.utc).isoformat()
     with _AUTH_LOCK:
         records = _load_student_registry()
         if any(str(r.get("student_id", "")) == valid_id for r in records):
-            raise ValueError(f"Student ID '{valid_id}' is already enrolled in the registry.")
+            raise ValueError(f"Student ID '{valid_id}' is already registered.")
         entry = {
             "student_id": valid_id,
             "name": valid_name,
+            "normalized_name": normalize_student_name(valid_name),
             "block": block.strip() if isinstance(block, str) and block.strip() else None,
             "room_number": room_number.strip() if isinstance(room_number, str) and room_number.strip() else None,
             "is_active": True,
-            "provisioned_at": datetime.now(timezone.utc).isoformat(),
+            "registration_source": "admin_provisioned",
+            "identity_verification": "admin_entered",
+            "registered_at": now_iso,
+            "last_login_at": None,
+            "provisioned_at": now_iso,
             "provisioned_by": provisioned_by,
         }
         records.append(entry)
@@ -452,7 +519,7 @@ def update_student_enrollment(
     block: Optional[str] = None,
     room_number: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Updates enrollment details or active status for a provisioned student."""
+    """Updates status or performs administrator-controlled name/detail correction for a student."""
     valid_id = validate_student_id(student_id)
     with _AUTH_LOCK:
         records = _load_student_registry()
@@ -461,7 +528,9 @@ def update_student_enrollment(
                 if is_active is not None:
                     rec["is_active"] = bool(is_active)
                 if name is not None:
-                    rec["name"] = validate_student_name(name)
+                    valid_name = validate_student_name(name)
+                    rec["name"] = valid_name
+                    rec["normalized_name"] = normalize_student_name(valid_name)
                 if block is not None:
                     rec["block"] = block.strip() or None
                 if room_number is not None:
@@ -472,38 +541,80 @@ def update_student_enrollment(
         raise ValueError(f"Student ID '{valid_id}' was not found in the student registry.")
 
 
-def authenticate_student(student_name: str, student_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Validates student format (`name` + exact 8-digit string `student_id`) and verifies
-    against the active administrator-provisioned student registry.
-    Never allows unprovisioned or name-mismatched identities to authenticate.
-    """
-    try:
-        valid_id = validate_student_id(student_id)
-        valid_name = validate_student_name(student_name)
-    except ValueError:
-        return None
-
-    rec = get_student_record(valid_id)
-    if not rec or not rec.get("is_active", True):
-        return None
-
-    stored_name = " ".join(str(rec.get("name", "")).strip().split()).casefold()
-    if stored_name != valid_name.casefold():
-        return None
-
+def _build_student_profile(rec: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "id": str(rec["student_id"]),
         "name": str(rec["name"]),
         "role": "student",
-        "title": "Enrolled Student",
+        "title": "Self-Registered Student",
         "department": "",
         "email": "",
         "block": rec.get("block"),
         "room_number": rec.get("room_number"),
         "must_change_password": False,
+        "identity_verification": rec.get("identity_verification", "self_declared_unverified"),
         "is_active": True,
     }
+
+
+def authenticate_or_register_student(student_name: str, student_id: str) -> Tuple[Dict[str, Any], bool]:
+    """
+    Self-registration and login workflow for students using Student Name + exact 8-digit Student ID:
+    - Case A (New student ID): validates inputs, automatically creates and persists a student record
+      marked `self_declared_unverified` (not institutionally verified), and returns `(profile, True)`.
+    - Case B (Existing student ID): verifies account is active and matches normalized name.
+      If name matches, updates `last_login_at` without creating duplicates and returns `(profile, False)`.
+      If name differs, raises StudentIdentityMismatchError without overwriting existing record.
+    """
+    valid_id = validate_student_id(student_id)
+    valid_name = validate_student_name(student_name)
+    norm_input_name = normalize_student_name(valid_name)
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    with _AUTH_LOCK:
+        records = _load_student_registry()
+        for rec in records:
+            if str(rec.get("student_id", "")) == valid_id:
+                if not rec.get("is_active", True):
+                    raise StudentAccountDeactivatedError(
+                        "This student profile has been deactivated by an administrator."
+                    )
+                stored_norm = normalize_student_name(str(rec.get("name", "")))
+                if stored_norm != norm_input_name:
+                    raise StudentIdentityMismatchError(
+                        "This 8-digit Student ID is already registered under a different name. "
+                        "Self-service identity overwrite is not permitted; please contact a Campus Administrator to request a name correction."
+                    )
+                rec["last_login_at"] = now_iso
+                _save_student_registry(records)
+                return _build_student_profile(rec), False
+
+        new_entry = {
+            "student_id": valid_id,
+            "name": valid_name,
+            "normalized_name": norm_input_name,
+            "block": None,
+            "room_number": None,
+            "is_active": True,
+            "registration_source": "self_registered",
+            "identity_verification": "self_declared_unverified",
+            "registered_at": now_iso,
+            "last_login_at": now_iso,
+            "provisioned_at": now_iso,
+            "provisioned_by": "self_registration",
+        }
+        records.append(new_entry)
+        _save_student_registry(records)
+        return _build_student_profile(new_entry), True
+
+
+def authenticate_student(student_name: str, student_id: str) -> Optional[Dict[str, Any]]:
+    """Compatibility wrapper returning authenticated/registered student profile or None."""
+    try:
+        profile, _ = authenticate_or_register_student(student_name, student_id)
+        return profile
+    except (ValueError, StudentIdentityMismatchError, StudentAccountDeactivatedError):
+        return None
 
 
 def authenticate_user(identifier: str, plain_password: str) -> Optional[Dict[str, Any]]:
@@ -532,6 +643,8 @@ def create_access_token(user_profile: Dict[str, Any], expires_delta: Optional[ti
         "block": user_profile.get("block"),
         "room_number": user_profile.get("room_number"),
         "must_change_password": bool(user_profile.get("must_change_password", False)),
+        "token_version": int(user_profile.get("token_version", 1)),
+        "identity_verification": user_profile.get("identity_verification"),
         "token_type": "access",
         "exp": expire,
         "iat": datetime.now(timezone.utc),

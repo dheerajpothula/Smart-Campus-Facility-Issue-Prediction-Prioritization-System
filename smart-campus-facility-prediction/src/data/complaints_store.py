@@ -35,9 +35,9 @@ PROGRESS_STAGES = [
 
 def get_current_student_identity() -> dict:
     """
-    Returns the trusted student identity for the current session.
+    Returns the authenticated student identity for the current session.
     Retrieves dynamically from st.session_state['auth_user'].
-    If not authenticated, checks test fallback or returns None for student_id and student_name.
+    If not authenticated, returns None for student_id and student_name (no hidden fallback).
     """
     auth = st.session_state.get("auth_user")
     if isinstance(auth, dict) and auth.get("role") == "student" and auth.get("id"):
@@ -46,13 +46,6 @@ def get_current_student_identity() -> dict:
             "student_name": auth.get("name", "Student"),
             "block": auth.get("block") or auth.get("hostel"),
             "room_number": auth.get("room_number") or auth.get("room"),
-        }
-    if st.session_state.get("user_role") == "student" and not auth:
-        return {
-            "student_id": "STU-TEST-001",
-            "student_name": "Test Student",
-            "block": None,
-            "room_number": None,
         }
     return {
         "student_id": None,

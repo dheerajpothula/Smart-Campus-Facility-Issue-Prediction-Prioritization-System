@@ -15,6 +15,7 @@ export interface UserProfile {
   block?: string | null;
   room_number?: string | null;
   must_change_password?: boolean;
+  identity_verification?: string | null;
 }
 
 export interface ProvisionedStudent {
@@ -23,6 +24,8 @@ export interface ProvisionedStudent {
   block?: string | null;
   room_number?: string | null;
   is_active: boolean;
+  registration_source?: string;
+  identity_verification?: string;
   provisioned_at?: string;
   provisioned_by?: string;
 }
@@ -55,6 +58,7 @@ export interface AuthResponse {
   expires_in_seconds: number;
   user: UserProfile;
   message: string;
+  is_new_registration?: boolean | null;
 }
 
 export interface RemarksHistoryEntry {

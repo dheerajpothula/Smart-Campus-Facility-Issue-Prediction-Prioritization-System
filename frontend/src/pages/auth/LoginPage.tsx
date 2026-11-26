@@ -38,7 +38,7 @@ export const LoginPage: React.FC = () => {
     const trimmedId = studentId.trim();
 
     if (trimmedName.length < 2 || !/[a-zA-Z]/.test(trimmedName)) {
-      setError('Please enter your registered full Student Name (at least 2 alphabetic characters).');
+      setError('Please enter your full Student Name (at least 2 alphabetic characters).');
       return;
     }
     if (!/^\d{8}$/.test(trimmedId)) {
@@ -59,7 +59,7 @@ export const LoginPage: React.FC = () => {
     } catch (err: any) {
       setError(
         err.message ||
-          'Student identity could not be verified against active campus enrollment records.',
+          'Unable to complete student sign-in or self-registration. Please check your name and 8-digit Student ID.',
       );
     } finally {
       setLoading(false);
@@ -109,7 +109,7 @@ export const LoginPage: React.FC = () => {
             <CardTitle>Sign In</CardTitle>
             <CardDescription>
               {mode === 'student'
-                ? 'Verify your registered Student Name and 8-digit Student ID'
+                ? 'Sign in or self-register with your Student Name and 8-digit Student ID'
                 : 'Authenticate with your provisioned administrator account'}
             </CardDescription>
           </div>
@@ -148,15 +148,17 @@ export const LoginPage: React.FC = () => {
           {mode === 'student' ? (
             <form onSubmit={handleStudentSubmit} className="space-y-4">
               <div className="p-3 rounded-lg bg-[#F5F7F2] border border-[#DCE5D8] text-[11px] text-[#52605B] leading-relaxed">
-                <strong className="text-[#172D28]">Required Identity Format:</strong> Enter your full registered name
-                and your <strong>exact 8-digit numeric Student ID</strong> (including any leading zeroes). Only
-                administrator-authorized student records can sign in.
+                <strong className="text-[#172D28]">Self-Declared Student Identity:</strong> Enter your full{' '}
+                <strong>Student Name</strong> and exact <strong>8-digit numeric Student ID</strong> (leading zeroes
+                preserved). New valid IDs automatically create a local student profile linked to your complaints and
+                queries. This self-declared entry is not verified against an external university directory; contact the
+                Campus Administrator if a name correction is needed for an existing ID.
               </div>
 
               <Input
                 label="Student Name"
                 name="studentName"
-                placeholder="Enter your registered full name"
+                placeholder="Enter your full name"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
                 leftIcon={<User className="w-4 h-4" />}
@@ -178,7 +180,7 @@ export const LoginPage: React.FC = () => {
               />
 
               <Button type="submit" variant="primary" className="w-full" isLoading={loading}>
-                Verify Student Identity & Continue
+                Continue to Student Portal
               </Button>
             </form>
           ) : (

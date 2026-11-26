@@ -258,6 +258,15 @@ class ComplaintService:
 
         with _SERVICE_LOCK:
             records = self._load_records()
+            if data.photo_stored_filename:
+                owner_conflict = any(
+                    r.get("photo_stored_filename") == data.photo_stored_filename
+                    and r.get("student_id")
+                    and r.get("student_id") != student_id
+                    for r in records
+                )
+                if owner_conflict:
+                    raise ValueError("Uploaded photo attachment reference belongs to another student's complaint.")
             token = self.generate_next_token(records)
 
             # Location formatting

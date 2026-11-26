@@ -41,7 +41,7 @@ describe('FIPP 2.0 Phase 8 & Phase 9 QA Frontend Regressions', () => {
     expect(text).toContain('PBKDF2 & JWT Session Security');
   });
 
-  it('2. LoginPage removes all demo credentials and enforces 8-digit Student ID + Name validation', async () => {
+  it('2. LoginPage removes all demo credentials and enforces self-registration 8-digit Student ID + Name validation', async () => {
     const studentLoginSpy = vi.spyOn(authService, 'studentLogin').mockResolvedValue({
       success: true,
       access_token: 'stu-jwt',
@@ -49,6 +49,7 @@ describe('FIPP 2.0 Phase 8 & Phase 9 QA Frontend Regressions', () => {
       expires_in_seconds: 3600,
       user: { id: '00123456', name: 'Aarav Sharma', role: 'student' },
       message: 'ok',
+      is_new_registration: true,
     });
 
     render(
@@ -59,19 +60,20 @@ describe('FIPP 2.0 Phase 8 & Phase 9 QA Frontend Regressions', () => {
       </MemoryRouter>,
     );
 
-    // Zero demo autofill UI anywhere
+    // Zero demo autofill UI anywhere and honest self-declared disclosure
     expect(screen.queryByText(/Demo Credentials/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Student Demo/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Admin Demo/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/Self-Declared Student Identity/i)).toBeInTheDocument();
 
     // Reject invalid alphanumeric or non-8-digit ID client-side
-    fireEvent.change(screen.getByPlaceholderText(/Enter your registered full name/i), {
+    fireEvent.change(screen.getByPlaceholderText(/Enter your full name/i), {
       target: { value: 'Aarav Sharma' },
     });
     fireEvent.change(screen.getByPlaceholderText(/Enter 8-digit numeric ID/i), {
       target: { value: '1234ABCD' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /Verify Student Identity/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Continue to Student Portal/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/exactly eight numeric digits/i)).toBeInTheDocument();
@@ -82,7 +84,7 @@ describe('FIPP 2.0 Phase 8 & Phase 9 QA Frontend Regressions', () => {
     fireEvent.change(screen.getByPlaceholderText(/Enter 8-digit numeric ID/i), {
       target: { value: '00123456' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /Verify Student Identity/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Continue to Student Portal/i }));
 
     await waitFor(() => {
       expect(studentLoginSpy).toHaveBeenCalledWith('Aarav Sharma', '00123456');

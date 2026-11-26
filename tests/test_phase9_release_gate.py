@@ -18,13 +18,15 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api.deps import reset_rate_limiter
 from app.core.security import (
     bootstrap_initial_admin,
     hash_password,
-    provision_student,
+    rotate_admin_temporary_password,
     validate_strong_password,
 )
 from app.main import app
+from app.services.complaint_service import ComplaintService
 from tests.helpers import admin_headers, setup_isolated_environment, student_headers
 
 
@@ -45,12 +47,18 @@ def test_old_sample_credentials_permanently_rejected(phase9_env):
         ("STU-2026-001", "student123"),
         ("STU101", "student123"),
         ("STU102", "student123"),
+        ("STU-TEST-001", "student123"),
         ("fipp.admin", "admin123"),
         ("fipp.admin", "password"),
+        ("fipp.admin", "rU82^Y9A#yYtL8bC4zpP"),
     ]
     for username, password in legacy_attempts:
         r = client.post("/api/auth/login", json={"username": username, "password": password})
         assert r.status_code == 401, f"Legacy sample credential {username} unexpectedly succeeded!"
+
+    # Fresh unpopulated student registry on clean deployment has zero pre-created demo students
+    empty_reg = json.loads(phase9_env["student_registry"].read_text(encoding="utf-8"))
+    assert all(r.get("student_id") not in {"STU-2026-001", "STU101", "STU102", "STU-TEST-001"} for r in empty_reg)
 
 
 def test_admin_bootstrap_idempotency_and_mandatory_first_login_password_change(tmp_path: Path, monkeypatch):
@@ -118,64 +126,93 @@ def test_admin_bootstrap_idempotency_and_mandatory_first_login_password_change(t
     assert client.get("/api/admin/kpis", headers={"Authorization": f"Bearer {fresh_token}"}).status_code == 200
 
 
-def test_eight_digit_student_id_validation_and_registry_enforcement(phase9_env):
+def test_eight_digit_student_self_registration_persistence_and_mismatch_protection(phase9_env):
     client = phase9_env["client"]
     adm_hdr = admin_headers(client, phase9_env["admin_username"], phase9_env["admin_password"])
+    reg_file = phase9_env["student_registry"]
 
-    # Valid leading-zero 8-digit student provisioned
-    s_hdr = student_headers(client, "Aarav Sharma", "00123456")
-    me_res = client.get("/api/auth/me", headers=s_hdr)
-    assert me_res.status_code == 200
-    assert me_res.json()["user"]["id"] == "00123456"  # leading zeroes preserved
-
-    # Unprovisioned valid 8-digit identity cannot sign in
-    unprov = client.post(
+    # Case A: Brand-new 8-digit leading-zero student self-registers WITHOUT prior admin creation
+    r_new = client.post(
         "/api/auth/student/login",
-        json={"student_name": "Unauthorized Student", "student_id": "99887766"},
+        json={"student_name": "  Rohan   Verma  ", "student_id": "00009876"},
     )
-    assert unprov.status_code == 401
+    assert r_new.status_code == 200, r_new.text
+    new_json = r_new.json()
+    assert new_json["is_new_registration"] is True
+    assert new_json["user"]["id"] == "00009876"  # leading zeroes preserved as string
+    assert new_json["user"]["name"] == "Rohan Verma"
+    assert new_json["user"]["identity_verification"] == "self_declared_unverified"
 
-    # Provisioned ID with wrong name cannot sign in
+    # Verify student profile persisted to disk
+    persisted_students = json.loads(reg_file.read_text(encoding="utf-8"))
+    matching_9876 = [s for s in persisted_students if s["student_id"] == "00009876"]
+    assert len(matching_9876) == 1
+    assert matching_9876[0]["registration_source"] == "self_registered"
+
+    # Case B (matching name with normalized whitespace/case) -> logs in WITHOUT creating duplicate
+    r_again = client.post(
+        "/api/auth/student/login",
+        json={"student_name": "rohan verma", "student_id": "00009876"},
+    )
+    assert r_again.status_code == 200, r_again.text
+    assert r_again.json()["is_new_registration"] is False
+    persisted_after = json.loads(reg_file.read_text(encoding="utf-8"))
+    assert len([s for s in persisted_after if s["student_id"] == "00009876"]) == 1
+
+    # Case B (name mismatch) -> rejected (409 Conflict), stored name NOT overwritten, no name leaked in message
     wrong_name = client.post(
         "/api/auth/student/login",
-        json={"student_name": "Wrong Person", "student_id": "00123456"},
+        json={"student_name": "Imposter Name", "student_id": "00009876"},
     )
-    assert wrong_name.status_code == 401
+    assert wrong_name.status_code == 409
+    assert "rohan" not in wrong_name.text.lower()
+    persisted_still = json.loads(reg_file.read_text(encoding="utf-8"))
+    assert [s for s in persisted_still if s["student_id"] == "00009876"][0]["name"] == "Rohan Verma"
 
-    # Invalid ID formats rejected (alphabetic, too short, too long, integer non-string)
+    # Empty / malformed names & invalid 8-digit formats rejected cleanly
+    for bad_name in ["", "   ", "12345", "A"]:
+        r_bad_n = client.post(
+            "/api/auth/student/login",
+            json={"student_name": bad_name, "student_id": "00009876"},
+        )
+        assert r_bad_n.status_code == 422
+
     for bad_id in ["1234567", "123456789", "1234ABCD", "0012 345", 12345678]:
         r_bad = client.post(
             "/api/auth/student/login",
-            json={"student_name": "Aarav Sharma", "student_id": bad_id},
+            json={"student_name": "Rohan Verma", "student_id": bad_id},
         )
         assert r_bad.status_code == 422, f"Expected 422 for student_id={bad_id!r}, got {r_bad.status_code}"
 
-    # Admin provisions a new leading-zero student via API, then deactivates them
-    r_prov = client.post(
-        "/api/admin/students",
+    # Admin-controlled identity name correction -> student can then sign in under corrected name
+    r_fix = client.patch(
+        "/api/admin/students/00009876",
         headers=adm_hdr,
-        json={"student_id": "00009876", "name": "Neha Verma", "block": "Block 57"},
+        json={"name": "Rohan K. Verma"},
     )
-    assert r_prov.status_code == 201, r_prov.text
-    assert r_prov.json()["student"]["student_id"] == "00009876"
+    assert r_fix.status_code == 200, r_fix.text
+    r_fixed_login = client.post(
+        "/api/auth/student/login",
+        json={"student_name": "Rohan K. Verma", "student_id": "00009876"},
+    )
+    assert r_fixed_login.status_code == 200
+    rohan_hdr = {"Authorization": f"Bearer {r_fixed_login.json()['access_token']}"}
+    assert client.get("/api/student/complaints", headers=rohan_hdr).status_code == 200
 
-    neha_hdr = student_headers(client, "Neha Verma", "00009876")
-    assert client.get("/api/student/complaints", headers=neha_hdr).status_code == 200
-
-    # Deactivate student -> active session blocked (403) and re-login rejected (401)
+    # Deactivate student -> active session blocked (403) and re-login blocked (403)
     r_deact = client.patch(
         "/api/admin/students/00009876",
         headers=adm_hdr,
         json={"is_active": False},
     )
     assert r_deact.status_code == 200
-    assert client.get("/api/student/complaints", headers=neha_hdr).status_code == 403
+    assert client.get("/api/student/complaints", headers=rohan_hdr).status_code == 403
     assert (
         client.post(
             "/api/auth/student/login",
-            json={"student_name": "Neha Verma", "student_id": "00009876"},
+            json={"student_name": "Rohan K. Verma", "student_id": "00009876"},
         ).status_code
-        == 401
+        == 403
     )
 
 
@@ -278,3 +315,178 @@ def test_campus_block_floor_reference_and_server_side_validation(phase9_env):
     all_admin = client.get("/api/admin/complaints", headers=adm_hdr)
     assert all_admin.status_code == 200
     assert any(r.get("complaint_id") == "CMP-2026-001" for r in all_admin.json()["records"])
+
+
+def test_self_registered_student_complaints_queries_attachments_isolation_and_restart(phase9_env):
+    client = phase9_env["client"]
+    adm_hdr = admin_headers(client, phase9_env["admin_username"], phase9_env["admin_password"])
+
+    # Student A (leading-zero self-registered without prior admin provisioning)
+    r_a = client.post(
+        "/api/auth/student/login",
+        json={"student_name": "Kavita Rao", "student_id": "00001122"},
+    )
+    assert r_a.status_code == 200
+    hdr_a = {"Authorization": f"Bearer {r_a.json()['access_token']}"}
+
+    # Student B self-registers independently
+    r_b = client.post(
+        "/api/auth/student/login",
+        json={"student_name": "Vikram Gill", "student_id": "00003344"},
+    )
+    assert r_b.status_code == 200
+    hdr_b = {"Authorization": f"Bearer {r_b.json()['access_token']}"}
+
+    # Student A uploads PNG photo
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (4, 4), color=(15, 95, 70)).save(buf, format="PNG")
+    up_res = client.post(
+        "/api/uploads/photo",
+        headers=hdr_a,
+        files={"file": ("defect.png", buf.getvalue(), "image/png")},
+    )
+    assert up_res.status_code == 200, up_res.text
+    stored_photo = up_res.json()["stored_filename"]
+
+    # Raise Complaint ("Grievance") even if spoofed student_id passed in payload body
+    c_payload = {
+        "student_id": "99999999",
+        "category_type": "Maintenance / Electrical Complaints",
+        "message_type": "Grievance",
+        "title": "Blocked Lab Corridor Drain",
+        "category": "Electricity",
+        "sub_category": "Power Supply / Socket",
+        "specific_categories": ["Sparking socket"],
+        "building": "Block 57",
+        "block_id": "BLK-57",
+        "floor_id": "BLK-57-F2",
+        "floor_label": "Second Floor",
+        "room_type": "Room No",
+        "room_number": "209",
+        "contact_number": "9876543210",
+        "availability_date": "2026-12-12",
+        "time_slot": "10:00 AM - 12:00 PM",
+        "description": "Power strip overheating near Block 57 laboratory room 209.",
+        "declarations_accepted": True,
+        "photo_stored_filename": stored_photo,
+        "photo_sha256": up_res.json()["sha256"],
+    }
+    sub_complaint = client.post("/api/student/complaints/submit", headers=hdr_a, json=c_payload)
+    assert sub_complaint.status_code == 200, sub_complaint.text
+    cmp_id = sub_complaint.json()["token"]
+    assert sub_complaint.json()["complaint"]["student_id"] == "00001122"
+
+    # Raise Query ("Enquiry") under same self-registered student ID
+    q_payload = {
+        **c_payload,
+        "message_type": "Enquiry",
+        "title": "Inspection Schedule Enquiry",
+        "photo_stored_filename": None,
+        "photo_sha256": None,
+        "description": "Requesting technician inspection slot confirmation for room 209.",
+    }
+    sub_query = client.post("/api/student/complaints/submit", headers=hdr_a, json=q_payload)
+    assert sub_query.status_code == 200, sub_query.text
+    qry_id = sub_query.json()["token"]
+
+    # Student B CANNOT view Student A's complaint, attachment, steal attachment ref, withdraw, or rate
+    assert client.get("/api/student/complaints", headers=hdr_b).json()["total_complaints"] == 0
+    assert client.get(f"/api/student/complaints/{cmp_id}", headers=hdr_b).status_code == 403
+    assert client.get(f"/api/uploads/{stored_photo}", headers=hdr_b).status_code == 403
+    assert (
+        client.post(
+            f"/api/student/complaints/{cmp_id}/withdraw",
+            headers=hdr_b,
+            json={"reason": "Unauthorized attempt"},
+        ).status_code
+        == 400
+    )
+    steal_photo = client.post(
+        "/api/student/complaints/submit",
+        headers=hdr_b,
+        json={**q_payload, "photo_stored_filename": stored_photo},
+    )
+    assert steal_photo.status_code == 400
+
+    # Admin resolves complaint -> Student A sees updated status, closing remarks & submits feedback
+    assert (
+        client.patch(
+            f"/api/admin/complaints/{cmp_id}",
+            headers=adm_hdr,
+            json={"status": "Resolved", "remarks": "Replaced faulty power strip in room 209."},
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            f"/api/student/complaints/{cmp_id}/feedback",
+            headers=hdr_a,
+            json={"rating": 5, "comments": "Prompt repair."},
+        ).status_code
+        == 200
+    )
+
+    # Admin view displays associated self-registered student identity
+    adm_view = client.get(f"/api/admin/complaints/{cmp_id}", headers=adm_hdr)
+    assert adm_view.status_code == 200
+    assert adm_view.json()["student_id"] == "00001122"
+    assert adm_view.json()["student_name"] == "Kavita Rao"
+
+    # Simulated application restart / fresh service & fresh re-login retrieves both records
+    fresh_service = ComplaintService(data_file=phase9_env["data_file"])
+    reloaded = fresh_service.get_student_complaints("00001122")
+    assert {r["complaint_id"] for r in reloaded} == {cmp_id, qry_id}
+
+    r_relogin = client.post(
+        "/api/auth/student/login",
+        json={"student_name": "  kavita   rao ", "student_id": "00001122"},
+    )
+    assert r_relogin.status_code == 200
+    assert r_relogin.json()["is_new_registration"] is False
+    hdr_a2 = {"Authorization": f"Bearer {r_relogin.json()['access_token']}"}
+    hist = client.get("/api/student/complaints", headers=hdr_a2).json()
+    assert hist["total_complaints"] == 2
+    assert {r["complaint_id"] for r in hist["records"]} == {cmp_id, qry_id}
+
+
+def test_admin_credential_rotation_and_auth_rate_limiting(phase9_env):
+    client = phase9_env["client"]
+    old_admin_hdr = admin_headers(client, phase9_env["admin_username"], phase9_env["admin_password"])
+    assert client.get("/api/admin/kpis", headers=old_admin_hdr).status_code == 200
+
+    # Rotate temporary admin password -> old password & old JWT both rejected
+    rot = rotate_admin_temporary_password()
+    assert rot["rotated"] is True
+    assert rot["must_change_password"] is True
+    new_temp = rot["temporary_password"]
+    assert new_temp != phase9_env["admin_password"]
+
+    assert client.get("/api/admin/kpis", headers=old_admin_hdr).status_code == 401
+    assert (
+        client.post(
+            "/api/auth/login",
+            json={"username": "fipp.admin", "password": phase9_env["admin_password"]},
+        ).status_code
+        == 401
+    )
+
+    # New temporary password logs in with must_change_password=True blocking admin endpoints
+    temp_login = client.post("/api/auth/login", json={"username": "fipp.admin", "password": new_temp})
+    assert temp_login.status_code == 200
+    assert temp_login.json()["user"]["must_change_password"] is True
+    temp_hdr = {"Authorization": f"Bearer {temp_login.json()['access_token']}"}
+    assert client.get("/api/admin/kpis", headers=temp_hdr).status_code == 403
+
+    # Verify auth rate limiter triggers HTTP 429 cleanly after burst on student registration/login
+    reset_rate_limiter()
+    statuses = []
+    for idx in range(28):
+        r = client.post(
+            "/api/auth/student/login",
+            json={"student_name": "Rate Test Student", "student_id": f"880000{idx:02d}"},
+        )
+        statuses.append(r.status_code)
+    assert 429 in statuses
+    reset_rate_limiter()

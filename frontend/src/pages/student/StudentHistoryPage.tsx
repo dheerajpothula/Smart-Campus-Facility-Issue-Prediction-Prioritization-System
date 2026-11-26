@@ -495,6 +495,12 @@ export const StudentHistoryPage: React.FC = () => {
                   </p>
                 )}
 
+                {selectedTicket.closing_remarks && (
+                  <p className="text-xs text-emerald-950 bg-white p-2.5 rounded-lg border border-emerald-200">
+                    <strong>Resolution Summary:</strong> {selectedTicket.closing_remarks}
+                  </p>
+                )}
+
                 {/* Feedback / Rating Section */}
                 {selectedTicket.feedback ? (
                   <div className="p-3 rounded-lg bg-white border border-emerald-200 text-xs text-emerald-900 space-y-1">
