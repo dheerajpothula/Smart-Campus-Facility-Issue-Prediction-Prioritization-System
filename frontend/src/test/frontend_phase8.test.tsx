@@ -23,6 +23,7 @@ describe('FIPP 2.0 Phase 8 & Phase 9 QA Frontend Regressions', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
@@ -60,11 +61,13 @@ describe('FIPP 2.0 Phase 8 & Phase 9 QA Frontend Regressions', () => {
       </MemoryRouter>,
     );
 
-    // Zero demo autofill UI anywhere and honest self-declared disclosure
+    // Zero demo autofill UI, no large technical info box, and concise instruction text present
     expect(screen.queryByText(/Demo Credentials/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Student Demo/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Admin Demo/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/Self-Declared Student Identity/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Self-Declared Student Identity/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/not verified against an external university directory/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Enter your name and 8-digit Student ID to continue.')).toBeInTheDocument();
 
     // Reject invalid alphanumeric or non-8-digit ID client-side
     fireEvent.change(screen.getByPlaceholderText(/Enter your full name/i), {
@@ -289,5 +292,132 @@ describe('FIPP 2.0 Phase 8 & Phase 9 QA Frontend Regressions', () => {
       expect(createUrlSpy).toHaveBeenCalledWith(blob);
       expect(openSpy).toHaveBeenCalledWith('blob:mock-photo-url', '_blank', 'noopener,noreferrer');
     });
+  });
+
+  it('7. apiClient reads Fetch Response body once across JSON, empty, HTML, and plain-text errors without "body stream already read"', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    // 7a. New registration (200 JSON)
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          success: true,
+          access_token: 'tok-new',
+          refresh_token: 'ref-new',
+          token_type: 'bearer',
+          expires_in_seconds: 3600,
+          is_new_registration: true,
+          user: { id: '00112233', name: 'Neha Singh', role: 'student' },
+          message: 'Student profile registered.',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    const regRes = await authService.studentLogin('Neha Singh', '00112233');
+    expect(regRes.is_new_registration).toBe(true);
+    expect(regRes.user.id).toBe('00112233');
+
+    // 7b. Existing student login (200 JSON)
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          success: true,
+          access_token: 'tok-existing',
+          refresh_token: 'ref-existing',
+          token_type: 'bearer',
+          expires_in_seconds: 3600,
+          is_new_registration: false,
+          user: { id: '00112233', name: 'Neha Singh', role: 'student' },
+          message: 'Welcome back.',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    const loginRes = await authService.studentLogin('Neha Singh', '00112233');
+    expect(loginRes.is_new_registration).toBe(false);
+
+    // 7c. Duplicate ID / name mismatch (409 Conflict JSON)
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ detail: 'This 8-digit Student ID is already registered under a different name.' }),
+        { status: 409, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    await expect(authService.studentLogin('Other Name', '00112233')).rejects.toMatchObject({
+      status: 409,
+      message: 'This 8-digit Student ID is already registered under a different name.',
+    });
+
+    // 7d. Empty 500 error (previously threw "body stream already read")
+    fetchMock.mockResolvedValueOnce(new Response('', { status: 500 }));
+    await expect(authService.studentLogin('Neha Singh', '00112233')).rejects.toMatchObject({
+      status: 500,
+      message: 'Request failed with HTTP status 500.',
+    });
+
+    // 7e. Non-JSON plain-text 502 error
+    fetchMock.mockResolvedValueOnce(new Response('Bad Gateway', { status: 502, headers: { 'Content-Type': 'text/plain' } }));
+    await expect(authService.studentLogin('Neha Singh', '00112233')).rejects.toMatchObject({
+      status: 502,
+      message: 'Bad Gateway',
+    });
+
+    // 7f. HTML proxy error response (502 HTML) shows clean HTTP status message, never raw HTML or stream error
+    fetchMock.mockResolvedValueOnce(
+      new Response('<html><body><h1>502 Bad Gateway</h1></body></html>', { status: 502, headers: { 'Content-Type': 'text/html' } }),
+    );
+    await expect(authService.studentLogin('Neha Singh', '00112233')).rejects.toMatchObject({
+      status: 502,
+      message: 'Backend service error (HTTP 502). Verify the API server is running and try again.',
+    });
+
+    // 7g. Upload endpoint reads non-JSON error safely once
+    fetchMock.mockResolvedValueOnce(new Response('Payload Too Large', { status: 413 }));
+    const dummyFile = new File(['abc'], 'photo.png', { type: 'image/png' });
+    await expect(api.upload('/api/uploads/photo', dummyFile)).rejects.toMatchObject({
+      status: 413,
+      message: 'Payload Too Large',
+    });
+  });
+
+  it('8. LoginPage surfaces genuine 409 mismatch and 500/502 backend errors gracefully without stream errors', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <LoginPage />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByPlaceholderText(/Enter your full name/i), {
+      target: { value: 'Wrong Person' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/Enter 8-digit numeric ID/i), {
+      target: { value: '00123456' },
+    });
+
+    // 409 Conflict JSON detail shown cleanly
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ detail: 'Student ID already registered under a different name.' }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Continue to Student Portal/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Student ID already registered under a different name.')).toBeInTheDocument();
+    });
+
+    // Non-JSON empty 502 error shown cleanly (no "body stream already read")
+    fetchMock.mockResolvedValueOnce(new Response('', { status: 502 }));
+    fireEvent.click(screen.getByRole('button', { name: /Continue to Student Portal/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Request failed with HTTP status 502.')).toBeInTheDocument();
+    });
+    expect(document.body.textContent).not.toMatch(/body stream already read/i);
   });
 });

@@ -56,6 +56,53 @@ export interface ApiError {
   detail?: any;
 }
 
+/**
+ * Consumes a Fetch Response body stream exactly once via `response.text()`,
+ * safely parses JSON if present, and avoids ever calling `.json()` and `.text()`
+ * separately on the same Response object.
+ */
+async function readResponseSafely(
+  response: Response
+): Promise<{ parsed: any; hasJson: boolean; rawText: string }> {
+  const rawText = await response.text();
+  if (!rawText || !rawText.trim()) {
+    return { parsed: null, hasJson: false, rawText: '' };
+  }
+  try {
+    return { parsed: JSON.parse(rawText), hasJson: true, rawText };
+  } catch {
+    return { parsed: null, hasJson: false, rawText };
+  }
+}
+
+function formatHttpErrorMessage(status: number, parsed: any, rawText: string): string {
+  if (parsed && typeof parsed === 'object') {
+    const rawDetail = parsed.detail ?? parsed.message ?? parsed.error;
+    if (typeof rawDetail === 'string' && rawDetail.trim()) {
+      return rawDetail.trim();
+    }
+    if (Array.isArray(rawDetail) && rawDetail.length > 0) {
+      const msgs = rawDetail
+        .map((item: any) => (typeof item?.msg === 'string' ? item.msg : JSON.stringify(item)))
+        .filter(Boolean);
+      if (msgs.length > 0) {
+        return msgs.join('; ');
+      }
+    }
+    if (rawDetail !== undefined && rawDetail !== null) {
+      return JSON.stringify(rawDetail);
+    }
+  }
+  const trimmed = rawText.trim();
+  if (trimmed) {
+    if (trimmed.startsWith('<') || /<\/?[a-z][\s\S]*>/i.test(trimmed)) {
+      return `Backend service error (HTTP ${status}). Verify the API server is running and try again.`;
+    }
+    return trimmed;
+  }
+  return `Request failed with HTTP status ${status}.`;
+}
+
 export async function request<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -76,7 +123,12 @@ export async function request<T>(
     let response = await fetch(url, { ...options, headers });
 
     // Handle token expiration & automatic refresh
-    if (response.status === 401 && !endpoint.includes('/api/auth/login') && !endpoint.includes('/api/auth/refresh')) {
+    if (
+      response.status === 401 &&
+      !endpoint.includes('/api/auth/login') &&
+      !endpoint.includes('/api/auth/student/login') &&
+      !endpoint.includes('/api/auth/refresh')
+    ) {
       const refreshToken = TokenManager.getRefreshToken();
       if (refreshToken) {
         try {
@@ -86,8 +138,8 @@ export async function request<T>(
             body: JSON.stringify({ refresh_token: refreshToken }),
           });
 
-          if (refreshRes.ok) {
-            const refreshData = await refreshRes.json();
+          const { parsed: refreshData, hasJson: refreshHasJson } = await readResponseSafely(refreshRes);
+          if (refreshRes.ok && refreshHasJson && refreshData?.access_token) {
             TokenManager.setSession(refreshData.access_token);
             // Retry original request with fresh token
             (headers as Record<string, string>)['Authorization'] = `Bearer ${refreshData.access_token}`;
@@ -106,39 +158,28 @@ export async function request<T>(
       }
     }
 
+    const { parsed, hasJson, rawText } = await readResponseSafely(response);
+
     if (!response.ok) {
-      let errorDetail: any = null;
-      try {
-        errorDetail = await response.json();
-      } catch {
-        errorDetail = await response.text();
-      }
-
-      const message =
-        (typeof errorDetail === 'object' && (errorDetail?.detail || errorDetail?.message)) ||
-        `Request failed with status ${response.status}`;
-
       const err: ApiError = {
         status: response.status,
-        message: typeof message === 'string' ? message : JSON.stringify(message),
-        detail: errorDetail,
+        message: formatHttpErrorMessage(response.status, parsed, rawText),
+        detail: hasJson ? parsed : rawText || null,
       };
       throw err;
     }
 
-    // Check if JSON response
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      return (await response.json()) as T;
+    if (hasJson) {
+      return parsed as T;
     }
-    return (await response.text()) as unknown as T;
+    return rawText as unknown as T;
   } catch (error: any) {
-    if (error.status && error.message) {
+    if (typeof error?.status === 'number' && error.status > 0 && error?.message) {
       throw error;
     }
     throw {
       status: 0,
-      message: error.message || 'Network connection failed. Verify that the backend is running.',
+      message: error?.message || 'Network connection failed. Verify that the backend is running.',
       detail: error,
     } as ApiError;
   }
@@ -186,13 +227,17 @@ export const api = {
       body: formData,
     });
 
+    const { parsed, hasJson, rawText } = await readResponseSafely(response);
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ detail: 'Upload failed' }));
       throw {
         status: response.status,
-        message: err.detail || 'Photo upload failed',
-      };
+        message: formatHttpErrorMessage(response.status, parsed, rawText) || 'Photo upload failed',
+        detail: hasJson ? parsed : rawText || null,
+      } as ApiError;
     }
-    return response.json();
+    if (hasJson) {
+      return parsed as T;
+    }
+    return rawText as unknown as T;
   },
 };

@@ -147,14 +147,6 @@ export const LoginPage: React.FC = () => {
 
           {mode === 'student' ? (
             <form onSubmit={handleStudentSubmit} className="space-y-4">
-              <div className="p-3 rounded-lg bg-[#F5F7F2] border border-[#DCE5D8] text-[11px] text-[#52605B] leading-relaxed">
-                <strong className="text-[#172D28]">Self-Declared Student Identity:</strong> Enter your full{' '}
-                <strong>Student Name</strong> and exact <strong>8-digit numeric Student ID</strong> (leading zeroes
-                preserved). New valid IDs automatically create a local student profile linked to your complaints and
-                queries. This self-declared entry is not verified against an external university directory; contact the
-                Campus Administrator if a name correction is needed for an existing ID.
-              </div>
-
               <Input
                 label="Student Name"
                 name="studentName"
@@ -178,6 +170,10 @@ export const LoginPage: React.FC = () => {
                 helperText="Exact 8 digits (0-9). Leading zeroes are preserved."
                 required
               />
+
+              <p className="text-xs text-[#52605B]">
+                Enter your name and 8-digit Student ID to continue.
+              </p>
 
               <Button type="submit" variant="primary" className="w-full" isLoading={loading}>
                 Continue to Student Portal

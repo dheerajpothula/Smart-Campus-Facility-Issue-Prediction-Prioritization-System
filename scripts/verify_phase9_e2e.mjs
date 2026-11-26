@@ -150,7 +150,8 @@ async function run() {
 
     const loginText = await page.evaluate(() => document.body.innerText);
     assert(!loginText.toUpperCase().includes('DEMO CREDENTIALS'), 'Demo credentials unexpectedly displayed');
-    assert(loginText.toUpperCase().includes('SELF-DECLARED STUDENT IDENTITY'), 'Missing self-declared disclosure');
+    assert(!loginText.toUpperCase().includes('SELF-DECLARED STUDENT IDENTITY'), 'Old info box unexpectedly displayed');
+    assert(loginText.toUpperCase().includes('ENTER YOUR NAME AND 8-DIGIT STUDENT ID TO CONTINUE'), 'Missing concise login instruction');
 
     // Verify invalid non-8-digit ID rejected cleanly client-side
     await typeIntoInput(page, 'input[name="studentName"]', 'Rohan Verma');
@@ -329,7 +330,7 @@ async function run() {
     await typeIntoInput(page, 'input[type="password"]', NEW_ADMIN_PWD);
     await page.click('button[type="submit"]');
     await page.waitForFunction(() => window.location.pathname.startsWith('/admin'), { timeout: 10000 });
-    await page.waitForFunction(() => document.body.innerText.toUpperCase().includes('OVERVIEW'), { timeout: 10000 });
+    await page.waitForFunction(() => document.body.innerText.toUpperCase().includes('EXECUTIVE OPERATIONS OVERVIEW'), { timeout: 10000 });
 
     // Confirm self-registered student 00246810 appears in Admin Student Registry & inline name correction works
     await clickButtonByText(page, /Student Registry/i);

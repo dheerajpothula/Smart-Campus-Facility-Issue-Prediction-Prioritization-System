@@ -659,6 +659,7 @@ def create_refresh_token(user_profile: Dict[str, Any]) -> str:
         "sub": str(user_profile["id"]),
         "id": str(user_profile["id"]),
         "role": user_profile["role"],
+        "token_version": int(user_profile.get("token_version", 1)),
         "token_type": "refresh",
         "exp": expire,
         "iat": datetime.now(timezone.utc),
