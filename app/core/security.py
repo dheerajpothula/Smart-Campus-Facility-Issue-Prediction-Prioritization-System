@@ -302,6 +302,72 @@ def rotate_admin_temporary_password(
         }
 
 
+def reset_admin_credentials(
+    new_username: str,
+    new_password: str,
+    display_name: Optional[str] = None,
+    require_password_change: bool = False,
+) -> Dict[str, Any]:
+    """
+    Resets or updates the single administrator account to use the supplied username
+    and password without creating duplicate administrator accounts.
+    Stores only an OWASP PBKDF2-HMAC-SHA256 hash and increments token_version.
+    """
+    clean_username = (new_username or "").strip()
+    if len(clean_username) < 3 or len(clean_username) > 64 or any(ch.isspace() for ch in clean_username):
+        raise ValueError("Administrator username must be 3-64 non-whitespace characters.")
+
+    validate_strong_password(new_password, clean_username)
+    norm_key = clean_username.lower()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    pwd_hash = hash_password(new_password, iterations=OWASP_PBKDF2_ITERATIONS)
+
+    with _AUTH_LOCK:
+        store = _load_admin_store()
+        existing_accounts = store.get("accounts", {})
+        prev_rec: Dict[str, Any] = {}
+        max_token_ver = 0
+        if isinstance(existing_accounts, dict):
+            for rec in existing_accounts.values():
+                if isinstance(rec, dict):
+                    if not prev_rec:
+                        prev_rec = rec
+                    max_token_ver = max(max_token_ver, int(rec.get("token_version", 1)))
+
+        resolved_name = (display_name or prev_rec.get("name") or INITIAL_ADMIN_DISPLAY_NAME).strip()
+        updated_rec = {
+            "id": clean_username,
+            "username": clean_username,
+            "name": resolved_name,
+            "role": "admin",
+            "title": prev_rec.get("title", "System Administrator"),
+            "department": prev_rec.get("department", "Campus Facility & Maintenance Operations"),
+            "email": prev_rec.get("email", ""),
+            "password_hash": pwd_hash,
+            "must_change_password": bool(require_password_change),
+            "token_version": max(1, max_token_ver) + 1,
+            "is_active": True,
+            "created_at": prev_rec.get("created_at", now_iso),
+            "password_updated_at": now_iso,
+        }
+
+        store["bootstrapped"] = True
+        store.setdefault("bootstrapped_at", now_iso)
+        # Replace accounts map with the single active administrator record to prevent duplicates
+        store["accounts"] = {norm_key: updated_rec}
+        _save_admin_store(store)
+
+        return {
+            "reset": True,
+            "username": clean_username,
+            "display_name": resolved_name,
+            "role": "admin",
+            "must_change_password": bool(require_password_change),
+            "token_version": updated_rec["token_version"],
+            "account_count": len(store["accounts"]),
+        }
+
+
 def get_admin_account(username: str) -> Optional[Dict[str, Any]]:
     """Retrieves an administrator account record (case-insensitive username match)."""
     if not username:
@@ -352,6 +418,11 @@ def change_admin_password(username: str, current_password: str, new_password: st
         accounts = store.get("accounts", {})
         norm = username.strip().lower()
         rec = accounts.get(norm)
+        if not rec:
+            for candidate in accounts.values():
+                if str(candidate.get("id", "")).lower() == norm or str(candidate.get("username", "")).lower() == norm:
+                    rec = candidate
+                    break
         if not rec or not rec.get("is_active", True):
             raise ValueError("Administrator account was not found or is inactive.")
         if not verify_password(current_password, rec.get("password_hash", "")):

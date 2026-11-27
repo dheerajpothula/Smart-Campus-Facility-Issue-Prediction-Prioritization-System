@@ -22,6 +22,7 @@ from app.api.deps import reset_rate_limiter
 from app.core.security import (
     bootstrap_initial_admin,
     hash_password,
+    reset_admin_credentials,
     rotate_admin_temporary_password,
     validate_strong_password,
 )
@@ -490,3 +491,55 @@ def test_admin_credential_rotation_and_auth_rate_limiting(phase9_env):
         statuses.append(r.status_code)
     assert 429 in statuses
     reset_rate_limiter()
+
+
+def test_admin_credential_reset_replaces_account_without_duplicates(phase9_env):
+    client = phase9_env["client"]
+    old_hdr = admin_headers(client, phase9_env["admin_username"], phase9_env["admin_password"])
+
+    custom_user = "OpsAdmin_01"
+    custom_pwd = f"ResetStrong#{secrets.token_hex(5)}9"
+    res = reset_admin_credentials(
+        new_username=custom_user,
+        new_password=custom_pwd,
+        require_password_change=False,
+    )
+    assert res["reset"] is True
+    assert res["username"] == custom_user
+    assert res["account_count"] == 1
+    assert res["must_change_password"] is False
+
+    # Plaintext never stored on disk and only 1 administrator exists
+    disk_data = json.loads(phase9_env["admin_store"].read_text(encoding="utf-8"))
+    assert len(disk_data["accounts"]) == 1
+    assert custom_pwd not in json.dumps(disk_data)
+
+    # Prior session & old username rejected cleanly
+    assert client.get("/api/admin/kpis", headers=old_hdr).status_code == 401
+    assert (
+        client.post(
+            "/api/auth/login",
+            json={"username": phase9_env["admin_username"], "password": phase9_env["admin_password"]},
+        ).status_code
+        == 401
+    )
+
+    # Wrong password rejected; exact username + case-insensitive lookup succeeds and reaches Control Centre
+    assert (
+        client.post(
+            "/api/auth/login",
+            json={"username": custom_user, "password": "WrongPassword!99"},
+        ).status_code
+        == 401
+    )
+    ok_login = client.post(
+        "/api/auth/login",
+        json={"username": custom_user, "password": custom_pwd},
+    )
+    assert ok_login.status_code == 200, ok_login.text
+    ok_json = ok_login.json()
+    assert ok_json["user"]["id"] == custom_user
+    assert ok_json["user"]["role"] == "admin"
+    assert ok_json["user"]["must_change_password"] is False
+    new_hdr = {"Authorization": f"Bearer {ok_json['access_token']}"}
+    assert client.get("/api/admin/kpis", headers=new_hdr).status_code == 200
